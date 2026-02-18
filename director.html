@@ -6,7 +6,7 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         body { font-family: sans-serif; background: #333; color: white; text-align: center; padding: 20px; }
-        .container { max-width: 800px; /* Zwiększyłem szerokość kontenera dla wygody */ margin: 0 auto; }
+        .container { max-width: 800px; margin: 0 auto; }
         
         button { cursor: pointer; border: none; border-radius: 5px; color: white; transition: 0.2s; }
         .btn-layout { background: #007bff; width: 45%; padding: 12px; font-size: 14px; margin: 5px; }
@@ -36,7 +36,6 @@
         .mirror-on { background: #007bff; border: 2px solid white; }
         .btn-move { background: #343a40; font-size: 14px; } .btn-move:hover { background: #495057; }
 
-        /* GIERKI */
         .game-section { background: #2a2a2a; padding: 15px; border-radius: 10px; margin-top: 10px; border: 1px solid #444; display: none; }
         .game-menu-grid { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         .game-tile { width: 45%; padding: 20px; background: #444; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: bold; }
@@ -56,18 +55,17 @@
         .btn-reroll { background: #9c27b0; } .btn-reroll:hover { background: #7b1fa2; }
         .btn-send { background: #009688; } .btn-send:hover { background: #00796b; }
 
-        /* --- FREE MODE CANVAS (POPRAWIONE) --- */
+        /* --- FREE MODE CANVAS (PRECYZYJNY) --- */
         #free-mode-stage {
             display: none; 
             width: 100%;
-            /* Kluczowe: Wymuszenie proporcji 16:9 */
             aspect-ratio: 16 / 9;
             background: #000;
             border: 2px solid #00d2ff;
             position: relative;
             margin-top: 20px;
             overflow: hidden;
-            /* Siatka pomocnicza (opcjonalnie) */
+            box-sizing: border-box; /* POPRAWKA: Ramka wewnątrz wymiaru */
             background-image: 
                 linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
@@ -75,7 +73,6 @@
         }
         .stage-box {
             position: absolute;
-            /* Wielkość ustawimy w JS dynamicznie */
             background: rgba(0, 123, 255, 0.8);
             border: 1px solid white;
             color: white;
@@ -89,6 +86,7 @@
             text-align: center;
             line-height: 1.2;
             padding: 2px;
+            box-sizing: border-box; /* POPRAWKA: Ramka nie powiększa elementu */
         }
         .stage-box:active { cursor: grabbing; border-color: yellow; z-index: 1000; background: rgba(0, 123, 255, 1); }
         .btn-free-mode { background: #28a745; width: 90%; margin-top: 20px; }
@@ -170,12 +168,10 @@
     </div>
 
     <script>
-        // --- KONFIGURACJA ROZDZIELCZOŚCI ---
-        // To musi się zgadzać z ustawieniami w obs.html (tryb free)
         const OBS_WIDTH = 1920; 
         const OBS_HEIGHT = 1080;
-        const CAM_WIDTH = 320; // Domyślna szerokość kamerki w OBS
-        const CAM_HEIGHT = 180; // Domyślna wysokość kamerki w OBS (16:9)
+        const CAM_WIDTH = 320; 
+        const CAM_HEIGHT = 180; 
 
         const gameData = { "Zwierzęta": ["Słoń", "Żyrafa", "Chomik", "Pingwin", "Rekin", "Wąż", "Orzeł", "Biedronka", "Krowa", "Kangur", "Zebra", "Lew", "Świnka", "Pies", "Kot", "Papuga", "Krokodyl", "Małpa", "Niedźwiedź", "Żaba"], "Filmy": ["Titanic", "Shrek", "Matrix", "Harry Potter", "Gwiezdne Wojny", "Król Lew", "Władca Pierścieni", "Joker", "Avengers", "Batman", "Spider-Man", "Forrest Gump", "Kraina Lodu", "Minionki", "Piraci z Karaibów"], "Postacie": ["Myszka Miki", "Superman", "Święty Mikołaj", "Sherlock Holmes", "Mario", "Pikachu", "Vader", "Wiedźmin", "Shrek", "Barbie", "SpongeBob", "Hulk", "Iron Man", "Tarzan", "Zorro"], "Zawody": ["Strażak", "Policjant", "Lekarz", "Nauczyciel", "Kucharz", "Kierowca", "Pilot", "Astronauta", "Hydraulik", "Fryzjer", "Aktor", "Piosenkarz", "Malarz", "Rolnik", "Programista"], "Przedmioty": ["Krzesło", "Telefon", "Samochód", "Długopis", "Butelka", "Książka", "Komputer", "Zegarek", "Lustro", "Klucz", "Młotek", "Szczoteczka", "Widelec", "Okulary", "Poduszka"] };
         const urlParams = new URLSearchParams(window.location.search);
@@ -216,7 +212,7 @@
         function renderGuestList(list) { const container = document.getElementById('guest-list'); container.innerHTML = ""; if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:#777;">Brak gości online.</p>'; return; } list.forEach((guest, index) => { const item = document.createElement('div'); item.className = 'guest-item'; const micClass = guest.muted ? 'mic-off' : 'mic-on'; const micIcon = guest.muted ? '🔇' : '🎤'; const statusText = guest.muted ? '(Wyciszony)' : ''; const mirrorClass = guest.mirrored ? 'mirror-on' : 'mirror-off'; const upVisibility = index === 0 ? 'visibility:hidden' : ''; const downVisibility = index === list.length - 1 ? 'visibility:hidden' : ''; item.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span> <span id="stats-${guest.id}" class="guest-stats">${guest.id.startsWith('fake-') ? 'SZTUCZNY GOŚĆ' : 'Czekam na dane...'}</span> </div> <div class="guest-actions"> <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button> </div> `; container.appendChild(item); }); }
         function updateStats(stats) { for (const [id, data] of Object.entries(stats)) { const el = document.getElementById(`stats-${id}`); if (el) { let colorClass = 'stat-good'; if (data.bitrate < 1000 || data.packetLoss > 5) colorClass = 'stat-mid'; if (data.bitrate < 300 || data.packetLoss > 15) colorClass = 'stat-bad'; el.innerHTML = `Bitrate: <span class="${colorClass}">${data.bitrate} kbps</span> | Loss: <span class="${colorClass}">${data.packetLoss}</span> | Res: ${data.resolution}`; } } }
 
-        // --- FREE MODE RENDERER (SKALOWANY) ---
+        // --- FREE MODE RENDERER ---
         function toggleFreeMode() {
             const stage = document.getElementById('free-mode-stage');
             if(stage.style.display === 'block') {
@@ -231,13 +227,8 @@
 
         function renderFreeStage() {
             const stage = document.getElementById('free-mode-stage');
-            
-            // OBLICZANIE SKALI: Ile pikseli na stole to 1 piksel w OBS
-            // stage.offsetWidth = szerokość czarnego pudła w px (np. 760px)
-            // OBS_WIDTH = 1920
-            const scaleFactor = stage.offsetWidth / OBS_WIDTH;
-
-            // Obliczamy rozmiar klocka w oparciu o skalę
+            // POPRAWKA: Używamy clientWidth, żeby ignorować border
+            const scaleFactor = stage.clientWidth / OBS_WIDTH;
             const blockW = CAM_WIDTH * scaleFactor;
             const blockH = CAM_HEIGHT * scaleFactor;
 
@@ -258,26 +249,23 @@
                     box.dataset.id = id;
                     box.innerText = name;
                     
-                    // Ustawiamy wielkość proporcjonalną do OBS
                     box.style.width = blockW + 'px';
                     box.style.height = blockH + 'px';
-                    
-                    // Startowa pozycja (kaskada)
                     box.style.left = (10 + index * 20) + 'px';
                     box.style.top = (10 + index * 20) + 'px';
                     
-                    setupDrag(box, scaleFactor);
+                    setupDrag(box);
                     stage.appendChild(box);
                 } else {
                     box.innerText = name; 
-                    // Aktualizujemy wielkość przy przerysowaniu (gdyby zmienił się rozmiar okna)
+                    // Aktualizujemy rozmiar (w razie resize okna)
                     box.style.width = blockW + 'px';
                     box.style.height = blockH + 'px';
                 }
             });
         }
 
-        function setupDrag(element, scaleFactor) {
+        function setupDrag(element) {
             let isDragging = false;
             let startX, startY, initialLeft, initialTop;
 
@@ -294,30 +282,31 @@
                 if (!isDragging) return;
                 
                 const stage = document.getElementById('free-mode-stage');
+                // POPRAWKA: Używamy clientWidth/Height dla wewnętrznego obszaru
+                const stageW = stage.clientWidth;
+                const stageH = stage.clientHeight;
                 
                 let newX = initialLeft + (e.clientX - startX);
                 let newY = initialTop + (e.clientY - startY);
 
-                // Granice wewnątrz stołu
-                newX = Math.max(0, Math.min(newX, stage.offsetWidth - element.offsetWidth));
-                newY = Math.max(0, Math.min(newY, stage.offsetHeight - element.offsetHeight));
+                // Granice (używamy stageW zamiast offsetWidth)
+                newX = Math.max(0, Math.min(newX, stageW - element.offsetWidth));
+                newY = Math.max(0, Math.min(newY, stageH - element.offsetHeight));
 
                 element.style.left = newX + 'px';
                 element.style.top = newY + 'px';
 
-                // --- KONWERSJA NA PROCENTY DLA OBS ---
-                // Dzielimy aktualną pozycję (px) przez szerokość stołu, żeby dostać procent
-                const percentX = (newX / stage.offsetWidth) * 100;
-                const percentY = (newY / stage.offsetHeight) * 100;
+                // Przeliczamy na procenty względem WEWNĘTRZNEGO obszaru
+                const percentX = (newX / stageW) * 100;
+                const percentY = (newY / stageH) * 100;
 
-                // Wysyłamy do OBS
                 broadcastCommand({ 
                     type: 'transform-update', 
                     targetId: element.dataset.id, 
                     x: percentX, 
                     y: percentY,
-                    w: CAM_WIDTH,  // Szerokość w OBS (320px)
-                    h: CAM_HEIGHT  // Wysokość w OBS (180px)
+                    w: CAM_WIDTH,
+                    h: CAM_HEIGHT
                 });
             });
 
