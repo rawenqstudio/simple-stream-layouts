@@ -108,9 +108,11 @@
       button:hover {
         background: #218838;
       }
+      /* Styl dla zablokowanego przycisku */
       button:disabled {
         background: #555;
         cursor: not-allowed;
+        color: #aaa;
       }
 
       #logs {
@@ -143,7 +145,6 @@
         border-top: 1px solid #555;
         padding-top: 15px;
       }
-      /* Kolor pomarańczowy, żeby odróżnić od dołączania */
       .btn-monitor {
         background: #ff9800;
         color: white;
@@ -201,14 +202,17 @@
       </div>
 
       <input type="text" id="target-id" />
-      <button id="join-btn" onclick="joinRoom()">DOŁĄCZ DO STUDIA</button>
+
+      <!-- ZMIANA: Domyślnie zablokowany -->
+      <button id="join-btn" onclick="joinRoom()" disabled>
+        Ładowanie kamery...
+      </button>
 
       <!-- SEKCJA PODGLĄDU (Dla Multi) -->
       <div id="monitor-area">
         <p style="margin-bottom: 10px; color: #ccc">
           Potrzebujesz widzieć grę i innych?
         </p>
-        <!-- ZMIENIONY TEKST PRZYCISKU -->
         <button id="btn-open-monitor" class="btn-monitor">
           📋 Skopiuj Link Podglądu (Ukryj moje hasło)
         </button>
@@ -271,18 +275,25 @@
 
       const videoSelect = document.getElementById("videoSource");
       const audioSelect = document.getElementById("audioSource");
+      const joinBtn = document.getElementById("join-btn");
 
       window.onload = async function () {
         const roomID = urlParams.get("room");
         if (roomID) {
           document.getElementById("target-id").value = roomID;
           log(`Pokój wykryty: ${roomID}`);
+
+          // Zablokuj przycisk, jeśli ID nie jest poprawne (dodatkowe zabezpieczenie)
+          joinBtn.disabled = true;
+          joinBtn.innerText = "Inicjalizacja...";
+
           await requestPermissions();
           await getDevices();
           startPreview();
         } else {
           log("BŁĄD: Brak ID pokoju w linku.", "error");
-          document.getElementById("join-btn").disabled = true;
+          joinBtn.disabled = true;
+          joinBtn.innerText = "BŁĘDNY LINK";
         }
       };
 
@@ -296,6 +307,7 @@
         } catch (err) {
           log("Błąd uprawnień: " + err.name, "error");
           alert("Musisz zezwolić na dostęp do kamery i mikrofonu!");
+          joinBtn.innerText = "BRAK DOSTĘPU";
         }
       }
 
@@ -317,8 +329,13 @@
       }
 
       async function startPreview() {
+        // Blokujemy przycisk podczas zmiany urządzenia
+        joinBtn.disabled = true;
+        joinBtn.innerText = "Ustawianie kamery...";
+
         if (localStream)
           localStream.getTracks().forEach((track) => track.stop());
+
         const constraints = {
           video: {
             deviceId: videoSelect.value
@@ -333,12 +350,20 @@
               : undefined,
           },
         };
+
         try {
           localStream = await navigator.mediaDevices.getUserMedia(constraints);
           document.getElementById("localVideo").srcObject = localStream;
           checkMuteState();
+
+          // --- SUKCES: ODBLOKOWUJEMY PRZYCISK ---
+          joinBtn.disabled = false;
+          joinBtn.innerText = "DOŁĄCZ DO STUDIA";
+          log("Kamera gotowa. Możesz dołączyć.", "success");
+          // --------------------------------------
         } catch (err) {
           log("Błąd podglądu: " + err.name, "error");
+          joinBtn.innerText = "BŁĄD KAMERY";
         }
       }
 
@@ -365,14 +390,12 @@
         const targetId = document.getElementById("target-id").value;
         const username = document.getElementById("username").value.trim();
         const highBitrate = document.getElementById("high-bitrate").checked;
-        const btn = document.getElementById("join-btn");
 
-        btn.disabled = true;
-        btn.innerText = "Łączenie...";
+        joinBtn.disabled = true;
+        joinBtn.innerText = "Łączenie...";
         videoSelect.disabled = true;
         audioSelect.disabled = true;
 
-        // Generujemy link i obsługę przycisku kopiowania
         generateMonitorLink(targetId, username);
 
         log(`Dzwonię do OBS...`);
@@ -384,6 +407,7 @@
         }
 
         if (isMulti) {
+          // TRYB MULTI
           log("Tryb Multi: Łączę z Reżyserem...");
           directorConn = peer.connect(targetId);
 
@@ -407,10 +431,9 @@
                   callSingleOBS(obsId, username, highBitrate);
                 }
               });
-              btn.innerText = "JESTEŚ NA WIZJI (MULTI)";
-              btn.style.background = "#dc3545";
+              joinBtn.innerText = "JESTEŚ NA WIZJI (MULTI)";
+              joinBtn.style.background = "#dc3545";
 
-              // Pokaż przycisk kopiowania
               document.getElementById("monitor-area").style.display = "block";
             }
             if (data.type === "force-sync") {
@@ -420,6 +443,7 @@
             handleRemoteCommand(data);
           });
         } else {
+          // TRYB STANDARD
           log("Tryb Standard: Dzwonię do OBS...");
           callSingleOBS(targetId, username, highBitrate);
         }
@@ -431,7 +455,6 @@
         });
       }
 
-      // --- NOWA LOGIKA KOPIOWANIA LINKU ---
       function generateMonitorLink(roomID, username) {
         const btnMonitor = document.getElementById("btn-open-monitor");
         let baseUrl = window.location.href.split("guest.html")[0];
@@ -443,18 +466,15 @@
         const obsUrl = `${baseUrl}obs.html${params}`;
 
         btnMonitor.onclick = () => {
-          // Kopiowanie do schowka
           navigator.clipboard
             .writeText(obsUrl)
             .then(() => {
-              // Feedback wizualny
               const originalText = btnMonitor.innerText;
               btnMonitor.innerText = "✅ Skopiowano!";
               btnMonitor.style.background = "#28a745";
-
               setTimeout(() => {
                 btnMonitor.innerText = originalText;
-                btnMonitor.style.background = ""; // powrót do CSS
+                btnMonitor.style.background = "";
               }, 2000);
             })
             .catch((err) => {
@@ -482,8 +502,8 @@
           conn.send({ type: "mic-status", muted: isMuted });
           if (!isMulti) {
             log("Połączenie zestawione!", "success");
-            document.getElementById("join-btn").innerText = "JESTEŚ NA WIZJI";
-            document.getElementById("join-btn").style.background = "#dc3545";
+            joinBtn.innerText = "JESTEŚ NA WIZJI";
+            joinBtn.style.background = "#dc3545";
           }
         });
 
