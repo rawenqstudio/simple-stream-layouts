@@ -1,225 +1,721 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>WIDOK OBS</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        /* GLOBALNY RESET - KLUCZOWY DLA PRECYZJI */
-        * { box-sizing: border-box; }
-        
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; font-family: 'Segoe UI', sans-serif; }
-        
-        #video-container { width: 100%; height: 100%; transition: all 0.5s ease; position: relative; }
-        
-        .video-box { 
-            position: relative; overflow: hidden; border: 2px solid white; 
-            box-shadow: 0 0 15px rgba(0,0,0,0.7); background: #000; transition: all 0.5s ease; 
-        }
-        
-        video, img.fake-cam { width: 100%; height: 100%; object-fit: cover; display: block; }
-        video.mirror-effect, img.mirror-effect { transform: scaleX(-1); }
-        .mute-icon { position: absolute; top: 10px; right: 10px; color: red; font-size: 24px; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 50%; display: none; z-index: 20; }
-        .label { position: absolute; bottom: 10px; left: 10px; background: rgba(0, 0, 0, 0.7); color: white; padding: 5px 15px; border-radius: 4px; font-size: 1.2rem; font-weight: bold; text-shadow: 1px 1px 2px black; border-left: 4px solid #00d2ff; z-index: 10; display: none; }
-        #video-container:not(.show-labels) .label { display: none !important; }
-        #video-container:not(.show-icons) .mute-icon { display: none !important; }
+      /* GLOBALNY RESET - KLUCZOWY DLA PRECYZJI */
+      * {
+        box-sizing: border-box;
+      }
 
-        .game-card {
-            position: absolute; top: 5%; left: 50%; transform: translateX(-50%);
-            background: #ffeb3b; color: #000; padding: 10px 20px; font-size: 2em; font-weight: 800; text-transform: uppercase;
-            border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 50; text-align: center; border: 2px solid #fdd835;
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); white-space: nowrap;
-        }
-        .game-card.self-hidden { opacity: 0 !important; pointer-events: none; }
-        @keyframes popIn { 0% { transform: translateX(-50%) scale(0) rotate(-10deg); opacity: 0; } 100% { transform: translateX(-50%) scale(1) rotate(0deg); opacity: 1; } }
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+        font-family: "Segoe UI", sans-serif;
+      }
 
-        /* --- NOWY TRYB SWOBODNY (FREE) --- */
-        .layout-free {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        .layout-free .video-box {
-            position: absolute; /* Umożliwia swobodne przesuwanie */
-            transition: width 0.2s, height 0.2s, top 0.1s, left 0.1s; /* Płynność */
-            box-shadow: 0 0 5px rgba(0,0,0,0.8); /* Mniejszy cień w trybie precyzyjnym */
-            /* Domyślny rozmiar w trybie Free, jeśli nie ustawiono inaczej */
-            width: 320px; 
-            height: 180px;
-        }
+      #video-container {
+        width: 100%;
+        height: 100%;
+        transition: all 0.5s ease;
+        position: relative;
+      }
 
-        /* POZOSTAŁE UKŁADY (Siatka itp.) - bez zmian */
-        .layout-grid { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 15px; padding: 20px; box-sizing: border-box; }
-        .layout-grid .video-box { width: 45%; height: 45%; } 
-        .layout-grid[data-count="1"] .video-box { width: 85%; height: 85%; }
-        .layout-grid[data-count="2"] .video-box { width: 48%; height: 60%; }
-        .layout-grid[data-count="3"] .video-box, .layout-grid[data-count="4"] .video-box { width: 45%; height: 45%; }
-        .layout-grid[data-count="5"] .video-box, .layout-grid[data-count="6"] .video-box { width: 32%; height: 45%; }
-        .layout-grid[data-count="7"] .video-box, .layout-grid[data-count="8"] .video-box, .layout-grid[data-count="9"] .video-box { width: 32%; height: 30%; }
-        .layout-grid[data-count="10"] .video-box { width: 23%; height: 23%; }
+      .video-box {
+        position: relative;
+        overflow: hidden;
+        border: 2px solid white;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+        background: #000;
+        transition: all 0.5s ease;
+      }
 
-        .layout-sidebar-right { display: flex; flex-direction: column; justify-content: center; align-items: flex-end; padding-right: 20px; height: 100vh; box-sizing: border-box; }
-        .layout-sidebar-right .video-box { width: 320px; height: 180px; margin-bottom: 15px; }
-        .layout-sidebar-left { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding-left: 20px; height: 100vh; box-sizing: border-box; }
-        .layout-sidebar-left .video-box { width: 320px; height: 180px; margin-bottom: 15px; }
-        .layout-bottom { display: flex; flex-direction: row; justify-content: center; align-items: flex-end; padding-bottom: 20px; height: 100vh; box-sizing: border-box; }
-        .layout-bottom .video-box { width: 280px; height: 157px; margin: 0 10px; }
-        .layout-top { display: flex; flex-direction: row; justify-content: center; align-items: flex-start; padding-top: 20px; height: 100vh; box-sizing: border-box; }
-        .layout-top .video-box { width: 280px; height: 157px; margin: 0 10px; }
-        .layout-split { display: grid; grid-template-columns: 320px 1fr 320px; grid-auto-rows: min-content; align-content: center; row-gap: 30px; padding: 20px 40px; height: 100vh; box-sizing: border-box; }
-        .layout-split .video-box { width: 100%; height: 180px; margin: 0; }
-        .layout-split .video-box:nth-child(odd) { grid-column: 1; justify-self: start; }
-        .layout-split .video-box:nth-child(even) { grid-column: 3; justify-self: end; }
-        .layout-center-stage { display: grid; grid-template-columns: 300px 1fr 300px; grid-auto-rows: min-content; gap: 15px; padding: 20px; height: 100vh; box-sizing: border-box; align-content: center; }
-        .layout-center-stage .video-box { width: 100%; height: 169px; margin: 0; }
-        .layout-center-stage .video-box:nth-child(1) { grid-column: 2; grid-row: 1 / span 10; width: 100%; height: auto; max-height: 90vh; aspect-ratio: 16/9; align-self: center; z-index: 10; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-        .layout-center-stage .video-box:nth-child(even) { grid-column: 1; }
-        .layout-center-stage .video-box:nth-child(odd):not(:first-child) { grid-column: 3; }
+      video,
+      img.fake-cam {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      video.mirror-effect,
+      img.mirror-effect {
+        transform: scaleX(-1);
+      }
+      .mute-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: red;
+        font-size: 24px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 5px;
+        border-radius: 50%;
+        display: none;
+        z-index: 20;
+      }
+      .label {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 5px 15px;
+        border-radius: 4px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px black;
+        border-left: 4px solid #00d2ff;
+        z-index: 10;
+        display: none;
+      }
+      #video-container:not(.show-labels) .label {
+        display: none !important;
+      }
+      #video-container:not(.show-icons) .mute-icon {
+        display: none !important;
+      }
+
+      .game-card {
+        position: absolute;
+        top: 5%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ffeb3b;
+        color: #000;
+        padding: 10px 20px;
+        font-size: 2em;
+        font-weight: 800;
+        text-transform: uppercase;
+        border-radius: 5px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        z-index: 50;
+        text-align: center;
+        border: 2px solid #fdd835;
+        animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        white-space: nowrap;
+      }
+      .game-card.self-hidden {
+        opacity: 0 !important;
+        pointer-events: none;
+      }
+      @keyframes popIn {
+        0% {
+          transform: translateX(-50%) scale(0) rotate(-10deg);
+          opacity: 0;
+        }
+        100% {
+          transform: translateX(-50%) scale(1) rotate(0deg);
+          opacity: 1;
+        }
+      }
+
+      /* --- NOWY TRYB SWOBODNY (FREE) --- */
+      .layout-free {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .layout-free .video-box {
+        position: absolute; /* Umożliwia swobodne przesuwanie */
+        transition:
+          width 0.2s,
+          height 0.2s,
+          top 0.1s,
+          left 0.1s; /* Płynność */
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.8); /* Mniejszy cień w trybie precyzyjnym */
+        /* Domyślny rozmiar w trybie Free, jeśli nie ustawiono inaczej */
+        width: 320px;
+        height: 180px;
+      }
+
+      /* POZOSTAŁE UKŁADY (Siatka itp.) - bez zmian */
+      .layout-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-content: center;
+        gap: 15px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .layout-grid .video-box {
+        width: 45%;
+        height: 45%;
+      }
+      .layout-grid[data-count="1"] .video-box {
+        width: 85%;
+        height: 85%;
+      }
+      .layout-grid[data-count="2"] .video-box {
+        width: 48%;
+        height: 60%;
+      }
+      .layout-grid[data-count="3"] .video-box,
+      .layout-grid[data-count="4"] .video-box {
+        width: 45%;
+        height: 45%;
+      }
+      .layout-grid[data-count="5"] .video-box,
+      .layout-grid[data-count="6"] .video-box {
+        width: 32%;
+        height: 45%;
+      }
+      .layout-grid[data-count="7"] .video-box,
+      .layout-grid[data-count="8"] .video-box,
+      .layout-grid[data-count="9"] .video-box {
+        width: 32%;
+        height: 30%;
+      }
+      .layout-grid[data-count="10"] .video-box {
+        width: 23%;
+        height: 23%;
+      }
+
+      .layout-sidebar-right {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-end;
+        padding-right: 20px;
+        height: 100vh;
+        box-sizing: border-box;
+      }
+      .layout-sidebar-right .video-box {
+        width: 320px;
+        height: 180px;
+        margin-bottom: 15px;
+      }
+      .layout-sidebar-left {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        padding-left: 20px;
+        height: 100vh;
+        box-sizing: border-box;
+      }
+      .layout-sidebar-left .video-box {
+        width: 320px;
+        height: 180px;
+        margin-bottom: 15px;
+      }
+      .layout-bottom {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-end;
+        padding-bottom: 20px;
+        height: 100vh;
+        box-sizing: border-box;
+      }
+      .layout-bottom .video-box {
+        width: 280px;
+        height: 157px;
+        margin: 0 10px;
+      }
+      .layout-top {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 20px;
+        height: 100vh;
+        box-sizing: border-box;
+      }
+      .layout-top .video-box {
+        width: 280px;
+        height: 157px;
+        margin: 0 10px;
+      }
+      .layout-split {
+        display: grid;
+        grid-template-columns: 320px 1fr 320px;
+        grid-auto-rows: min-content;
+        align-content: center;
+        row-gap: 30px;
+        padding: 20px 40px;
+        height: 100vh;
+        box-sizing: border-box;
+      }
+      .layout-split .video-box {
+        width: 100%;
+        height: 180px;
+        margin: 0;
+      }
+      .layout-split .video-box:nth-child(odd) {
+        grid-column: 1;
+        justify-self: start;
+      }
+      .layout-split .video-box:nth-child(even) {
+        grid-column: 3;
+        justify-self: end;
+      }
+      .layout-center-stage {
+        display: grid;
+        grid-template-columns: 300px 1fr 300px;
+        grid-auto-rows: min-content;
+        gap: 15px;
+        padding: 20px;
+        height: 100vh;
+        box-sizing: border-box;
+        align-content: center;
+      }
+      .layout-center-stage .video-box {
+        width: 100%;
+        height: 169px;
+        margin: 0;
+      }
+      .layout-center-stage .video-box:nth-child(1) {
+        grid-column: 2;
+        grid-row: 1 / span 10;
+        width: 100%;
+        height: auto;
+        max-height: 90vh;
+        aspect-ratio: 16/9;
+        align-self: center;
+        z-index: 10;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+      }
+      .layout-center-stage .video-box:nth-child(even) {
+        grid-column: 1;
+      }
+      .layout-center-stage .video-box:nth-child(odd):not(:first-child) {
+        grid-column: 3;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="video-container" class="layout-grid" data-count="0"></div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const myID = urlParams.get('room') || 'test-room';
-        const useStunOnly = urlParams.get('stunonly');
-        const useULL = urlParams.get('ull'); 
-        const isMulti = urlParams.get('multi');
-        const hideTargetName = urlParams.get('hide') ? urlParams.get('hide').toLowerCase().trim() : null;
+      const urlParams = new URLSearchParams(window.location.search);
+      const myID = urlParams.get("room") || "test-room";
+      const useStunOnly = urlParams.get("stunonly");
+      const useULL = urlParams.get("ull");
+      const isMulti = urlParams.get("multi");
+      const hideTargetName = urlParams.get("hide")
+        ? urlParams.get("hide").toLowerCase().trim()
+        : null;
 
-        const selectedConfig = useStunOnly ? [ { urls: "stun:stun.l.google.com:19302" } ] : [
+      const selectedConfig = useStunOnly
+        ? [{ urls: "stun:stun.l.google.com:19302" }]
+        : [
             { urls: "stun:stun.l.google.com:19302" },
-            { urls: "turn:openrelay.metered.ca:80?transport=udp", username: "openrelayproject", credential: "openrelayproject" },
-            { urls: "turn:openrelay.metered.ca:80?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
-            { urls: "turn:openrelay.metered.ca:443?transport=udp", username: "openrelayproject", credential: "openrelayproject" },
-            { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
-        ];
+            {
+              urls: "turn:openrelay.metered.ca:80?transport=udp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:80?transport=tcp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:443?transport=udp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:443?transport=tcp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+          ];
 
-        const peer = new Peer(isMulti ? undefined : myID, { config: { iceServers: selectedConfig } });
-        const container = document.getElementById('video-container');
-        const guests = {}; const heartbeats = {}; let directorConn = null; const statsCache = {};
+      const peer = new Peer(isMulti ? undefined : myID, {
+        config: { iceServers: selectedConfig },
+      });
+      const container = document.getElementById("video-container");
+      const guests = {};
+      const heartbeats = {};
+      let directorConn = null;
+      const statsCache = {};
 
-        peer.on('open', (id) => { console.log('OBS gotowy. ID: ' + id); if (isMulti) connectToDirector(myID); });
-        function connectToDirector(targetId) {
-            directorConn = peer.connect(targetId);
-            directorConn.on('open', () => { directorConn.send({ type: 'register-obs' }); });
-            directorConn.on('data', (data) => handleData(data));
-        }
+      peer.on("open", (id) => {
+        console.log("OBS gotowy. ID: " + id);
+        if (isMulti) connectToDirector(myID);
+      });
+      function connectToDirector(targetId) {
+        directorConn = peer.connect(targetId);
+        directorConn.on("open", () => {
+          directorConn.send({ type: "register-obs" });
+        });
+        directorConn.on("data", (data) => handleData(data));
+      }
 
-        peer.on('call', (call) => {
-            call.answer();
-            if(!guests[call.peer]) guests[call.peer] = { name: "Łączenie...", muted: false, mirrored: false, conn: null };
-            guests[call.peer].call = call;
-            if (useULL) { setTimeout(() => { const pc = call.peerConnection; if (pc && pc.getReceivers) { pc.getReceivers().forEach(receiver => { if (receiver.track && receiver.track.kind === 'video' && 'playoutDelayHint' in receiver) { receiver.playoutDelayHint = 0; } }); } }, 500); }
-            call.on('stream', (stream) => addVideo(stream, call.peer));
-            call.on('close', () => removeGuest(call.peer));
-            call.on('error', () => removeGuest(call.peer));
+      peer.on("call", (call) => {
+        call.answer();
+        if (!guests[call.peer])
+          guests[call.peer] = {
+            name: "Łączenie...",
+            muted: false,
+            mirrored: false,
+            conn: null,
+          };
+        guests[call.peer].call = call;
+        if (useULL) {
+          setTimeout(() => {
             const pc = call.peerConnection;
-            pc.oniceconnectionstatechange = () => { if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'closed') removeGuest(call.peer); };
-        });
-
-        peer.on('connection', (conn) => {
-            conn.on('data', (data) => { if(data.type === 'director-hello') { directorConn = conn; sendGuestListToDirector(); } handleData(data, conn); });
-            conn.on('close', () => removeGuest(conn.peer));
-            conn.on('error', () => removeGuest(conn.peer));
-        });
-
-        function handleData(data, conn) {
-            if(data.type === 'layout') {
-                container.className = data.mode;
-                // Jeśli wychodzimy z trybu Free, czyścimy style inline (pozycja)
-                if(data.mode !== 'layout-free') {
-                    document.querySelectorAll('.video-box').forEach(box => {
-                        box.style.top = ''; box.style.left = ''; box.style.width = ''; box.style.height = '';
-                    });
+            if (pc && pc.getReceivers) {
+              pc.getReceivers().forEach((receiver) => {
+                if (
+                  receiver.track &&
+                  receiver.track.kind === "video" &&
+                  "playoutDelayHint" in receiver
+                ) {
+                  receiver.playoutDelayHint = 0;
                 }
+              });
             }
-            // --- OBSŁUGA RĘCZNEGO PRZESUWANIA (NOWE) ---
-            if(data.type === 'transform-update') {
-                const box = document.getElementById(`box-${data.targetId}`);
-                if(box) {
-                    // Pozycjonujemy w procentach (responsywnie)
-                    box.style.left = data.x + '%';
-                    box.style.top = data.y + '%';
-                    box.style.width = data.w + '%';
-                    box.style.height = data.h + '%';
-                }
-            }
-            // --------------------------------------------
-            
-            if(data.type === 'toggle-labels') { if (data.show) container.classList.add('show-labels'); else container.classList.remove('show-labels'); }
-            if(data.type === 'toggle-icons') { if (data.show) container.classList.add('show-icons'); else container.classList.remove('show-icons'); }
-            if(data.type === 'reorder-guests') { data.order.forEach((id) => { const box = document.getElementById(`box-${id}`); if(box) container.appendChild(box); }); }
-            if(data.type === 'add-fake-guest') addFakeVideo(data.id, data.name, data.img);
-            if(data.type === 'refresh-cam') { if(data.targetId === 'all') Object.keys(guests).forEach(id => performRefresh(id)); else performRefresh(data.targetId); }
-            if(data.type === 'toggle-mirror') { const box = document.getElementById(`box-${data.targetId}`); if(box) { const video = box.querySelector('video') || box.querySelector('img'); if(video) { video.classList.toggle('mirror-effect'); if (guests[data.targetId]) guests[data.targetId].mirrored = video.classList.contains('mirror-effect'); sendGuestListToDirector(); } } }
-            if(data.type === 'game-deal') { document.querySelectorAll('.game-card').forEach(el => el.remove()); for (const [id, word] of Object.entries(data.cards)) { setGameCard(id, word); } }
-            if(data.type === 'game-update-card') { setGameCard(data.targetId, data.word); }
-            if(data.type === 'game-clear') { document.querySelectorAll('.game-card').forEach(el => el.remove()); }
-            if(data.type === 'remote-mute') { if(guests[data.targetId] && guests[data.targetId].conn) { guests[data.targetId].conn.send({ type: 'mute-cmd', state: data.state }); } }
-            if(data.type === 'identify' && conn) { if(!guests[conn.peer]) guests[conn.peer] = { name: "Gość", muted: false, mirrored: false }; guests[conn.peer].name = data.name || "Gość"; guests[conn.peer].conn = conn; updateLabel(conn.peer, data.name); const box = document.getElementById(`box-${conn.peer}`); if(box) { const card = box.querySelector('.game-card'); if(card && hideTargetName && data.name.toLowerCase().trim() === hideTargetName) card.classList.add('self-hidden'); } sendGuestListToDirector(); }
-            if(data.type === 'mic-status' && conn) { if(guests[conn.peer]) { guests[conn.peer].muted = data.muted; toggleMuteIcon(conn.peer, data.muted); sendGuestListToDirector(); } }
-            if(data.type === 'heartbeat' && conn) heartbeats[conn.peer] = Date.now();
-            if(data.type === 'leave' && conn) removeGuest(conn.peer);
+          }, 500);
         }
+        call.on("stream", (stream) => addVideo(stream, call.peer));
+        call.on("close", () => removeGuest(call.peer));
+        call.on("error", () => removeGuest(call.peer));
+        const pc = call.peerConnection;
+        pc.oniceconnectionstatechange = () => {
+          if (
+            pc.iceConnectionState === "disconnected" ||
+            pc.iceConnectionState === "failed" ||
+            pc.iceConnectionState === "closed"
+          )
+            removeGuest(call.peer);
+        };
+      });
 
-        function setGameCard(id, word) {
-            const box = document.getElementById(`box-${id}`); if(!box) return;
-            let oldCard = box.querySelector('.game-card'); if(oldCard) oldCard.remove();
-            const card = document.createElement('div'); card.className = 'game-card'; card.innerText = word;
-            if (hideTargetName && guests[id] && guests[id].name) { if (guests[id].name.toLowerCase().trim() === hideTargetName) { card.classList.add('self-hidden'); } }
-            box.appendChild(card);
+      peer.on("connection", (conn) => {
+        conn.on("data", (data) => {
+          if (data.type === "director-hello") {
+            directorConn = conn;
+            sendGuestListToDirector();
+          }
+          handleData(data, conn);
+        });
+        conn.on("close", () => removeGuest(conn.peer));
+        conn.on("error", () => removeGuest(conn.peer));
+      });
+
+      function handleData(data, conn) {
+        if (data.type === "layout") {
+          container.className = data.mode;
+          // Jeśli wychodzimy z trybu Free, czyścimy style inline (pozycja)
+          if (data.mode !== "layout-free") {
+            document.querySelectorAll(".video-box").forEach((box) => {
+              box.style.top = "";
+              box.style.left = "";
+              box.style.width = "";
+              box.style.height = "";
+            });
+          }
         }
-        function updateGuestCount() { const count = container.querySelectorAll('.video-box').length; container.setAttribute('data-count', count); }
-        function addFakeVideo(id, name, imgSrc) { if(document.getElementById(`box-${id}`)) return; guests[id] = { name: name, muted: false, mirrored: false, conn: null }; const box = document.createElement('div'); box.className = 'video-box'; box.id = `box-${id}`; box.style.order = 999; const img = document.createElement('img'); img.src = imgSrc; img.className = 'fake-cam'; const label = document.createElement('div'); label.className = 'label'; label.id = `label-${id}`; label.innerText = name; const muteIcon = document.createElement('div'); muteIcon.className = 'mute-icon'; muteIcon.innerText = '🔇'; muteIcon.id = `mute-${id}`; box.appendChild(img); box.appendChild(label); box.appendChild(muteIcon); container.appendChild(box); updateGuestCount(); sendGuestListToDirector(); }
-        function addVideo(stream, id) { if(document.getElementById(`box-${id}`)) return; heartbeats[id] = Date.now(); statsCache[id] = { bytes: 0, delayTotal: 0, emittedTotal: 0 }; const box = document.createElement('div'); box.className = 'video-box'; box.id = `box-${id}`; box.style.order = 999; const video = document.createElement('video'); video.srcObject = stream; video.muted = true; video.autoplay = true; video.playsInline = true; const audio = document.createElement('audio'); audio.srcObject = stream; audio.muted = false; audio.autoplay = true; audio.id = `audio-${id}`; const label = document.createElement('div'); label.className = 'label'; label.id = `label-${id}`; const muteIcon = document.createElement('div'); muteIcon.className = 'mute-icon'; muteIcon.innerText = '🔇'; muteIcon.id = `mute-${id}`; box.appendChild(video); box.appendChild(label); box.appendChild(muteIcon); box.appendChild(audio); container.appendChild(box); updateGuestCount(); video.play().catch(e => console.error(e)); audio.play().catch(e => console.warn(e)); }
-        function performRefresh(id) { const box = document.getElementById(`box-${id}`); if(!box) return; const video = box.querySelector('video'); const audio = box.querySelector('audio'); if(video && video.srcObject) { const stream = video.srcObject; video.srcObject = null; if(audio) audio.srcObject = null; setTimeout(() => { video.srcObject = stream; if(audio) audio.srcObject = stream; video.play().catch(e => console.log(e)); if(audio) audio.play().catch(e => console.log(e)); }, 100); } }
-        function removeGuest(id) { if(document.getElementById(`box-${id}`)) { document.getElementById(`box-${id}`).remove(); delete guests[id]; delete heartbeats[id]; delete statsCache[id]; updateGuestCount(); sendGuestListToDirector(); } }
-        function updateLabel(id, name) { const label = document.getElementById(`label-${id}`); if(label) { if (name && name.trim() !== "") { label.innerText = name; label.style.display = 'block'; } else { label.style.display = 'none'; } } }
-        function toggleMuteIcon(id, isMuted) { const icon = document.getElementById(`mute-${id}`); if(icon) icon.style.display = isMuted ? 'block' : 'none'; }
-        function sendGuestListToDirector() { if(directorConn && directorConn.open) { const safeList = Object.keys(guests).map(id => ({ id: id, name: guests[id].name, muted: guests[id].muted, mirrored: guests[id].mirrored })); directorConn.send({ type: 'guest-list', list: safeList }); } }
-        
-        setInterval(async () => {
-            const now = Date.now();
-            const statsReport = {};
-            for (const peerId in guests) {
-                if(peerId.startsWith('fake-')) continue;
-                if (heartbeats[peerId] && (now - heartbeats[peerId] > 7000)) { removeGuest(peerId); continue; }
-                const guest = guests[peerId];
-                if (guest.call && guest.call.peerConnection) {
-                    try {
-                        const stats = await guest.call.peerConnection.getStats();
-                        let videoStats = null;
-                        stats.forEach(report => { if (report.type === 'inbound-rtp' && report.kind === 'video') videoStats = report; });
-                        if (videoStats) {
-                            const bytes = videoStats.bytesReceived;
-                            const prevBytes = statsCache[peerId]?.bytes || 0;
-                            const bitrate = ((bytes - prevBytes) * 8) / 1000;
-                            const jitterBufferDelay = videoStats.jitterBufferDelay || 0;
-                            const jitterBufferEmitted = videoStats.jitterBufferEmittedCount || 1;
-                            const prevDelayTotal = statsCache[peerId]?.delayTotal || 0;
-                            const prevEmittedTotal = statsCache[peerId]?.emittedTotal || 0;
-                            const deltaDelay = jitterBufferDelay - prevDelayTotal;
-                            const deltaEmitted = jitterBufferEmitted - prevEmittedTotal;
-                            let currentLatency = 0;
-                            if(deltaEmitted > 0) currentLatency = deltaDelay / deltaEmitted;
-                            const box = document.getElementById(`box-${peerId}`);
-                            if(box) {
-                                const video = box.querySelector('video');
-                                if(video && !video.paused) {
-                                    if (currentLatency > 0.2) { if(video.playbackRate !== 1.05) video.playbackRate = 1.05; } else if (currentLatency < 0.15) { if(video.playbackRate !== 1.0) video.playbackRate = 1.0; }
-                                    if (currentLatency > 2.0) performRefresh(peerId);
-                                }
-                            }
-                            statsCache[peerId] = { bytes: bytes, delayTotal: jitterBufferDelay, emittedTotal: jitterBufferEmitted };
-                            statsReport[peerId] = { bitrate: Math.round(bitrate), packetLoss: videoStats.packetsLost || 0, resolution: (videoStats.frameWidth && videoStats.frameHeight) ? `${videoStats.frameWidth}x${videoStats.frameHeight}` : 'N/A' };
-                        }
-                    } catch (e) {}
-                }
+        // --- OBSŁUGA RĘCZNEGO PRZESUWANIA (NOWE) ---
+        if (data.type === "transform-update") {
+          const box = document.getElementById(`box-${data.targetId}`);
+          if (box) {
+            // Pozycjonujemy w procentach (responsywnie)
+            box.style.left = data.x + "%";
+            box.style.top = data.y + "%";
+            box.style.width = data.w + "%";
+            box.style.height = data.h + "%";
+          }
+        }
+        // --------------------------------------------
+
+        if (data.type === "toggle-labels") {
+          if (data.show) container.classList.add("show-labels");
+          else container.classList.remove("show-labels");
+        }
+        if (data.type === "toggle-icons") {
+          if (data.show) container.classList.add("show-icons");
+          else container.classList.remove("show-icons");
+        }
+        if (data.type === "reorder-guests") {
+          data.order.forEach((id) => {
+            const box = document.getElementById(`box-${id}`);
+            if (box) container.appendChild(box);
+          });
+        }
+        if (data.type === "add-fake-guest")
+          addFakeVideo(data.id, data.name, data.img);
+        if (data.type === "refresh-cam") {
+          if (data.targetId === "all")
+            Object.keys(guests).forEach((id) => performRefresh(id));
+          else performRefresh(data.targetId);
+        }
+        if (data.type === "toggle-mirror") {
+          const box = document.getElementById(`box-${data.targetId}`);
+          if (box) {
+            const video =
+              box.querySelector("video") || box.querySelector("img");
+            if (video) {
+              video.classList.toggle("mirror-effect");
+              if (guests[data.targetId])
+                guests[data.targetId].mirrored =
+                  video.classList.contains("mirror-effect");
+              sendGuestListToDirector();
             }
-            if(directorConn && directorConn.open && Object.keys(statsReport).length > 0) { directorConn.send({ type: 'stats-update', stats: statsReport }); }
-        }, 1000);
+          }
+        }
+        if (data.type === "game-deal") {
+          document.querySelectorAll(".game-card").forEach((el) => el.remove());
+          for (const [id, word] of Object.entries(data.cards)) {
+            setGameCard(id, word);
+          }
+        }
+        if (data.type === "game-update-card") {
+          setGameCard(data.targetId, data.word);
+        }
+        if (data.type === "game-clear") {
+          document.querySelectorAll(".game-card").forEach((el) => el.remove());
+        }
+        if (data.type === "remote-mute") {
+          if (guests[data.targetId] && guests[data.targetId].conn) {
+            guests[data.targetId].conn.send({
+              type: "mute-cmd",
+              state: data.state,
+            });
+          }
+        }
+        if (data.type === "identify" && conn) {
+          if (!guests[conn.peer])
+            guests[conn.peer] = { name: "Gość", muted: false, mirrored: false };
+          guests[conn.peer].name = data.name || "Gość";
+          guests[conn.peer].conn = conn;
+          updateLabel(conn.peer, data.name);
+          const box = document.getElementById(`box-${conn.peer}`);
+          if (box) {
+            const card = box.querySelector(".game-card");
+            if (
+              card &&
+              hideTargetName &&
+              data.name.toLowerCase().trim() === hideTargetName
+            )
+              card.classList.add("self-hidden");
+          }
+          sendGuestListToDirector();
+        }
+        if (data.type === "mic-status" && conn) {
+          if (guests[conn.peer]) {
+            guests[conn.peer].muted = data.muted;
+            toggleMuteIcon(conn.peer, data.muted);
+            sendGuestListToDirector();
+          }
+        }
+        if (data.type === "heartbeat" && conn)
+          heartbeats[conn.peer] = Date.now();
+        if (data.type === "leave" && conn) removeGuest(conn.peer);
+      }
+
+      function setGameCard(id, word) {
+        const box = document.getElementById(`box-${id}`);
+        if (!box) return;
+        let oldCard = box.querySelector(".game-card");
+        if (oldCard) oldCard.remove();
+        const card = document.createElement("div");
+        card.className = "game-card";
+        card.innerText = word;
+        if (hideTargetName && guests[id] && guests[id].name) {
+          if (guests[id].name.toLowerCase().trim() === hideTargetName) {
+            card.classList.add("self-hidden");
+          }
+        }
+        box.appendChild(card);
+      }
+      function updateGuestCount() {
+        const count = container.querySelectorAll(".video-box").length;
+        container.setAttribute("data-count", count);
+      }
+      function addFakeVideo(id, name, imgSrc) {
+        if (document.getElementById(`box-${id}`)) return;
+        guests[id] = { name: name, muted: false, mirrored: false, conn: null };
+        const box = document.createElement("div");
+        box.className = "video-box";
+        box.id = `box-${id}`;
+        box.style.order = 999;
+        const img = document.createElement("img");
+        img.src = imgSrc;
+        img.className = "fake-cam";
+        const label = document.createElement("div");
+        label.className = "label";
+        label.id = `label-${id}`;
+        label.innerText = name;
+        const muteIcon = document.createElement("div");
+        muteIcon.className = "mute-icon";
+        muteIcon.innerText = "🔇";
+        muteIcon.id = `mute-${id}`;
+        box.appendChild(img);
+        box.appendChild(label);
+        box.appendChild(muteIcon);
+        container.appendChild(box);
+        updateGuestCount();
+        sendGuestListToDirector();
+      }
+      function addVideo(stream, id) {
+        if (document.getElementById(`box-${id}`)) return;
+        heartbeats[id] = Date.now();
+        statsCache[id] = { bytes: 0, delayTotal: 0, emittedTotal: 0 };
+        const box = document.createElement("div");
+        box.className = "video-box";
+        box.id = `box-${id}`;
+        box.style.order = 999;
+        const video = document.createElement("video");
+        video.srcObject = stream;
+        video.muted = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        const audio = document.createElement("audio");
+        audio.srcObject = stream;
+        audio.muted = false;
+        audio.autoplay = true;
+        audio.id = `audio-${id}`;
+        const label = document.createElement("div");
+        label.className = "label";
+        label.id = `label-${id}`;
+        const muteIcon = document.createElement("div");
+        muteIcon.className = "mute-icon";
+        muteIcon.innerText = "🔇";
+        muteIcon.id = `mute-${id}`;
+        box.appendChild(video);
+        box.appendChild(label);
+        box.appendChild(muteIcon);
+        box.appendChild(audio);
+        container.appendChild(box);
+        updateGuestCount();
+        video.play().catch((e) => console.error(e));
+        audio.play().catch((e) => console.warn(e));
+      }
+      function performRefresh(id) {
+        const box = document.getElementById(`box-${id}`);
+        if (!box) return;
+        const video = box.querySelector("video");
+        const audio = box.querySelector("audio");
+        if (video && video.srcObject) {
+          const stream = video.srcObject;
+          video.srcObject = null;
+          if (audio) audio.srcObject = null;
+          setTimeout(() => {
+            video.srcObject = stream;
+            if (audio) audio.srcObject = stream;
+            video.play().catch((e) => console.log(e));
+            if (audio) audio.play().catch((e) => console.log(e));
+          }, 100);
+        }
+      }
+      function removeGuest(id) {
+        if (document.getElementById(`box-${id}`)) {
+          document.getElementById(`box-${id}`).remove();
+          delete guests[id];
+          delete heartbeats[id];
+          delete statsCache[id];
+          updateGuestCount();
+          sendGuestListToDirector();
+        }
+      }
+      function updateLabel(id, name) {
+        const label = document.getElementById(`label-${id}`);
+        if (label) {
+          if (name && name.trim() !== "") {
+            label.innerText = name;
+            label.style.display = "block";
+          } else {
+            label.style.display = "none";
+          }
+        }
+      }
+      function toggleMuteIcon(id, isMuted) {
+        const icon = document.getElementById(`mute-${id}`);
+        if (icon) icon.style.display = isMuted ? "block" : "none";
+      }
+      function sendGuestListToDirector() {
+        if (directorConn && directorConn.open) {
+          const safeList = Object.keys(guests).map((id) => ({
+            id: id,
+            name: guests[id].name,
+            muted: guests[id].muted,
+            mirrored: guests[id].mirrored,
+          }));
+          directorConn.send({ type: "guest-list", list: safeList });
+        }
+      }
+
+      setInterval(async () => {
+        const now = Date.now();
+        const statsReport = {};
+        for (const peerId in guests) {
+          if (peerId.startsWith("fake-")) continue;
+          if (heartbeats[peerId] && now - heartbeats[peerId] > 7000) {
+            removeGuest(peerId);
+            continue;
+          }
+          const guest = guests[peerId];
+          if (guest.call && guest.call.peerConnection) {
+            try {
+              const stats = await guest.call.peerConnection.getStats();
+              let videoStats = null;
+              stats.forEach((report) => {
+                if (report.type === "inbound-rtp" && report.kind === "video")
+                  videoStats = report;
+              });
+              if (videoStats) {
+                const bytes = videoStats.bytesReceived;
+                const prevBytes = statsCache[peerId]?.bytes || 0;
+                const bitrate = ((bytes - prevBytes) * 8) / 1000;
+                const jitterBufferDelay = videoStats.jitterBufferDelay || 0;
+                const jitterBufferEmitted =
+                  videoStats.jitterBufferEmittedCount || 1;
+                const prevDelayTotal = statsCache[peerId]?.delayTotal || 0;
+                const prevEmittedTotal = statsCache[peerId]?.emittedTotal || 0;
+                const deltaDelay = jitterBufferDelay - prevDelayTotal;
+                const deltaEmitted = jitterBufferEmitted - prevEmittedTotal;
+                let currentLatency = 0;
+                if (deltaEmitted > 0)
+                  currentLatency = deltaDelay / deltaEmitted;
+                const box = document.getElementById(`box-${peerId}`);
+                if (box) {
+                  const video = box.querySelector("video");
+                  if (video && !video.paused) {
+                    if (currentLatency > 0.2) {
+                      if (video.playbackRate !== 1.05)
+                        video.playbackRate = 1.05;
+                    } else if (currentLatency < 0.15) {
+                      if (video.playbackRate !== 1.0) video.playbackRate = 1.0;
+                    }
+                    if (currentLatency > 2.0) performRefresh(peerId);
+                  }
+                }
+                statsCache[peerId] = {
+                  bytes: bytes,
+                  delayTotal: jitterBufferDelay,
+                  emittedTotal: jitterBufferEmitted,
+                };
+                statsReport[peerId] = {
+                  bitrate: Math.round(bitrate),
+                  packetLoss: videoStats.packetsLost || 0,
+                  resolution:
+                    videoStats.frameWidth && videoStats.frameHeight
+                      ? `${videoStats.frameWidth}x${videoStats.frameHeight}`
+                      : "N/A",
+                };
+              }
+            } catch (e) {}
+          }
+        }
+        if (
+          directorConn &&
+          directorConn.open &&
+          Object.keys(statsReport).length > 0
+        ) {
+          directorConn.send({ type: "stats-update", stats: statsReport });
+        }
+      }, 1000);
     </script>
-</body>
+  </body>
 </html>
