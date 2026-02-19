@@ -76,7 +76,7 @@
         <input type="text" id="target-id">
         <button id="join-btn" onclick="joinRoom()">DOŁĄCZ DO STUDIA</button>
 
-        <!-- SEKCJA PODGLĄDU DLA GOŚCIA -->
+        <!-- SEKCJA PODGLĄDU (Dla Multi) -->
         <div id="monitor-area">
             <p style="margin-bottom: 10px; color: #ccc;">Chcesz widzieć grę i innych?</p>
             <button id="btn-open-monitor" class="btn-monitor">📺 Otwórz Podgląd Gry (Ukryj moje hasło)</button>
@@ -196,9 +196,7 @@
             btn.disabled = true; btn.innerText = "Łączenie...";
             videoSelect.disabled = true; audioSelect.disabled = true;
             
-            // --- AUTOMATYCZNE GENEROWANIE LINKU DO OBS DLA GOŚCIA ---
             generateMonitorLink(targetId, username);
-            // --------------------------------------------------------
 
             log(`Dzwonię do OBS...`);
             
@@ -234,7 +232,7 @@
                         btn.innerText = "JESTEŚ NA WIZJI (MULTI)";
                         btn.style.background = "#dc3545";
                         
-                        // Pokaż przycisk podglądu po udanym połączeniu
+                        // ZMIANA: Pokaż przycisk TYLKO w trybie Multi
                         document.getElementById('monitor-area').style.display = 'block';
                     }
                     if (data.type === 'force-sync') {
@@ -256,23 +254,13 @@
             });
         }
 
-        // --- FUNKCJA GENERUJĄCA LINK DLA GOŚCIA ---
         function generateMonitorLink(roomID, username) {
             const btnMonitor = document.getElementById('btn-open-monitor');
-            
-            // Pobierz aktualny URL bez pliku guest.html
             let baseUrl = window.location.href.split('guest.html')[0];
-            
-            // Zachowaj parametry (multi, stunonly)
             let params = `?room=${roomID}`;
             if(useStunOnly) params += '&stunonly=1';
             if(isMulti) params += '&multi=1';
-            
-            // Dodaj kluczowe ukrywanie (jeśli wpisano imię)
-            if(username) {
-                // Kodujemy imię, żeby spacje i polskie znaki nie zepsuły linku
-                params += `&hide=${encodeURIComponent(username)}`;
-            }
+            if(username) params += `&hide=${encodeURIComponent(username)}`;
 
             const obsUrl = `${baseUrl}obs.html${params}`;
             
@@ -298,8 +286,8 @@
                     log('Połączenie zestawione!', 'success');
                     document.getElementById('join-btn').innerText = "JESTEŚ NA WIZJI";
                     document.getElementById('join-btn').style.background = "#dc3545";
-                    // Pokaż przycisk podglądu
-                    document.getElementById('monitor-area').style.display = 'block';
+                    
+                    // ZMIANA: W trybie Standard NIE pokazujemy przycisku (domyślnie ukryty CSSem)
                 }
             });
             
