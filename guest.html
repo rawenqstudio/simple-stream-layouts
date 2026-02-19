@@ -143,11 +143,13 @@
         border-top: 1px solid #555;
         padding-top: 15px;
       }
+      /* Kolor pomarańczowy, żeby odróżnić od dołączania */
       .btn-monitor {
-        background: #007bff;
+        background: #ff9800;
+        color: white;
       }
       .btn-monitor:hover {
-        background: #0056b3;
+        background: #e68900;
       }
 
       .footer-credits {
@@ -204,10 +206,11 @@
       <!-- SEKCJA PODGLĄDU (Dla Multi) -->
       <div id="monitor-area">
         <p style="margin-bottom: 10px; color: #ccc">
-          Chcesz widzieć grę i innych?
+          Potrzebujesz widzieć grę i innych?
         </p>
+        <!-- ZMIENIONY TEKST PRZYCISKU -->
         <button id="btn-open-monitor" class="btn-monitor">
-          📺 Otwórz Podgląd Gry (Ukryj moje hasło)
+          📋 Skopiuj Link Podglądu (Ukryj moje hasło)
         </button>
       </div>
 
@@ -369,6 +372,7 @@
         videoSelect.disabled = true;
         audioSelect.disabled = true;
 
+        // Generujemy link i obsługę przycisku kopiowania
         generateMonitorLink(targetId, username);
 
         log(`Dzwonię do OBS...`);
@@ -380,7 +384,6 @@
         }
 
         if (isMulti) {
-          // TRYB MULTI
           log("Tryb Multi: Łączę z Reżyserem...");
           directorConn = peer.connect(targetId);
 
@@ -407,7 +410,7 @@
               btn.innerText = "JESTEŚ NA WIZJI (MULTI)";
               btn.style.background = "#dc3545";
 
-              // ZMIANA: Pokaż przycisk TYLKO w trybie Multi
+              // Pokaż przycisk kopiowania
               document.getElementById("monitor-area").style.display = "block";
             }
             if (data.type === "force-sync") {
@@ -417,7 +420,6 @@
             handleRemoteCommand(data);
           });
         } else {
-          // TRYB STANDARD
           log("Tryb Standard: Dzwonię do OBS...");
           callSingleOBS(targetId, username, highBitrate);
         }
@@ -429,6 +431,7 @@
         });
       }
 
+      // --- NOWA LOGIKA KOPIOWANIA LINKU ---
       function generateMonitorLink(roomID, username) {
         const btnMonitor = document.getElementById("btn-open-monitor");
         let baseUrl = window.location.href.split("guest.html")[0];
@@ -440,7 +443,27 @@
         const obsUrl = `${baseUrl}obs.html${params}`;
 
         btnMonitor.onclick = () => {
-          window.open(obsUrl, "_blank");
+          // Kopiowanie do schowka
+          navigator.clipboard
+            .writeText(obsUrl)
+            .then(() => {
+              // Feedback wizualny
+              const originalText = btnMonitor.innerText;
+              btnMonitor.innerText = "✅ Skopiowano!";
+              btnMonitor.style.background = "#28a745";
+
+              setTimeout(() => {
+                btnMonitor.innerText = originalText;
+                btnMonitor.style.background = ""; // powrót do CSS
+              }, 2000);
+            })
+            .catch((err) => {
+              console.error("Błąd kopiowania:", err);
+              alert(
+                "Nie udało się skopiować automatycznie. Twój link to:\n" +
+                  obsUrl,
+              );
+            });
         };
       }
 
@@ -461,8 +484,6 @@
             log("Połączenie zestawione!", "success");
             document.getElementById("join-btn").innerText = "JESTEŚ NA WIZJI";
             document.getElementById("join-btn").style.background = "#dc3545";
-
-            // ZMIANA: W trybie Standard NIE pokazujemy przycisku (domyślnie ukryty CSSem)
           }
         });
 
