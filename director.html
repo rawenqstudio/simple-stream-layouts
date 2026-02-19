@@ -73,8 +73,8 @@
         }
         .stage-box {
             position: absolute;
-            background: rgba(0, 123, 255, 0.8);
-            border: 1px solid white;
+            background: #000; /* Tło czarne jak wideo */
+            border: 2px solid white; /* Taka sama ramka jak w OBS */
             color: white;
             font-size: 11px;
             display: flex;
@@ -87,6 +87,8 @@
             line-height: 1.2;
             padding: 2px;
             box-sizing: border-box; 
+            /* Symulacja cienia z OBS (przeskalowana) */
+            box-shadow: 0 0 5px rgba(0,0,0,0.7); 
         }
         .stage-box:active { cursor: grabbing; border-color: yellow; z-index: 1000; background: rgba(0, 123, 255, 1); }
         .btn-free-mode { background: #28a745; width: 90%; margin-top: 20px; }
@@ -318,14 +320,14 @@
                 element.style.left = newX + '%';
                 element.style.top = newY + '%';
 
-                // Wysyłamy w procentach DO OBS (tylko liczby, obs doda %)
+                // Wysyłamy w procentach DO OBS (z precyzją do 4 miejsc po przecinku)
                 broadcastCommand({ 
                     type: 'transform-update', 
                     targetId: element.dataset.id, 
-                    x: newX, 
-                    y: newY,
-                    w: CAM_WIDTH_PCT,
-                    h: CAM_HEIGHT_PCT
+                    x: parseFloat(newX.toFixed(4)), 
+                    y: parseFloat(newY.toFixed(4)),
+                    w: parseFloat(CAM_WIDTH_PCT.toFixed(4)),
+                    h: parseFloat(CAM_HEIGHT_PCT.toFixed(4))
                 });
             });
 
