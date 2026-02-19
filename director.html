@@ -55,14 +55,18 @@
         .btn-reroll { background: #9c27b0; } .btn-reroll:hover { background: #7b1fa2; }
         .btn-send { background: #009688; } .btn-send:hover { background: #00796b; }
 
-        /* --- FREE MODE CANVAS (ZMIENIONY) --- */
+        /* --- FREE MODE CANVAS (PRECYZYJNY FIX) --- */
         #free-mode-stage {
             display: none; 
             width: 100%;
             aspect-ratio: 16 / 9;
             background: #000;
-            /* Używamy outline zamiast border, żeby nie zaburzać wymiarów */
+            
+            /* ZAMIANA BORDER NA OUTLINE */
+            /* Outline nie zabiera miejsca wewnątrz pudełka, więc 0% to faktyczna krawędź */
             outline: 2px solid #00d2ff; 
+            border: none;
+            
             position: relative;
             margin-top: 20px;
             overflow: hidden;
@@ -74,9 +78,11 @@
         }
         .stage-box {
             position: absolute;
-            background: #000;
-            border: 2px solid white; /* Odwzorowanie ramki OBS */
-            box-shadow: 0 0 5px rgba(0,0,0,0.7); /* Odwzorowanie cienia */
+            background: rgba(0, 123, 255, 0.8);
+            
+            /* UJEDNOLICENIE RAMKI Z OBS (2px) */
+            border: 2px solid white;
+            
             color: white;
             font-size: 11px;
             display: flex;
@@ -90,7 +96,7 @@
             padding: 2px;
             box-sizing: border-box; 
         }
-        .stage-box:active { cursor: grabbing; border-color: yellow; z-index: 1000; }
+        .stage-box:active { cursor: grabbing; border-color: yellow; z-index: 1000; background: rgba(0, 123, 255, 1); }
         .btn-free-mode { background: #28a745; width: 90%; margin-top: 20px; }
     </style>
 </head>
@@ -216,7 +222,7 @@
         function renderGuestList(list) { const container = document.getElementById('guest-list'); container.innerHTML = ""; if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:#777;">Brak gości online.</p>'; return; } list.forEach((guest, index) => { const item = document.createElement('div'); item.className = 'guest-item'; const micClass = guest.muted ? 'mic-off' : 'mic-on'; const micIcon = guest.muted ? '🔇' : '🎤'; const statusText = guest.muted ? '(Wyciszony)' : ''; const mirrorClass = guest.mirrored ? 'mirror-on' : 'mirror-off'; const upVisibility = index === 0 ? 'visibility:hidden' : ''; const downVisibility = index === list.length - 1 ? 'visibility:hidden' : ''; item.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span> <span id="stats-${guest.id}" class="guest-stats">${guest.id.startsWith('fake-') ? 'SZTUCZNY GOŚĆ' : 'Czekam na dane...'}</span> </div> <div class="guest-actions"> <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button> </div> `; container.appendChild(item); }); }
         function updateStats(stats) { for (const [id, data] of Object.entries(stats)) { const el = document.getElementById(`stats-${id}`); if (el) { let colorClass = 'stat-good'; if (data.bitrate < 1000 || data.packetLoss > 5) colorClass = 'stat-mid'; if (data.bitrate < 300 || data.packetLoss > 15) colorClass = 'stat-bad'; el.innerHTML = `Bitrate: <span class="${colorClass}">${data.bitrate} kbps</span> | Loss: <span class="${colorClass}">${data.packetLoss}</span> | Res: ${data.resolution}`; } } }
 
-        // --- FREE MODE RENDERER (NOWY) ---
+        // --- FREE MODE RENDERER (PRECYZYJNY - PROCENTY) ---
         function toggleFreeMode() {
             const stage = document.getElementById('free-mode-stage');
             if(stage.style.display === 'block') {
@@ -248,8 +254,11 @@
                     box.dataset.id = id;
                     box.innerText = name;
                     
+                    // USTAWIENIE W PROCENTACH
                     box.style.width = CAM_WIDTH_PCT + '%';
                     box.style.height = CAM_HEIGHT_PCT + '%';
+                    
+                    // Kaskada w procentach
                     box.style.left = (2 + index * 2) + '%';
                     box.style.top = (2 + index * 2) + '%';
                     
@@ -266,17 +275,24 @@
         function setupDrag(element) {
             let isDragging = false;
             let startX, startY;
-            let clickOffsetX, clickOffsetY; // Offset kliknięcia wewnątrz elementu (w px)
+            let startLeftPct, startTopPct;
 
             element.addEventListener('mousedown', (e) => {
                 isDragging = true;
                 startX = e.clientX;
                 startY = e.clientY;
+                const stage = document.getElementById('free-mode-stage');
                 
-                const rect = element.getBoundingClientRect();
-                clickOffsetX = e.clientX - rect.left;
-                clickOffsetY = e.clientY - rect.top;
+                // POBIERAMY POZYCJĘ STARTOWĄ W PROCENTACH (z CSS, jeśli jest)
+                startLeftPct = parseFloat(element.style.left) || 0;
+                startTopPct = parseFloat(element.style.top) || 0;
                 
+                // Fallback, jeśli brak CSS (rzadki przypadek, ale bezpieczny)
+                if (!element.style.left.includes('%')) {
+                     startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
+                     startTopPct = (element.offsetTop / stage.clientHeight) * 100;
+                }
+
                 element.style.zIndex = 1000; 
             });
 
@@ -284,37 +300,35 @@
                 if (!isDragging) return;
                 
                 const stage = document.getElementById('free-mode-stage');
-                const stageRect = stage.getBoundingClientRect();
+                const stageW = stage.clientWidth; // Szerokość bez obramowania
+                const stageH = stage.clientHeight;
                 
-                // Obliczamy pozycję X/Y myszki względem rogu stołu
-                let mouseX_Relative = e.clientX - stageRect.left;
-                let mouseY_Relative = e.clientY - stageRect.top;
+                // Delta w pikselach
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
 
-                // Odejmujemy offset kliknięcia, żeby przesuwać "za punkt chwytu"
-                let newX = mouseX_Relative - clickOffsetX;
-                let newY = mouseY_Relative - clickOffsetY;
+                // Konwersja delty na procenty
+                const deltaXPct = (deltaX / stageW) * 100;
+                const deltaYPct = (deltaY / stageH) * 100;
 
-                // Granice (w pikselach)
-                const maxW = stageRect.width - element.offsetWidth;
-                const maxH = stageRect.height - element.offsetHeight;
-                
-                newX = Math.max(0, Math.min(newX, maxW));
-                newY = Math.max(0, Math.min(newY, maxH));
+                // Nowa pozycja = start + delta
+                let newX = startLeftPct + deltaXPct;
+                let newY = startTopPct + deltaYPct;
 
-                // Konwersja na procenty
-                const percentX = (newX / stageRect.width) * 100;
-                const percentY = (newY / stageRect.height) * 100;
+                // Granice (0% do 100% minus rozmiar elementu w %)
+                newX = Math.max(0, Math.min(newX, 100 - CAM_WIDTH_PCT));
+                newY = Math.max(0, Math.min(newY, 100 - CAM_HEIGHT_PCT));
 
                 // Aplikujemy lokalnie
-                element.style.left = percentX + '%';
-                element.style.top = percentY + '%';
+                element.style.left = newX + '%';
+                element.style.top = newY + '%';
 
-                // Wysyłamy z zaokrągleniem dla czystości
+                // Wysyłamy do OBS
                 broadcastCommand({ 
                     type: 'transform-update', 
                     targetId: element.dataset.id, 
-                    x: parseFloat(percentX.toFixed(4)), 
-                    y: parseFloat(percentY.toFixed(4)),
+                    x: parseFloat(newX.toFixed(4)), // Zaokrąglamy
+                    y: parseFloat(newY.toFixed(4)),
                     w: parseFloat(CAM_WIDTH_PCT.toFixed(4)),
                     h: parseFloat(CAM_HEIGHT_PCT.toFixed(4))
                 });
