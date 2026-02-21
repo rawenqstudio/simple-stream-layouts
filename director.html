@@ -55,9 +55,10 @@
         .btn-reroll { background: #9c27b0; } .btn-reroll:hover { background: #7b1fa2; }
         .btn-send { background: #009688; } .btn-send:hover { background: #00796b; }
 
-        /* FREE MODE CANVAS */
+        /* --- FREE MODE CANVAS (NAPRAWIONY) --- */
         #free-mode-stage {
-            display: none; 
+            /* POPRAWKA: display: block (był none), bo widocznością zarządza wrapper */
+            display: block; 
             width: 100%;
             aspect-ratio: 16 / 9;
             background: #000;
@@ -238,10 +239,9 @@
         function renderGuestList(list) { const container = document.getElementById('guest-list'); container.innerHTML = ""; if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:#777;">Brak gości online.</p>'; return; } list.forEach((guest, index) => { const item = document.createElement('div'); item.className = 'guest-item'; const micClass = guest.muted ? 'mic-off' : 'mic-on'; const micIcon = guest.muted ? '🔇' : '🎤'; const statusText = guest.muted ? '(Wyciszony)' : ''; const mirrorClass = guest.mirrored ? 'mirror-on' : 'mirror-off'; const upVisibility = index === 0 ? 'visibility:hidden' : ''; const downVisibility = index === list.length - 1 ? 'visibility:hidden' : ''; item.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span> <span id="stats-${guest.id}" class="guest-stats">${guest.id.startsWith('fake-') ? 'SZTUCZNY GOŚĆ' : 'Czekam na dane...'}</span> </div> <div class="guest-actions"> <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button> </div> `; container.appendChild(item); }); }
         function updateStats(stats) { for (const [id, data] of Object.entries(stats)) { const el = document.getElementById(`stats-${id}`); if (el) { let colorClass = 'stat-good'; if (data.bitrate < 1000 || data.packetLoss > 5) colorClass = 'stat-mid'; if (data.bitrate < 300 || data.packetLoss > 15) colorClass = 'stat-bad'; el.innerHTML = `Bitrate: <span class="${colorClass}">${data.bitrate} kbps</span> | Loss: <span class="${colorClass}">${data.packetLoss}</span> | Res: ${data.resolution}`; } } }
 
-        // --- FREE MODE (LOGIKA KOLIZJI + NAPRAWIONE UI) ---
+        // --- FREE MODE (LOGIKA KOLIZJI + POPRAWKA WYŚWIETLANIA) ---
         function toggleFreeMode() {
             const wrapper = document.getElementById('free-mode-wrapper');
-            const stage = document.getElementById('free-mode-stage');
             
             if(wrapper.style.display === 'block') {
                 wrapper.style.display = 'none';
@@ -339,26 +339,17 @@
                 const useCollision = document.getElementById('collision-check').checked;
                 
                 if (useCollision) {
-                    // Sprawdzamy, czy "kandydat" koliduje z kimkolwiek
-                    // Uwaga: To prosta detekcja AABB.
-                    
-                    // Najpierw spróbujmy ruszyć tylko w X
                     if (!checkCollision(element, candidateX, startTopPct)) {
-                        // Jeśli nie ma kolizji w X, zaakceptuj X
+                        // X jest ok
                     } else {
-                        // Jest kolizja w X, zachowaj stare X
                         candidateX = startLeftPct; 
                     }
 
-                    // Potem spróbujmy ruszyć tylko w Y
                     if (!checkCollision(element, candidateX, candidateY)) {
-                         // Jeśli nie ma kolizji w Y (z nowym lub starym X), zaakceptuj Y
+                         // Y jest ok
                     } else {
-                        // Jest kolizja w Y, zachowaj stare Y
                         candidateY = startTopPct;
                     }
-                    
-                    // Jeśli po obu resetach nadal jest kolizja (np. w punkcie startowym), nic nie rób (bardzo rzadkie)
                 }
 
                 // Aplikujemy
@@ -380,45 +371,31 @@
             });
         }
 
-        // Funkcja sprawdzająca czy element na pozycji (x,y) nachodzi na INNY element
+        // Funkcja sprawdzająca kolizję (AABB)
         function checkCollision(activeElement, x, y) {
             const boxes = document.querySelectorAll('.stage-box');
-            
-            // Wymiary w procentach (stałe dla wszystkich)
             const w = CAM_WIDTH_PCT;
             const h = CAM_HEIGHT_PCT;
 
-            // Prostokąt Aktywny (kandydat)
-            const rectA = {
-                left: x,
-                right: x + w,
-                top: y,
-                bottom: y + h
-            };
+            const rectA = { left: x, right: x + w, top: y, bottom: y + h };
 
             for (let box of boxes) {
-                if (box === activeElement) continue; // Nie sprawdzaj z samym sobą
+                if (box === activeElement) continue;
 
-                // Pobierz pozycję innego
                 const bx = parseFloat(box.style.left) || 0;
                 const by = parseFloat(box.style.top) || 0;
 
-                const rectB = {
-                    left: bx,
-                    right: bx + w,
-                    top: by,
-                    bottom: by + h
-                };
+                const rectB = { left: bx, right: bx + w, top: by, bottom: by + h };
 
-                // Wzór na kolizję (AABB)
-                if (rectA.left < rectB.right &&
-                    rectA.right > rectB.left &&
-                    rectA.top < rectB.bottom &&
-                    rectA.bottom > rectB.top) {
-                    return true; // Jest kolizja!
+                // Margines błędu 0.1% dla płynności
+                if (rectA.left < rectB.right - 0.1 &&
+                    rectA.right > rectB.left + 0.1 &&
+                    rectA.top < rectB.bottom - 0.1 &&
+                    rectA.bottom > rectB.top + 0.1) {
+                    return true;
                 }
             }
-            return false; // Czysto
+            return false;
         }
     </script>
 </body>
