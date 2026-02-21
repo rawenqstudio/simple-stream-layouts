@@ -55,10 +55,9 @@
         .btn-reroll { background: #9c27b0; } .btn-reroll:hover { background: #7b1fa2; }
         .btn-send { background: #009688; } .btn-send:hover { background: #00796b; }
 
-        /* --- FREE MODE CANVAS (NAPRAWIONY) --- */
+        /* --- FREE MODE CANVAS --- */
         #free-mode-stage {
-            /* POPRAWKA: display: block (był none), bo widocznością zarządza wrapper */
-            display: block; 
+            display: none; 
             width: 100%;
             aspect-ratio: 16 / 9;
             background: #000;
@@ -77,6 +76,7 @@
             position: absolute;
             background: rgba(0, 123, 255, 0.8);
             border: 2px solid white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.7);
             color: white;
             font-size: 11px;
             display: flex;
@@ -93,7 +93,6 @@
         .stage-box:active { cursor: grabbing; border-color: yellow; z-index: 1000; background: rgba(0, 123, 255, 1); }
         .btn-free-mode { background: #28a745; width: 90%; margin-top: 20px; }
 
-        /* Styl Checkboxa Kolizji */
         .collision-toggle {
             display: inline-flex;
             align-items: center;
@@ -239,55 +238,7 @@
         function renderGuestList(list) { const container = document.getElementById('guest-list'); container.innerHTML = ""; if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:#777;">Brak gości online.</p>'; return; } list.forEach((guest, index) => { const item = document.createElement('div'); item.className = 'guest-item'; const micClass = guest.muted ? 'mic-off' : 'mic-on'; const micIcon = guest.muted ? '🔇' : '🎤'; const statusText = guest.muted ? '(Wyciszony)' : ''; const mirrorClass = guest.mirrored ? 'mirror-on' : 'mirror-off'; const upVisibility = index === 0 ? 'visibility:hidden' : ''; const downVisibility = index === list.length - 1 ? 'visibility:hidden' : ''; item.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span> <span id="stats-${guest.id}" class="guest-stats">${guest.id.startsWith('fake-') ? 'SZTUCZNY GOŚĆ' : 'Czekam na dane...'}</span> </div> <div class="guest-actions"> <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button> </div> `; container.appendChild(item); }); }
         function updateStats(stats) { for (const [id, data] of Object.entries(stats)) { const el = document.getElementById(`stats-${id}`); if (el) { let colorClass = 'stat-good'; if (data.bitrate < 1000 || data.packetLoss > 5) colorClass = 'stat-mid'; if (data.bitrate < 300 || data.packetLoss > 15) colorClass = 'stat-bad'; el.innerHTML = `Bitrate: <span class="${colorClass}">${data.bitrate} kbps</span> | Loss: <span class="${colorClass}">${data.packetLoss}</span> | Res: ${data.resolution}`; } } }
 
-        // --- FREE MODE (LOGIKA KOLIZJI + POPRAWKA WYŚWIETLANIA) ---
-        function toggleFreeMode() {
-            const wrapper = document.getElementById('free-mode-wrapper');
-            
-            if(wrapper.style.display === 'block') {
-                wrapper.style.display = 'none';
-                sendLayout('layout-grid'); 
-            } else {
-                wrapper.style.display = 'block';
-                broadcastCommand({ type: 'layout', mode: 'layout-free' });
-                renderFreeStage();
-            }
-        }
-
-        function renderFreeStage() {
-            const stage = document.getElementById('free-mode-stage');
-            let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
-            
-            Array.from(stage.children).forEach(child => {
-                if(child.tagName === 'P') return; 
-                if(!guestIds.includes(child.dataset.id)) child.remove();
-            });
-
-            guestIds.forEach((id, index) => {
-                let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
-                const name = multiGuestsState[id] ? multiGuestsState[id].name : "Gość";
-
-                if(!box) {
-                    box = document.createElement('div');
-                    box.className = 'stage-box';
-                    box.dataset.id = id;
-                    box.innerText = name;
-                    
-                    // USTAWIENIE W PROCENTACH
-                    box.style.width = CAM_WIDTH_PCT + '%';
-                    box.style.height = CAM_HEIGHT_PCT + '%';
-                    box.style.left = (2 + index * 2) + '%';
-                    box.style.top = (2 + index * 2) + '%';
-                    
-                    setupDrag(box);
-                    stage.appendChild(box);
-                } else {
-                    box.innerText = name; 
-                    box.style.width = CAM_WIDTH_PCT + '%';
-                    box.style.height = CAM_HEIGHT_PCT + '%';
-                }
-            });
-        }
-
+        // --- FREE MODE: LOGIKA "MAGNETYZMU" (Przyklejanie do krawędzi) ---
         function setupDrag(element) {
             let isDragging = false;
             let startX, startY;
@@ -298,15 +249,12 @@
                 startX = e.clientX;
                 startY = e.clientY;
                 const stage = document.getElementById('free-mode-stage');
-                
                 startLeftPct = parseFloat(element.style.left) || 0;
                 startTopPct = parseFloat(element.style.top) || 0;
-                
                 if (!element.style.left.includes('%')) {
                      startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
                      startTopPct = (element.offsetTop / stage.clientHeight) * 100;
                 }
-
                 element.style.zIndex = 1000; 
             });
 
@@ -316,86 +264,76 @@
                 const stage = document.getElementById('free-mode-stage');
                 const stageW = stage.clientWidth;
                 const stageH = stage.clientHeight;
-                
-                // Delta w pikselach
                 const deltaX = e.clientX - startX;
                 const deltaY = e.clientY - startY;
-
-                // Delta w procentach
                 const deltaXPct = (deltaX / stageW) * 100;
                 const deltaYPct = (deltaY / stageH) * 100;
 
-                // Oblicz POTENCJALNĄ nową pozycję
-                let candidateX = startLeftPct + deltaXPct;
-                let candidateY = startTopPct + deltaYPct;
+                let newX = startLeftPct + deltaXPct;
+                let newY = startTopPct + deltaYPct;
+
+                // --- DETEKCJA KOLIZJI I PRZYKLEJANIE (SNAPPING) ---
+                const useCollision = document.getElementById('collision-check').checked;
+                
+                if (useCollision) {
+                    const boxes = document.querySelectorAll('.stage-box');
+                    const myW = CAM_WIDTH_PCT;
+                    const myH = CAM_HEIGHT_PCT;
+                    const MARGIN = 0.2; // Lekki odstęp wizualny
+
+                    // Sprawdzamy kolizję w osi X (przy starym Y)
+                    for (let box of boxes) {
+                        if (box === element) continue;
+                        const bx = parseFloat(box.style.left) || 0;
+                        const by = parseFloat(box.style.top) || 0;
+
+                        // Czy nachodzimy w pionie?
+                        if (startTopPct < by + myH && startTopPct + myH > by) {
+                            // Jeśli wchodzimy z lewej strony
+                            if (startLeftPct + myW <= bx && newX + myW > bx) {
+                                newX = bx - myW - MARGIN; // Przyklej do lewej krawędzi obiektu
+                            }
+                            // Jeśli wchodzimy z prawej strony
+                            else if (startLeftPct >= bx + myW && newX < bx + myW) {
+                                newX = bx + myW + MARGIN; // Przyklej do prawej krawędzi obiektu
+                            }
+                        }
+                    }
+
+                    // Sprawdzamy kolizję w osi Y (przy (ewentualnie poprawionym) X)
+                    for (let box of boxes) {
+                        if (box === element) continue;
+                        const bx = parseFloat(box.style.left) || 0;
+                        const by = parseFloat(box.style.top) || 0;
+                        
+                        // Czy nachodzimy w poziomie (używając newX!)
+                        if (newX < bx + myW && newX + myW > bx) {
+                             // Jeśli wchodzimy od góry
+                            if (startTopPct + myH <= by && newY + myH > by) {
+                                newY = by - myH - MARGIN;
+                            }
+                            // Jeśli wchodzimy od dołu
+                            else if (startTopPct >= by + myH && newY < by + myH) {
+                                newY = by + myH + MARGIN;
+                            }
+                        }
+                    }
+                }
+                // ------------------------------------------------
 
                 // Granice stołu
                 const maxW = 100 - CAM_WIDTH_PCT;
                 const maxH = 100 - CAM_HEIGHT_PCT;
-                candidateX = Math.max(0, Math.min(candidateX, maxW));
-                candidateY = Math.max(0, Math.min(candidateY, maxH));
+                newX = Math.max(0, Math.min(newX, maxW));
+                newY = Math.max(0, Math.min(newY, maxH));
 
-                // --- DETEKCJA KOLIZJI ---
-                const useCollision = document.getElementById('collision-check').checked;
-                
-                if (useCollision) {
-                    if (!checkCollision(element, candidateX, startTopPct)) {
-                        // X jest ok
-                    } else {
-                        candidateX = startLeftPct; 
-                    }
+                element.style.left = newX + '%';
+                element.style.top = newY + '%';
 
-                    if (!checkCollision(element, candidateX, candidateY)) {
-                         // Y jest ok
-                    } else {
-                        candidateY = startTopPct;
-                    }
-                }
-
-                // Aplikujemy
-                element.style.left = candidateX + '%';
-                element.style.top = candidateY + '%';
-
-                broadcastCommand({ 
-                    type: 'transform-update', 
-                    targetId: element.dataset.id, 
-                    x: parseFloat(candidateX.toFixed(4)), 
-                    y: parseFloat(candidateY.toFixed(4)),
-                    w: parseFloat(CAM_WIDTH_PCT.toFixed(4)),
-                    h: parseFloat(CAM_HEIGHT_PCT.toFixed(4))
-                });
+                broadcastCommand({ type: 'transform-update', targetId: element.dataset.id, x: parseFloat(newX.toFixed(4)), y: parseFloat(newY.toFixed(4)), w: parseFloat(CAM_WIDTH_PCT.toFixed(4)), h: parseFloat(CAM_HEIGHT_PCT.toFixed(4)) });
             });
 
-            document.addEventListener('mouseup', () => {
-                if(isDragging) { isDragging = false; element.style.zIndex = ''; }
-            });
-        }
-
-        // Funkcja sprawdzająca kolizję (AABB)
-        function checkCollision(activeElement, x, y) {
-            const boxes = document.querySelectorAll('.stage-box');
-            const w = CAM_WIDTH_PCT;
-            const h = CAM_HEIGHT_PCT;
-
-            const rectA = { left: x, right: x + w, top: y, bottom: y + h };
-
-            for (let box of boxes) {
-                if (box === activeElement) continue;
-
-                const bx = parseFloat(box.style.left) || 0;
-                const by = parseFloat(box.style.top) || 0;
-
-                const rectB = { left: bx, right: bx + w, top: by, bottom: by + h };
-
-                // Margines błędu 0.1% dla płynności
-                if (rectA.left < rectB.right - 0.1 &&
-                    rectA.right > rectB.left + 0.1 &&
-                    rectA.top < rectB.bottom - 0.1 &&
-                    rectA.bottom > rectB.top + 0.1) {
-                    return true;
-                }
-            }
-            return false;
+            document.addEventListener('mouseup', () => { if(isDragging) { isDragging = false; element.style.zIndex = ''; } });
         }
     </script>
 </body>
