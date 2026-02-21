@@ -55,9 +55,9 @@
         .btn-reroll { background: #9c27b0; } .btn-reroll:hover { background: #7b1fa2; }
         .btn-send { background: #009688; } .btn-send:hover { background: #00796b; }
 
-        /* --- FREE MODE CANVAS (NAPRAWIONY DISPLAY) --- */
+        /* FREE MODE CANVAS */
         #free-mode-stage {
-            display: block; /* ZMIANA: Musi być block, bo jest wewnątrz ukrytego wrappera */
+            display: block; 
             width: 100%;
             aspect-ratio: 16 / 9;
             background: #000;
@@ -237,72 +237,30 @@
         function renderGuestList(list) { const container = document.getElementById('guest-list'); container.innerHTML = ""; if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:#777;">Brak gości online.</p>'; return; } list.forEach((guest, index) => { const item = document.createElement('div'); item.className = 'guest-item'; const micClass = guest.muted ? 'mic-off' : 'mic-on'; const micIcon = guest.muted ? '🔇' : '🎤'; const statusText = guest.muted ? '(Wyciszony)' : ''; const mirrorClass = guest.mirrored ? 'mirror-on' : 'mirror-off'; const upVisibility = index === 0 ? 'visibility:hidden' : ''; const downVisibility = index === list.length - 1 ? 'visibility:hidden' : ''; item.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span> <span id="stats-${guest.id}" class="guest-stats">${guest.id.startsWith('fake-') ? 'SZTUCZNY GOŚĆ' : 'Czekam na dane...'}</span> </div> <div class="guest-actions"> <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button> </div> `; container.appendChild(item); }); }
         function updateStats(stats) { for (const [id, data] of Object.entries(stats)) { const el = document.getElementById(`stats-${id}`); if (el) { let colorClass = 'stat-good'; if (data.bitrate < 1000 || data.packetLoss > 5) colorClass = 'stat-mid'; if (data.bitrate < 300 || data.packetLoss > 15) colorClass = 'stat-bad'; el.innerHTML = `Bitrate: <span class="${colorClass}">${data.bitrate} kbps</span> | Loss: <span class="${colorClass}">${data.packetLoss}</span> | Res: ${data.resolution}`; } } }
 
-        // --- FREE MODE (POPRAWIONY WRAPPER) ---
-        function toggleFreeMode() {
-            const wrapper = document.getElementById('free-mode-wrapper');
-            if(wrapper.style.display === 'block') {
-                wrapper.style.display = 'none';
-                sendLayout('layout-grid'); 
-            } else {
-                wrapper.style.display = 'block';
-                broadcastCommand({ type: 'layout', mode: 'layout-free' });
-                renderFreeStage();
-            }
-        }
-
-        function renderFreeStage() {
-            const stage = document.getElementById('free-mode-stage');
-            let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
-            
-            Array.from(stage.children).forEach(child => {
-                if(child.tagName === 'P') return; 
-                if(!guestIds.includes(child.dataset.id)) child.remove();
-            });
-
-            guestIds.forEach((id, index) => {
-                let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
-                const name = multiGuestsState[id] ? multiGuestsState[id].name : "Gość";
-
-                if(!box) {
-                    box = document.createElement('div');
-                    box.className = 'stage-box';
-                    box.dataset.id = id;
-                    box.innerText = name;
-                    
-                    // USTAWIENIE W PROCENTACH
-                    box.style.width = CAM_WIDTH_PCT + '%';
-                    box.style.height = CAM_HEIGHT_PCT + '%';
-                    
-                    // Kaskada w procentach
-                    box.style.left = (2 + index * 2) + '%';
-                    box.style.top = (2 + index * 2) + '%';
-                    
-                    setupDrag(box);
-                    stage.appendChild(box);
-                } else {
-                    box.innerText = name; 
-                    box.style.width = CAM_WIDTH_PCT + '%';
-                    box.style.height = CAM_HEIGHT_PCT + '%';
-                }
-            });
-        }
-
+        // --- FREE MODE: NOWA LOGIKA PRZYKLEJANIA (Separacja Osi) ---
         function setupDrag(element) {
             let isDragging = false;
             let startX, startY;
-            let startLeftPct, startTopPct;
+            
+            // Pozycje w PROCENTACH
+            let currentXPct, currentYPct;
 
             element.addEventListener('mousedown', (e) => {
                 isDragging = true;
                 startX = e.clientX;
                 startY = e.clientY;
+                
                 const stage = document.getElementById('free-mode-stage');
-                startLeftPct = parseFloat(element.style.left) || 0;
-                startTopPct = parseFloat(element.style.top) || 0;
+                // Pobieramy aktualną pozycję startową
+                currentXPct = parseFloat(element.style.left) || 0;
+                currentYPct = parseFloat(element.style.top) || 0;
+                
+                // Fallback dla świeżych elementów
                 if (!element.style.left.includes('%')) {
-                     startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
-                     startTopPct = (element.offsetTop / stage.clientHeight) * 100;
+                     currentXPct = (element.offsetLeft / stage.clientWidth) * 100;
+                     currentYPct = (element.offsetTop / stage.clientHeight) * 100;
                 }
+                
                 element.style.zIndex = 1000; 
             });
 
@@ -312,70 +270,111 @@
                 const stage = document.getElementById('free-mode-stage');
                 const stageW = stage.clientWidth;
                 const stageH = stage.clientHeight;
+                
+                // Delta myszki w pikselach
                 const deltaX = e.clientX - startX;
                 const deltaY = e.clientY - startY;
+
+                // Delta w procentach
                 const deltaXPct = (deltaX / stageW) * 100;
                 const deltaYPct = (deltaY / stageH) * 100;
 
-                let newX = startLeftPct + deltaXPct;
-                let newY = startTopPct + deltaYPct;
+                // Proponowana nowa pozycja (baza)
+                let candidateX = currentXPct + deltaXPct;
+                let candidateY = currentYPct + deltaYPct;
 
-                const maxW = 100 - CAM_WIDTH_PCT;
-                const maxH = 100 - CAM_HEIGHT_PCT;
-                newX = Math.max(0, Math.min(newX, maxW));
-                newY = Math.max(0, Math.min(newY, maxH));
-
-                // --- SNAPPING LOGIC (POPRAWIONA) ---
+                // --- DETEKCJA I BLOKOWANIE KOLIZJI (Osobno X, Osobno Y) ---
                 const useCollision = document.getElementById('collision-check').checked;
-                
+                const MARGIN = 0.2; // Odstęp "magnetyczny"
+
                 if (useCollision) {
                     const boxes = document.querySelectorAll('.stage-box');
-                    const myW = CAM_WIDTH_PCT;
-                    const myH = CAM_HEIGHT_PCT;
-                    const SNAP = 0.5; // Zwiększony margines przyciągania
+                    
+                    // 1. Rozwiąż X (używając aktualnego Y)
+                    let safeX = candidateX;
+                    for (let box of boxes) {
+                        if (box === element) continue;
+                        
+                        const bx = parseFloat(box.style.left) || 0;
+                        const by = parseFloat(box.style.top) || 0;
+                        const bw = CAM_WIDTH_PCT;
+                        const bh = CAM_HEIGHT_PCT;
 
-                    // Faza 1: Sprawdź Oś X (używając Y = startTopPct, czyli tam gdzie byłem przed chwilą)
+                        // Czy jest kolizja w pionie na AKTUALNYM Y?
+                        // Używamy currentYPct, bo jeszcze nie ruszyliśmy w pionie
+                        // Dla lepszego "szurania" można użyć candidateY, ale to ryzykowne
+                        // Bezpieczniej: Sprawdźmy czy nakładamy się w pionie w ogóle
+                        // A dokładniej: Czy nasz prostokąt (safeX, currentYPct) koliduje z (bx, by)
+                        
+                        // Kolizja w Y (używając candidateY, żeby przewidzieć ruch)
+                        if (candidateY < by + bh - MARGIN && candidateY + CAM_HEIGHT_PCT > by + MARGIN) {
+                            
+                            // Próba ruchu w prawo: Uderzamy w lewą ścianę
+                            if (currentXPct + CAM_WIDTH_PCT <= bx + MARGIN && safeX + CAM_WIDTH_PCT > bx - MARGIN) {
+                                safeX = bx - CAM_WIDTH_PCT - MARGIN;
+                            }
+                            // Próba ruchu w lewo: Uderzamy w prawą ścianę
+                            else if (currentXPct >= bx + CAM_WIDTH_PCT - MARGIN && safeX < bx + CAM_WIDTH_PCT + MARGIN) {
+                                safeX = bx + CAM_WIDTH_PCT + MARGIN;
+                            }
+                        }
+                    }
+                    candidateX = safeX; // Zaakceptuj bezpieczny X
+
+                    // 2. Rozwiąż Y (używając już bezpiecznego X)
+                    let safeY = candidateY;
                     for (let box of boxes) {
                         if (box === element) continue;
                         const bx = parseFloat(box.style.left) || 0;
                         const by = parseFloat(box.style.top) || 0;
+                        const bw = CAM_WIDTH_PCT;
+                        const bh = CAM_HEIGHT_PCT;
 
-                        // Czy nachodzimy w pionie? (używamy startTopPct - to klucz!)
-                        if (startTopPct < by + myH - SNAP && startTopPct + myH > by + SNAP) {
-                            if (startLeftPct + myW <= bx + SNAP && newX + myW > bx - SNAP) {
-                                newX = bx - myW - SNAP; // Klej do lewej
-                            } else if (startLeftPct >= bx + myW - SNAP && newX < bx + myW + SNAP) {
-                                newX = bx + myW + SNAP; // Klej do prawej
+                        // Czy jest kolizja w poziomie na NOWYM X?
+                        if (candidateX < bx + bw - MARGIN && candidateX + CAM_WIDTH_PCT > bx + MARGIN) {
+                            
+                            // Próba ruchu w dół: Uderzamy w górną krawędź
+                            if (currentYPct + CAM_HEIGHT_PCT <= by + MARGIN && safeY + CAM_HEIGHT_PCT > by - MARGIN) {
+                                safeY = by - CAM_HEIGHT_PCT - MARGIN;
+                            }
+                            // Próba ruchu w górę: Uderzamy w dolną krawędź
+                            else if (currentYPct >= by + CAM_HEIGHT_PCT - MARGIN && safeY < by + CAM_HEIGHT_PCT + MARGIN) {
+                                safeY = by + CAM_HEIGHT_PCT + MARGIN;
                             }
                         }
                     }
-
-                    // Faza 2: Sprawdź Oś Y (używając X = startLeftPct, czyli tam gdzie byłem przed chwilą)
-                    // Dzięki temu nie ma "przeskakiwania" przy ruchu po skosie
-                    for (let box of boxes) {
-                        if (box === element) continue;
-                        const bx = parseFloat(box.style.left) || 0;
-                        const by = parseFloat(box.style.top) || 0;
-
-                        // Czy nachodzimy w poziomie? (używamy startLeftPct - to klucz!)
-                        if (startLeftPct < bx + myW - SNAP && startLeftPct + myW > bx + SNAP) {
-                            if (startTopPct + myH <= by + SNAP && newY + myH > by - SNAP) {
-                                newY = by - myH - SNAP; // Klej do góry
-                            } else if (startTopPct >= by + myH - SNAP && newY < by + myH + SNAP) {
-                                newY = by + myH + SNAP; // Klej do dołu
-                            }
-                        }
-                    }
+                    candidateY = safeY; // Zaakceptuj bezpieczny Y
                 }
-                // ------------------------------------------------
+                
+                // Granice stołu
+                candidateX = Math.max(0, Math.min(candidateX, 100 - CAM_WIDTH_PCT));
+                candidateY = Math.max(0, Math.min(candidateY, 100 - CAM_HEIGHT_PCT));
 
-                element.style.left = newX + '%';
-                element.style.top = newY + '%';
+                // Aplikujemy
+                element.style.left = candidateX + '%';
+                element.style.top = candidateY + '%';
 
-                broadcastCommand({ type: 'transform-update', targetId: element.dataset.id, x: parseFloat(newX.toFixed(4)), y: parseFloat(newY.toFixed(4)), w: parseFloat(CAM_WIDTH_PCT.toFixed(4)), h: parseFloat(CAM_HEIGHT_PCT.toFixed(4)) });
+                broadcastCommand({ 
+                    type: 'transform-update', 
+                    targetId: element.dataset.id, 
+                    x: parseFloat(candidateX.toFixed(4)), 
+                    y: parseFloat(candidateY.toFixed(4)),
+                    w: parseFloat(CAM_WIDTH_PCT.toFixed(4)),
+                    h: parseFloat(CAM_HEIGHT_PCT.toFixed(4))
+                });
             });
 
-            document.addEventListener('mouseup', () => { if(isDragging) { isDragging = false; element.style.zIndex = ''; } });
+            document.addEventListener('mouseup', () => { 
+                if(isDragging) { 
+                    isDragging = false; 
+                    element.style.zIndex = '';
+                    
+                    // Zaktualizuj bazę (current) do nowej pozycji po upuszczeniu
+                    // Aby przy kolejnym kliknięciu delta liczyła się poprawnie
+                    currentXPct = parseFloat(element.style.left);
+                    currentYPct = parseFloat(element.style.top);
+                } 
+            });
         }
     </script>
 </body>
