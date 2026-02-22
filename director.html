@@ -94,13 +94,18 @@
       }
       .guest-item {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
         background: #444;
         padding: 10px;
         margin-bottom: 10px;
         border-radius: 5px;
-        flex-wrap: wrap;
+      }
+
+      .guest-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
       }
       .guest-info {
         display: flex;
@@ -117,28 +122,19 @@
         margin-top: 4px;
         font-family: monospace;
       }
-      .stat-good {
-        color: #00ff00;
-      }
-      .stat-mid {
-        color: #ffcc00;
-      }
-      .stat-bad {
-        color: #ff4444;
-        font-weight: bold;
-      }
+
       .guest-actions {
         display: flex;
         gap: 5px;
       }
       .btn-icon {
-        width: 40px;
-        height: 40px;
+        width: 35px;
+        height: 35px;
         padding: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+        font-size: 18px;
       }
       .mic-on {
         background: #28a745;
@@ -169,7 +165,45 @@
       .btn-move:hover {
         background: #495057;
       }
+      .btn-settings {
+        background: #555;
+      }
+      .btn-settings:hover {
+        background: #777;
+      }
 
+      /* PANEL CROP */
+      .crop-panel {
+        background: #222;
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        display: none; /* Domyślnie ukryty */
+        border: 1px solid #555;
+      }
+      .crop-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        color: #ccc;
+        font-size: 0.9em;
+      }
+      .crop-row input[type="range"] {
+        flex-grow: 1;
+        margin-left: 10px;
+        cursor: pointer;
+      }
+      .crop-reset {
+        font-size: 10px;
+        background: #444;
+        padding: 2px 6px;
+        border-radius: 3px;
+        cursor: pointer;
+        margin-left: 5px;
+      }
+
+      /* GIERKI */
       .game-section {
         background: #2a2a2a;
         padding: 15px;
@@ -297,12 +331,11 @@
         background: #00796b;
       }
 
-      /* --- FREE MODE CANVAS --- */
+      /* FREE MODE */
       #free-mode-container {
         display: none;
         margin-top: 20px;
       }
-
       #free-mode-stage {
         display: block;
         width: 100%;
@@ -346,7 +379,6 @@
         width: 90%;
         margin-top: 20px;
       }
-
       .btn-lock-on {
         background: #dc3545;
       }
@@ -363,7 +395,6 @@
         cursor: not-allowed !important;
         opacity: 0.7;
       }
-
       .guide-line {
         position: absolute;
         background-color: #ff0000;
@@ -380,6 +411,17 @@
         height: 100%;
         width: 1px;
         top: 0;
+      }
+
+      .stat-good {
+        color: #00ff00;
+      }
+      .stat-mid {
+        color: #ffcc00;
+      }
+      .stat-bad {
+        color: #ff4444;
+        font-weight: bold;
       }
     </style>
   </head>
@@ -466,7 +508,6 @@
           >
             🔓 Układ: ODBLOKOWANY
           </button>
-
           <div id="free-mode-stage">
             <div id="guide-x" class="guide-line guide-x"></div>
             <div id="guide-y" class="guide-line guide-y"></div>
@@ -567,7 +608,7 @@
             </div>
             <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0" />
             <p style="color: #aaa; font-size: 0.8em; margin-bottom: 5px">
-              Zarządzanie ręczne (Wpisz i kliknij Wyślij):
+              Zarządzanie ręczne:
             </p>
             <div id="game-players-list"></div>
           </div>
@@ -683,6 +724,7 @@
           "Poduszka",
         ],
       };
+
       const urlParams = new URLSearchParams(window.location.search);
       const useStunOnly = urlParams.get("stunonly");
       const isMulti = urlParams.get("multi");
@@ -702,6 +744,7 @@
               credential: "openrelayproject",
             },
           ];
+
       const peer = new Peer(isMulti ? roomID : undefined, {
         config: { iceServers: selectedConfig },
       });
@@ -712,9 +755,11 @@
       let guestOrder = [];
       let labelsVisible = false;
       let iconsVisible = false;
+      let isLayoutLocked = false;
       const currentWords = {};
 
-      let isLayoutLocked = false;
+      // --- CROP STATE (Nowe) ---
+      const cropState = {}; // { id: { zoom: 1.0, panX: 50 } }
 
       function toggleGamePanel() {
         const panel = document.getElementById("game-section");
@@ -1058,43 +1103,7 @@
           ? "btn-tool btn-toggle-on"
           : "btn-tool btn-toggle-off";
       }
-      function renderGuestList(list) {
-        const container = document.getElementById("guest-list");
-        container.innerHTML = "";
-        if (list.length === 0) {
-          container.innerHTML =
-            '<p style="text-align:center; color:#777;">Brak gości online.</p>';
-          return;
-        }
-        list.forEach((guest, index) => {
-          const item = document.createElement("div");
-          item.className = "guest-item";
-          const micClass = guest.muted ? "mic-off" : "mic-on";
-          const micIcon = guest.muted ? "🔇" : "🎤";
-          const statusText = guest.muted ? "(Wyciszony)" : "";
-          const mirrorClass = guest.mirrored ? "mirror-on" : "mirror-off";
-          const upVisibility = index === 0 ? "visibility:hidden" : "";
-          const downVisibility =
-            index === list.length - 1 ? "visibility:hidden" : "";
-          item.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span> <span id="stats-${guest.id}" class="guest-stats">${guest.id.startsWith("fake-") ? "SZTUCZNY GOŚĆ" : "Czekam na dane..."}</span> </div> <div class="guest-actions"> <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button> </div> `;
-          container.appendChild(item);
-        });
-      }
-      function updateStats(stats) {
-        for (const [id, data] of Object.entries(stats)) {
-          const el = document.getElementById(`stats-${id}`);
-          if (el) {
-            let colorClass = "stat-good";
-            if (data.bitrate < 1000 || data.packetLoss > 5)
-              colorClass = "stat-mid";
-            if (data.bitrate < 300 || data.packetLoss > 15)
-              colorClass = "stat-bad";
-            el.innerHTML = `Bitrate: <span class="${colorClass}">${data.bitrate} kbps</span> | Loss: <span class="${colorClass}">${data.packetLoss}</span> | Res: ${data.resolution}`;
-          }
-        }
-      }
 
-      // --- FREE MODE RENDERER (NOWY) ---
       function toggleLayoutLock() {
         isLayoutLocked = !isLayoutLocked;
         const btn = document.getElementById("btn-lock-layout");
@@ -1107,7 +1116,6 @@
         }
         renderFreeStage();
       }
-
       function toggleFreeMode() {
         const container = document.getElementById("free-mode-container");
         if (container.style.display === "block") {
@@ -1117,24 +1125,17 @@
           container.style.display = "block";
           broadcastCommand({ type: "layout", mode: "layout-free" });
           renderFreeStage();
-          // --- KLUCZOWA ZMIANA: WYMUSZENIE SYNCHRONIZACJI PRZY OTWARCIU ---
           setTimeout(syncFreeStageToOBS, 100);
         }
       }
-
       function syncFreeStageToOBS() {
         const stage = document.getElementById("free-mode-stage");
         const boxes = stage.querySelectorAll(".stage-box");
-
         boxes.forEach((box) => {
-          // Odczytujemy aktualne pozycje (procenty lub puste)
           let x = parseFloat(box.style.left);
           let y = parseFloat(box.style.top);
           let w = parseFloat(box.style.width);
           let h = parseFloat(box.style.height);
-
-          // Jeśli styl jest pusty (nowy kafelek), bierzemy domyślne
-          // i wysyłamy do OBS
           if (!isNaN(x) && !isNaN(y)) {
             broadcastCommand({
               type: "transform-update",
@@ -1151,30 +1152,25 @@
       function renderFreeStage() {
         const stage = document.getElementById("free-mode-stage");
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
-
         Array.from(stage.children).forEach((child) => {
           if (child.tagName === "P" || child.classList.contains("guide-line"))
             return;
           if (!guestIds.includes(child.dataset.id)) child.remove();
         });
-
         guestIds.forEach((id, index) => {
           let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
           const name = multiGuestsState[id]
             ? multiGuestsState[id].name
             : "Gość";
-
           if (!box) {
             box = document.createElement("div");
             box.className = "stage-box";
             box.dataset.id = id;
             box.innerText = name;
-
             box.style.width = CAM_WIDTH_PCT + "%";
             box.style.height = CAM_HEIGHT_PCT + "%";
             box.style.left = 2 + index * 2 + "%";
             box.style.top = 2 + index * 2 + "%";
-
             setupDrag(box);
             stage.appendChild(box);
           } else {
@@ -1182,74 +1178,56 @@
             if (!box.style.width) box.style.width = CAM_WIDTH_PCT + "%";
             if (!box.style.height) box.style.height = CAM_HEIGHT_PCT + "%";
           }
-
           if (isLayoutLocked) box.classList.add("locked");
           else box.classList.remove("locked");
         });
       }
-
       function setupDrag(element) {
         let isDragging = false;
         let startX, startY;
         let startLeftPct, startTopPct;
-
         element.addEventListener("mousedown", (e) => {
           if (isLayoutLocked) return;
-
           isDragging = true;
           startX = e.clientX;
           startY = e.clientY;
           const stage = document.getElementById("free-mode-stage");
-
           startLeftPct = parseFloat(element.style.left) || 0;
           startTopPct = parseFloat(element.style.top) || 0;
-
           if (!element.style.left.includes("%")) {
             startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
             startTopPct = (element.offsetTop / stage.clientHeight) * 100;
           }
-
           element.style.zIndex = 1000;
         });
-
         document.addEventListener("mousemove", (e) => {
           if (!isDragging) return;
-
           const isAltPressed = e.altKey;
-
           const stage = document.getElementById("free-mode-stage");
           const stageW = stage.clientWidth;
           const stageH = stage.clientHeight;
-
           const deltaX = e.clientX - startX;
           const deltaY = e.clientY - startY;
-
           const deltaXPct = (deltaX / stageW) * 100;
           const deltaYPct = (deltaY / stageH) * 100;
-
           let newX = startLeftPct + deltaXPct;
           let newY = startTopPct + deltaYPct;
-
           const guideX = document.getElementById("guide-x");
           const guideY = document.getElementById("guide-y");
           let snappedX = false;
           let snappedY = false;
-
           if (!isAltPressed) {
             const SNAP = 1.5;
             const myW = parseFloat(element.style.width);
             const myH = parseFloat(element.style.height);
-
             const others = Array.from(
               document.querySelectorAll(".stage-box"),
             ).filter((b) => b !== element);
-
             for (const other of others) {
               const oX = parseFloat(other.style.left);
               const oY = parseFloat(other.style.top);
               const oW = parseFloat(other.style.width);
               const oH = parseFloat(other.style.height);
-
               if (Math.abs(newX - oX) < SNAP) {
                 newX = oX;
                 snappedX = true;
@@ -1266,7 +1244,6 @@
                 newX = oX + oW - myW;
                 snappedX = true;
               }
-
               if (Math.abs(newY - oY) < SNAP) {
                 newY = oY;
                 snappedY = true;
@@ -1285,7 +1262,6 @@
               }
             }
           }
-
           if (snappedX) {
             guideX.style.display = "block";
             guideX.style.left = (newX * stageW) / 100 + "px";
@@ -1294,7 +1270,6 @@
             guideY.style.display = "block";
             guideY.style.top = (newY * stageH) / 100 + "px";
           } else guideY.style.display = "none";
-
           newX = Math.max(
             0,
             Math.min(newX, 100 - parseFloat(element.style.width)),
@@ -1303,10 +1278,8 @@
             0,
             Math.min(newY, 100 - parseFloat(element.style.height)),
           );
-
           element.style.left = newX + "%";
           element.style.top = newY + "%";
-
           broadcastCommand({
             type: "transform-update",
             targetId: element.dataset.id,
@@ -1316,7 +1289,6 @@
             h: parseFloat(element.style.height),
           });
         });
-
         document.addEventListener("mouseup", () => {
           if (isDragging) {
             isDragging = false;
@@ -1325,6 +1297,118 @@
             document.getElementById("guide-y").style.display = "none";
           }
         });
+      }
+
+      // --- CROP LOGIC ---
+      function toggleCropControls(id) {
+        let panel = document.getElementById(`crop-panel-${id}`);
+        if (!panel) {
+          // Jeśli panel nie istnieje, musimy go stworzyć wewnątrz elementu guest-item
+          // Ale ponieważ guest-item jest renderowany od nowa, lepiej mieć go w strukturze.
+          // W renderGuestList dodamy ukryty div, a tu go tylko pokazujemy.
+          return;
+        }
+        panel.style.display =
+          panel.style.display === "block" ? "none" : "block";
+
+        // Inicjalizacja stanu jeśli brak
+        if (!cropState[id]) cropState[id] = { zoom: 1.0, panX: 50 };
+
+        // Ustaw suwaki
+        document.getElementById(`zoom-${id}`).value = cropState[id].zoom;
+        document.getElementById(`pan-${id}`).value = cropState[id].panX;
+      }
+
+      function updateCrop(id) {
+        const zoomVal = document.getElementById(`zoom-${id}`).value;
+        const panVal = document.getElementById(`pan-${id}`).value;
+
+        cropState[id] = { zoom: zoomVal, panX: panVal };
+
+        // Wyślij do OBS
+        broadcastCommand({
+          type: "crop-update",
+          targetId: id,
+          zoom: zoomVal,
+          panX: panVal,
+        });
+      }
+
+      function resetCrop(id) {
+        document.getElementById(`zoom-${id}`).value = 1.0;
+        document.getElementById(`pan-${id}`).value = 50;
+        updateCrop(id);
+      }
+
+      function renderGuestList(list) {
+        const container = document.getElementById("guest-list");
+        container.innerHTML = "";
+        if (list.length === 0) {
+          container.innerHTML =
+            '<p style="text-align:center; color:#777;">Brak gości online.</p>';
+          return;
+        }
+        list.forEach((guest, index) => {
+          const item = document.createElement("div");
+          item.className = "guest-item";
+          const micClass = guest.muted ? "mic-off" : "mic-on";
+          const micIcon = guest.muted ? "🔇" : "🎤";
+          const statusText = guest.muted ? "(Wyciszony)" : "";
+          const mirrorClass = guest.mirrored ? "mirror-on" : "mirror-off";
+          const upVisibility = index === 0 ? "visibility:hidden" : "";
+          const downVisibility =
+            index === list.length - 1 ? "visibility:hidden" : "";
+
+          // HTML DLA CROP CONTROLS (Domyślnie ukryty)
+          const cropHtml = `
+                    <div id="crop-panel-${guest.id}" class="crop-panel">
+                        <div class="crop-row">
+                            <span>Zoom:</span>
+                            <input type="range" id="zoom-${guest.id}" min="1" max="3" step="0.1" value="1" oninput="updateCrop('${guest.id}')">
+                            <span class="crop-reset" onclick="resetCrop('${guest.id}')">Reset</span>
+                        </div>
+                        <div class="crop-row">
+                            <span>Pan X:</span>
+                            <input type="range" id="pan-${guest.id}" min="0" max="100" value="50" oninput="updateCrop('${guest.id}')">
+                        </div>
+                    </div>
+                `;
+
+          item.innerHTML = `
+                    <div class="guest-header">
+                        <div class="guest-actions" style="margin-right: 10px;">
+                            <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button>
+                            <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button>
+                        </div>
+                        <div class="guest-info">
+                            <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span>
+                            <span id="stats-${guest.id}" class="guest-stats">Czekam na dane...</span>
+                        </div>
+                        <div class="guest-actions">
+                            <button class="btn-icon btn-settings" onclick="toggleCropControls('${guest.id}')" title="Kadrowanie">⚙️</button>
+                            <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button>
+                            <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button>
+                            <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button>
+                        </div>
+                    </div>
+                    ${cropHtml}
+                `;
+          container.appendChild(item);
+        });
+      }
+
+      function updateStats(stats) {
+        for (const [id, data] of Object.entries(stats)) {
+          const el = document.getElementById(`stats-${id}`);
+          if (el) {
+            let colorClass = "stat-good";
+            if (data.bitrate < 1000 || data.packetLoss > 5)
+              colorClass = "stat-mid";
+            if (data.bitrate < 300 || data.packetLoss > 15)
+              colorClass = "stat-bad";
+            el.innerHTML = `Bitrate: <span class="${colorClass}">${data.bitrate} kbps</span> | Loss: <span class="${colorClass}">${data.packetLoss}</span> | Res: ${data.resolution}`;
+          }
+        }
       }
     </script>
   </body>

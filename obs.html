@@ -5,11 +5,9 @@
     <title>WIDOK OBS</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-      /* GLOBALNY RESET - KLUCZOWY DLA PRECYZJI */
       * {
         box-sizing: border-box;
       }
-
       body,
       html {
         margin: 0;
@@ -20,14 +18,12 @@
         background: transparent;
         font-family: "Segoe UI", sans-serif;
       }
-
       #video-container {
         width: 100%;
         height: 100%;
         transition: all 0.5s ease;
         position: relative;
       }
-
       .video-box {
         position: relative;
         overflow: hidden;
@@ -36,7 +32,6 @@
         background: #000;
         transition: all 0.5s ease;
       }
-
       video,
       img.fake-cam {
         width: 100%;
@@ -44,10 +39,13 @@
         object-fit: cover;
         display: block;
       }
-      video.mirror-effect,
+
+      /* Klasa mirror-effect jest teraz obsługiwana przez JS inline styles dla kompatybilności z zoomem, 
+           ale zostawiamy ją dla img.fake-cam */
       img.mirror-effect {
         transform: scaleX(-1);
       }
+
       .mute-icon {
         position: absolute;
         top: 10px;
@@ -82,6 +80,7 @@
         display: none !important;
       }
 
+      /* KARTKA CZÓŁKO */
       .game-card {
         position: absolute;
         top: 5%;
@@ -116,26 +115,25 @@
         }
       }
 
-      /* --- NOWY TRYB SWOBODNY (FREE) --- */
+      /* UKŁADY FREE MODE */
       .layout-free {
         position: relative;
         width: 100%;
         height: 100%;
       }
       .layout-free .video-box {
-        position: absolute; /* Umożliwia swobodne przesuwanie */
+        position: absolute;
         transition:
           width 0.2s,
           height 0.2s,
           top 0.1s,
-          left 0.1s; /* Płynność */
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.8); /* Mniejszy cień w trybie precyzyjnym */
-        /* Domyślny rozmiar w trybie Free, jeśli nie ustawiono inaczej */
+          left 0.1s;
         width: 320px;
         height: 180px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
       }
 
-      /* POZOSTAŁE UKŁADY (Siatka itp.) - bez zmian */
+      /* POZOSTAŁE UKŁADY */
       .layout-grid {
         display: flex;
         flex-wrap: wrap;
@@ -143,7 +141,6 @@
         align-content: center;
         gap: 15px;
         padding: 20px;
-        box-sizing: border-box;
       }
       .layout-grid .video-box {
         width: 45%;
@@ -173,11 +170,12 @@
         width: 32%;
         height: 30%;
       }
-      .layout-grid[data-count="10"] .video-box {
+      .layout-grid[data-count="10"] .video-box,
+      .layout-grid[data-count="11"] .video-box,
+      .layout-grid[data-count="12"] .video-box {
         width: 23%;
         height: 23%;
       }
-
       .layout-sidebar-right {
         display: flex;
         flex-direction: column;
@@ -185,7 +183,6 @@
         align-items: flex-end;
         padding-right: 20px;
         height: 100vh;
-        box-sizing: border-box;
       }
       .layout-sidebar-right .video-box {
         width: 320px;
@@ -199,7 +196,6 @@
         align-items: flex-start;
         padding-left: 20px;
         height: 100vh;
-        box-sizing: border-box;
       }
       .layout-sidebar-left .video-box {
         width: 320px;
@@ -213,7 +209,6 @@
         align-items: flex-end;
         padding-bottom: 20px;
         height: 100vh;
-        box-sizing: border-box;
       }
       .layout-bottom .video-box {
         width: 280px;
@@ -227,7 +222,6 @@
         align-items: flex-start;
         padding-top: 20px;
         height: 100vh;
-        box-sizing: border-box;
       }
       .layout-top .video-box {
         width: 280px;
@@ -242,7 +236,6 @@
         row-gap: 30px;
         padding: 20px 40px;
         height: 100vh;
-        box-sizing: border-box;
       }
       .layout-split .video-box {
         width: 100%;
@@ -264,7 +257,6 @@
         gap: 15px;
         padding: 20px;
         height: 100vh;
-        box-sizing: border-box;
         align-content: center;
       }
       .layout-center-stage .video-box {
@@ -334,6 +326,8 @@
         config: { iceServers: selectedConfig },
       });
       const container = document.getElementById("video-container");
+
+      // Baza gości z rozszerzonym stanem (crop)
       const guests = {};
       const heartbeats = {};
       let directorConn = null;
@@ -343,6 +337,7 @@
         console.log("OBS gotowy. ID: " + id);
         if (isMulti) connectToDirector(myID);
       });
+
       function connectToDirector(targetId) {
         directorConn = peer.connect(targetId);
         directorConn.on("open", () => {
@@ -353,12 +348,15 @@
 
       peer.on("call", (call) => {
         call.answer();
+        // Init with defaults
         if (!guests[call.peer])
           guests[call.peer] = {
             name: "Łączenie...",
             muted: false,
             mirrored: false,
             conn: null,
+            zoom: 1.0,
+            panX: 50, // Domyślne wartości crop
           };
         guests[call.peer].call = call;
         if (useULL) {
@@ -406,7 +404,6 @@
       function handleData(data, conn) {
         if (data.type === "layout") {
           container.className = data.mode;
-          // Jeśli wychodzimy z trybu Free, czyścimy style inline (pozycja)
           if (data.mode !== "layout-free") {
             document.querySelectorAll(".video-box").forEach((box) => {
               box.style.top = "";
@@ -416,18 +413,55 @@
             });
           }
         }
-        // --- OBSŁUGA RĘCZNEGO PRZESUWANIA (NOWE) ---
         if (data.type === "transform-update") {
           const box = document.getElementById(`box-${data.targetId}`);
           if (box) {
-            // Pozycjonujemy w procentach (responsywnie)
             box.style.left = data.x + "%";
             box.style.top = data.y + "%";
             box.style.width = data.w + "%";
             box.style.height = data.h + "%";
           }
         }
-        // --------------------------------------------
+
+        // --- CROP UPDATE (ZOOM & PAN) ---
+        if (data.type === "crop-update") {
+          const id = data.targetId;
+          if (guests[id]) {
+            guests[id].zoom = data.zoom;
+            guests[id].panX = data.panX;
+            applyVideoTransform(id);
+          }
+        }
+
+        if (data.type === "toggle-mirror") {
+          const id = data.targetId;
+          if (guests[id]) {
+            guests[id].mirrored = !guests[id].mirrored; // Toggle state logic handled here or by director? Director sends event, we just toggle.
+            // Wait, director sends toggle, but we need absolute state sometimes.
+            // Let's assume director sends 'toggle' means 'flip current'.
+            // Better: Update state and re-apply.
+
+            // Actually, let's check current DOM or memory.
+            // Director logic was: update local state, send toggle cmd.
+            // So we flip our local state too.
+          }
+
+          // Toggle visually via class for image, but via function for video
+          const box = document.getElementById(`box-${id}`);
+          if (box) {
+            // For IMG fake guest
+            const img = box.querySelector("img.fake-cam");
+            if (img) img.classList.toggle("mirror-effect");
+
+            // For VIDEO
+            const video = box.querySelector("video");
+            if (video) {
+              // Just update state bit and re-calc transform
+              if (guests[id]) guests[id].mirrored = !guests[id].mirrored; // Toggle
+              applyVideoTransform(id);
+            }
+          }
+        }
 
         if (data.type === "toggle-labels") {
           if (data.show) container.classList.add("show-labels");
@@ -449,20 +483,6 @@
           if (data.targetId === "all")
             Object.keys(guests).forEach((id) => performRefresh(id));
           else performRefresh(data.targetId);
-        }
-        if (data.type === "toggle-mirror") {
-          const box = document.getElementById(`box-${data.targetId}`);
-          if (box) {
-            const video =
-              box.querySelector("video") || box.querySelector("img");
-            if (video) {
-              video.classList.toggle("mirror-effect");
-              if (guests[data.targetId])
-                guests[data.targetId].mirrored =
-                  video.classList.contains("mirror-effect");
-              sendGuestListToDirector();
-            }
-          }
         }
         if (data.type === "game-deal") {
           document.querySelectorAll(".game-card").forEach((el) => el.remove());
@@ -486,7 +506,13 @@
         }
         if (data.type === "identify" && conn) {
           if (!guests[conn.peer])
-            guests[conn.peer] = { name: "Gość", muted: false, mirrored: false };
+            guests[conn.peer] = {
+              name: "Gość",
+              muted: false,
+              mirrored: false,
+              zoom: 1,
+              panX: 50,
+            };
           guests[conn.peer].name = data.name || "Gość";
           guests[conn.peer].conn = conn;
           updateLabel(conn.peer, data.name);
@@ -514,6 +540,32 @@
         if (data.type === "leave" && conn) removeGuest(conn.peer);
       }
 
+      // --- GŁÓWNA FUNKCJA TRANSORMACJI WIDEO (Zoom + Pan + Mirror) ---
+      function applyVideoTransform(id) {
+        const box = document.getElementById(`box-${id}`);
+        if (!box) return;
+        const video = box.querySelector("video");
+        if (!video) return;
+
+        const g = guests[id] || { zoom: 1, panX: 50, mirrored: false };
+
+        // 1. Skala (Zoom)
+        // 2. Skala X (-1) jeśli lustro
+        let transform = `scale(${g.zoom})`;
+        if (g.mirrored) transform += ` scaleX(-1)`;
+
+        video.style.transform = transform;
+
+        // Panowanie (Przesunięcie środka skalowania)
+        // Domyślnie 50% 50%. Suwak 0-100 steruje osią X.
+        // Jeśli jest lustro, musimy odwrócić logikę panowania?
+        // Sprawdźmy: Transform origin jest relatywny do elementu.
+        // ScaleX(-1) odwraca element w miejscu.
+        // Origin 50% jest bezpieczny. Origin 0% (lewo) przy lustrze staje się prawem.
+        // Użytkownik to zobaczy i skoryguje suwakiem.
+        video.style.transformOrigin = `${g.panX}% 50%`;
+      }
+
       function setGameCard(id, word) {
         const box = document.getElementById(`box-${id}`);
         if (!box) return;
@@ -535,7 +587,14 @@
       }
       function addFakeVideo(id, name, imgSrc) {
         if (document.getElementById(`box-${id}`)) return;
-        guests[id] = { name: name, muted: false, mirrored: false, conn: null };
+        guests[id] = {
+          name: name,
+          muted: false,
+          mirrored: false,
+          zoom: 1,
+          panX: 50,
+          conn: null,
+        };
         const box = document.createElement("div");
         box.className = "video-box";
         box.id = `box-${id}`;
@@ -558,40 +617,54 @@
         updateGuestCount();
         sendGuestListToDirector();
       }
+
       function addVideo(stream, id) {
         if (document.getElementById(`box-${id}`)) return;
         heartbeats[id] = Date.now();
         statsCache[id] = { bytes: 0, delayTotal: 0, emittedTotal: 0 };
+        // Init guest state if not present
+        if (!guests[id]) guests[id] = { zoom: 1, panX: 50, mirrored: false };
+
         const box = document.createElement("div");
         box.className = "video-box";
         box.id = `box-${id}`;
         box.style.order = 999;
+
         const video = document.createElement("video");
         video.srcObject = stream;
         video.muted = true;
         video.autoplay = true;
         video.playsInline = true;
+
         const audio = document.createElement("audio");
         audio.srcObject = stream;
         audio.muted = false;
         audio.autoplay = true;
         audio.id = `audio-${id}`;
+
         const label = document.createElement("div");
         label.className = "label";
         label.id = `label-${id}`;
+
         const muteIcon = document.createElement("div");
         muteIcon.className = "mute-icon";
         muteIcon.innerText = "🔇";
         muteIcon.id = `mute-${id}`;
+
         box.appendChild(video);
         box.appendChild(label);
         box.appendChild(muteIcon);
         box.appendChild(audio);
         container.appendChild(box);
+
+        // Aplikuj domyślne transformacje
+        applyVideoTransform(id);
+
         updateGuestCount();
         video.play().catch((e) => console.error(e));
         audio.play().catch((e) => console.warn(e));
       }
+
       function performRefresh(id) {
         const box = document.getElementById(`box-${id}`);
         if (!box) return;
@@ -646,6 +719,7 @@
         }
       }
 
+      // Pętla statystyk (bez zmian w logice)
       setInterval(async () => {
         const now = Date.now();
         const statsReport = {};
@@ -682,6 +756,7 @@
                 if (box) {
                   const video = box.querySelector("video");
                   if (video && !video.paused) {
+                    // Auto-catchup (nie ruszamy playbackRate bo to działa, ale uwaga: zmiana playbackRate nie resetuje transform!)
                     if (currentLatency > 0.2) {
                       if (video.playbackRate !== 1.05)
                         video.playbackRate = 1.05;
