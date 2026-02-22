@@ -94,18 +94,13 @@
       }
       .guest-item {
         display: flex;
-        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
         background: #444;
         padding: 10px;
         margin-bottom: 10px;
         border-radius: 5px;
-      }
-
-      .guest-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
+        flex-wrap: wrap;
       }
       .guest-info {
         display: flex;
@@ -122,19 +117,28 @@
         margin-top: 4px;
         font-family: monospace;
       }
-
+      .stat-good {
+        color: #00ff00;
+      }
+      .stat-mid {
+        color: #ffcc00;
+      }
+      .stat-bad {
+        color: #ff4444;
+        font-weight: bold;
+      }
       .guest-actions {
         display: flex;
         gap: 5px;
       }
       .btn-icon {
-        width: 35px;
-        height: 35px;
+        width: 40px;
+        height: 40px;
         padding: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 18px;
+        font-size: 20px;
       }
       .mic-on {
         background: #28a745;
@@ -165,45 +169,7 @@
       .btn-move:hover {
         background: #495057;
       }
-      .btn-settings {
-        background: #555;
-      }
-      .btn-settings:hover {
-        background: #777;
-      }
 
-      /* PANEL CROP */
-      .crop-panel {
-        background: #222;
-        margin-top: 10px;
-        padding: 10px;
-        border-radius: 5px;
-        display: none; /* Domyślnie ukryty */
-        border: 1px solid #555;
-      }
-      .crop-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 5px;
-        color: #ccc;
-        font-size: 0.9em;
-      }
-      .crop-row input[type="range"] {
-        flex-grow: 1;
-        margin-left: 10px;
-        cursor: pointer;
-      }
-      .crop-reset {
-        font-size: 10px;
-        background: #444;
-        padding: 2px 6px;
-        border-radius: 3px;
-        cursor: pointer;
-        margin-left: 5px;
-      }
-
-      /* GIERKI */
       .game-section {
         background: #2a2a2a;
         padding: 15px;
@@ -331,11 +297,12 @@
         background: #00796b;
       }
 
-      /* FREE MODE */
+      /* --- FREE MODE CANVAS --- */
       #free-mode-container {
         display: none;
         margin-top: 20px;
       }
+
       #free-mode-stage {
         display: block;
         width: 100%;
@@ -379,6 +346,23 @@
         width: 90%;
         margin-top: 20px;
       }
+
+      /* --- UCHWYT DO SKALOWANIA --- */
+      .resize-handle {
+        width: 10px;
+        height: 10px;
+        background: white;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        cursor: se-resize; /* Kursor strzałki skośnej */
+        z-index: 10;
+      }
+      /* Zmiana koloru uchwytu przy najechaniu */
+      .resize-handle:hover {
+        background: yellow;
+      }
+
       .btn-lock-on {
         background: #dc3545;
       }
@@ -391,10 +375,16 @@
       .btn-lock-off:hover {
         background: #218838;
       }
+
+      /* Gdy zablokowane, wyłączamy interakcje */
       .stage-box.locked {
         cursor: not-allowed !important;
         opacity: 0.7;
       }
+      .stage-box.locked .resize-handle {
+        display: none;
+      } /* Ukryj uchwyt przy blokadzie */
+
       .guide-line {
         position: absolute;
         background-color: #ff0000;
@@ -411,17 +401,6 @@
         height: 100%;
         width: 1px;
         top: 0;
-      }
-
-      .stat-good {
-        color: #00ff00;
-      }
-      .stat-mid {
-        color: #ffcc00;
-      }
-      .stat-bad {
-        color: #ff4444;
-        font-weight: bold;
       }
     </style>
   </head>
@@ -508,6 +487,7 @@
           >
             🔓 Układ: ODBLOKOWANY
           </button>
+
           <div id="free-mode-stage">
             <div id="guide-x" class="guide-line guide-x"></div>
             <div id="guide-y" class="guide-line guide-y"></div>
@@ -523,7 +503,10 @@
               "
             >
               Stół Montażowy (16:9)<br />
-              <small>Przytrzymaj <b>ALT</b>, aby wyłączyć przyciąganie.</small>
+              <small
+                >Przesuwanie: Chwyć środek<br />Skalowanie: Chwyć prawy dolny
+                róg</small
+              >
             </p>
           </div>
         </div>
@@ -608,7 +591,7 @@
             </div>
             <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0" />
             <p style="color: #aaa; font-size: 0.8em; margin-bottom: 5px">
-              Zarządzanie ręczne:
+              Zarządzanie ręczne (Wpisz i kliknij Wyślij):
             </p>
             <div id="game-players-list"></div>
           </div>
@@ -724,7 +707,6 @@
           "Poduszka",
         ],
       };
-
       const urlParams = new URLSearchParams(window.location.search);
       const useStunOnly = urlParams.get("stunonly");
       const isMulti = urlParams.get("multi");
@@ -744,7 +726,6 @@
               credential: "openrelayproject",
             },
           ];
-
       const peer = new Peer(isMulti ? roomID : undefined, {
         config: { iceServers: selectedConfig },
       });
@@ -755,11 +736,9 @@
       let guestOrder = [];
       let labelsVisible = false;
       let iconsVisible = false;
-      let isLayoutLocked = false;
       const currentWords = {};
 
-      // --- CROP STATE (Nowe) ---
-      const cropState = {}; // { id: { zoom: 1.0, panX: 50 } }
+      let isLayoutLocked = false;
 
       function toggleGamePanel() {
         const panel = document.getElementById("game-section");
@@ -1103,243 +1082,6 @@
           ? "btn-tool btn-toggle-on"
           : "btn-tool btn-toggle-off";
       }
-
-      function toggleLayoutLock() {
-        isLayoutLocked = !isLayoutLocked;
-        const btn = document.getElementById("btn-lock-layout");
-        if (isLayoutLocked) {
-          btn.innerText = "🔒 Układ: ZABLOKOWANY";
-          btn.className = "btn-tool btn-lock-on";
-        } else {
-          btn.innerText = "🔓 Układ: ODBLOKOWANY";
-          btn.className = "btn-tool btn-lock-off";
-        }
-        renderFreeStage();
-      }
-      function toggleFreeMode() {
-        const container = document.getElementById("free-mode-container");
-        if (container.style.display === "block") {
-          container.style.display = "none";
-          sendLayout("layout-grid");
-        } else {
-          container.style.display = "block";
-          broadcastCommand({ type: "layout", mode: "layout-free" });
-          renderFreeStage();
-          setTimeout(syncFreeStageToOBS, 100);
-        }
-      }
-      function syncFreeStageToOBS() {
-        const stage = document.getElementById("free-mode-stage");
-        const boxes = stage.querySelectorAll(".stage-box");
-        boxes.forEach((box) => {
-          let x = parseFloat(box.style.left);
-          let y = parseFloat(box.style.top);
-          let w = parseFloat(box.style.width);
-          let h = parseFloat(box.style.height);
-          if (!isNaN(x) && !isNaN(y)) {
-            broadcastCommand({
-              type: "transform-update",
-              targetId: box.dataset.id,
-              x: x,
-              y: y,
-              w: w,
-              h: h,
-            });
-          }
-        });
-      }
-
-      function renderFreeStage() {
-        const stage = document.getElementById("free-mode-stage");
-        let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
-        Array.from(stage.children).forEach((child) => {
-          if (child.tagName === "P" || child.classList.contains("guide-line"))
-            return;
-          if (!guestIds.includes(child.dataset.id)) child.remove();
-        });
-        guestIds.forEach((id, index) => {
-          let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
-          const name = multiGuestsState[id]
-            ? multiGuestsState[id].name
-            : "Gość";
-          if (!box) {
-            box = document.createElement("div");
-            box.className = "stage-box";
-            box.dataset.id = id;
-            box.innerText = name;
-            box.style.width = CAM_WIDTH_PCT + "%";
-            box.style.height = CAM_HEIGHT_PCT + "%";
-            box.style.left = 2 + index * 2 + "%";
-            box.style.top = 2 + index * 2 + "%";
-            setupDrag(box);
-            stage.appendChild(box);
-          } else {
-            box.innerText = name;
-            if (!box.style.width) box.style.width = CAM_WIDTH_PCT + "%";
-            if (!box.style.height) box.style.height = CAM_HEIGHT_PCT + "%";
-          }
-          if (isLayoutLocked) box.classList.add("locked");
-          else box.classList.remove("locked");
-        });
-      }
-      function setupDrag(element) {
-        let isDragging = false;
-        let startX, startY;
-        let startLeftPct, startTopPct;
-        element.addEventListener("mousedown", (e) => {
-          if (isLayoutLocked) return;
-          isDragging = true;
-          startX = e.clientX;
-          startY = e.clientY;
-          const stage = document.getElementById("free-mode-stage");
-          startLeftPct = parseFloat(element.style.left) || 0;
-          startTopPct = parseFloat(element.style.top) || 0;
-          if (!element.style.left.includes("%")) {
-            startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
-            startTopPct = (element.offsetTop / stage.clientHeight) * 100;
-          }
-          element.style.zIndex = 1000;
-        });
-        document.addEventListener("mousemove", (e) => {
-          if (!isDragging) return;
-          const isAltPressed = e.altKey;
-          const stage = document.getElementById("free-mode-stage");
-          const stageW = stage.clientWidth;
-          const stageH = stage.clientHeight;
-          const deltaX = e.clientX - startX;
-          const deltaY = e.clientY - startY;
-          const deltaXPct = (deltaX / stageW) * 100;
-          const deltaYPct = (deltaY / stageH) * 100;
-          let newX = startLeftPct + deltaXPct;
-          let newY = startTopPct + deltaYPct;
-          const guideX = document.getElementById("guide-x");
-          const guideY = document.getElementById("guide-y");
-          let snappedX = false;
-          let snappedY = false;
-          if (!isAltPressed) {
-            const SNAP = 1.5;
-            const myW = parseFloat(element.style.width);
-            const myH = parseFloat(element.style.height);
-            const others = Array.from(
-              document.querySelectorAll(".stage-box"),
-            ).filter((b) => b !== element);
-            for (const other of others) {
-              const oX = parseFloat(other.style.left);
-              const oY = parseFloat(other.style.top);
-              const oW = parseFloat(other.style.width);
-              const oH = parseFloat(other.style.height);
-              if (Math.abs(newX - oX) < SNAP) {
-                newX = oX;
-                snappedX = true;
-              }
-              if (Math.abs(newX - (oX + oW)) < SNAP) {
-                newX = oX + oW;
-                snappedX = true;
-              }
-              if (Math.abs(newX + myW - oX) < SNAP) {
-                newX = oX - myW;
-                snappedX = true;
-              }
-              if (Math.abs(newX + myW - (oX + oW)) < SNAP) {
-                newX = oX + oW - myW;
-                snappedX = true;
-              }
-              if (Math.abs(newY - oY) < SNAP) {
-                newY = oY;
-                snappedY = true;
-              }
-              if (Math.abs(newY - (oY + oH)) < SNAP) {
-                newY = oY + oH;
-                snappedY = true;
-              }
-              if (Math.abs(newY + myH - oY) < SNAP) {
-                newY = oY - myH;
-                snappedY = true;
-              }
-              if (Math.abs(newY + myH - (oY + oH)) < SNAP) {
-                newY = oY + oH - myH;
-                snappedY = true;
-              }
-            }
-          }
-          if (snappedX) {
-            guideX.style.display = "block";
-            guideX.style.left = (newX * stageW) / 100 + "px";
-          } else guideX.style.display = "none";
-          if (snappedY) {
-            guideY.style.display = "block";
-            guideY.style.top = (newY * stageH) / 100 + "px";
-          } else guideY.style.display = "none";
-          newX = Math.max(
-            0,
-            Math.min(newX, 100 - parseFloat(element.style.width)),
-          );
-          newY = Math.max(
-            0,
-            Math.min(newY, 100 - parseFloat(element.style.height)),
-          );
-          element.style.left = newX + "%";
-          element.style.top = newY + "%";
-          broadcastCommand({
-            type: "transform-update",
-            targetId: element.dataset.id,
-            x: parseFloat(newX.toFixed(4)),
-            y: parseFloat(newY.toFixed(4)),
-            w: parseFloat(element.style.width),
-            h: parseFloat(element.style.height),
-          });
-        });
-        document.addEventListener("mouseup", () => {
-          if (isDragging) {
-            isDragging = false;
-            element.style.zIndex = "";
-            document.getElementById("guide-x").style.display = "none";
-            document.getElementById("guide-y").style.display = "none";
-          }
-        });
-      }
-
-      // --- CROP LOGIC ---
-      function toggleCropControls(id) {
-        let panel = document.getElementById(`crop-panel-${id}`);
-        if (!panel) {
-          // Jeśli panel nie istnieje, musimy go stworzyć wewnątrz elementu guest-item
-          // Ale ponieważ guest-item jest renderowany od nowa, lepiej mieć go w strukturze.
-          // W renderGuestList dodamy ukryty div, a tu go tylko pokazujemy.
-          return;
-        }
-        panel.style.display =
-          panel.style.display === "block" ? "none" : "block";
-
-        // Inicjalizacja stanu jeśli brak
-        if (!cropState[id]) cropState[id] = { zoom: 1.0, panX: 50 };
-
-        // Ustaw suwaki
-        document.getElementById(`zoom-${id}`).value = cropState[id].zoom;
-        document.getElementById(`pan-${id}`).value = cropState[id].panX;
-      }
-
-      function updateCrop(id) {
-        const zoomVal = document.getElementById(`zoom-${id}`).value;
-        const panVal = document.getElementById(`pan-${id}`).value;
-
-        cropState[id] = { zoom: zoomVal, panX: panVal };
-
-        // Wyślij do OBS
-        broadcastCommand({
-          type: "crop-update",
-          targetId: id,
-          zoom: zoomVal,
-          panX: panVal,
-        });
-      }
-
-      function resetCrop(id) {
-        document.getElementById(`zoom-${id}`).value = 1.0;
-        document.getElementById(`pan-${id}`).value = 50;
-        updateCrop(id);
-      }
-
       function renderGuestList(list) {
         const container = document.getElementById("guest-list");
         container.innerHTML = "";
@@ -1358,45 +1100,10 @@
           const upVisibility = index === 0 ? "visibility:hidden" : "";
           const downVisibility =
             index === list.length - 1 ? "visibility:hidden" : "";
-
-          // HTML DLA CROP CONTROLS (Domyślnie ukryty)
-          const cropHtml = `
-                    <div id="crop-panel-${guest.id}" class="crop-panel">
-                        <div class="crop-row">
-                            <span>Zoom:</span>
-                            <input type="range" id="zoom-${guest.id}" min="1" max="3" step="0.1" value="1" oninput="updateCrop('${guest.id}')">
-                            <span class="crop-reset" onclick="resetCrop('${guest.id}')">Reset</span>
-                        </div>
-                        <div class="crop-row">
-                            <span>Pan X:</span>
-                            <input type="range" id="pan-${guest.id}" min="0" max="100" value="50" oninput="updateCrop('${guest.id}')">
-                        </div>
-                    </div>
-                `;
-
-          item.innerHTML = `
-                    <div class="guest-header">
-                        <div class="guest-actions" style="margin-right: 10px;">
-                            <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button>
-                            <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button>
-                        </div>
-                        <div class="guest-info">
-                            <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span>
-                            <span id="stats-${guest.id}" class="guest-stats">Czekam na dane...</span>
-                        </div>
-                        <div class="guest-actions">
-                            <button class="btn-icon btn-settings" onclick="toggleCropControls('${guest.id}')" title="Kadrowanie">⚙️</button>
-                            <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button>
-                            <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button>
-                            <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button>
-                        </div>
-                    </div>
-                    ${cropHtml}
-                `;
+          item.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span> <span id="stats-${guest.id}" class="guest-stats">${guest.id.startsWith("fake-") ? "SZTUCZNY GOŚĆ" : "Czekam na dane..."}</span> </div> <div class="guest-actions"> <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button> </div> `;
           container.appendChild(item);
         });
       }
-
       function updateStats(stats) {
         for (const [id, data] of Object.entries(stats)) {
           const el = document.getElementById(`stats-${id}`);
@@ -1409,6 +1116,302 @@
             el.innerHTML = `Bitrate: <span class="${colorClass}">${data.bitrate} kbps</span> | Loss: <span class="${colorClass}">${data.packetLoss}</span> | Res: ${data.resolution}`;
           }
         }
+      }
+
+      // --- FREE MODE RENDERER ---
+      function toggleLayoutLock() {
+        isLayoutLocked = !isLayoutLocked;
+        const btn = document.getElementById("btn-lock-layout");
+        if (isLayoutLocked) {
+          btn.innerText = "🔒 Układ: ZABLOKOWANY";
+          btn.className = "btn-tool btn-lock-on";
+        } else {
+          btn.innerText = "🔓 Układ: ODBLOKOWANY";
+          btn.className = "btn-tool btn-lock-off";
+        }
+        renderFreeStage();
+      }
+
+      function toggleFreeMode() {
+        const container = document.getElementById("free-mode-container");
+        if (container.style.display === "block") {
+          container.style.display = "none";
+          sendLayout("layout-grid");
+        } else {
+          container.style.display = "block";
+          broadcastCommand({ type: "layout", mode: "layout-free" });
+          // WYMUSZENIE SYNCHRONIZACJI (RESET POZYCJI OBS)
+          setTimeout(syncFreeStageToOBS, 100);
+          renderFreeStage();
+        }
+      }
+
+      function syncFreeStageToOBS() {
+        const stage = document.getElementById("free-mode-stage");
+        const boxes = stage.querySelectorAll(".stage-box");
+
+        boxes.forEach((box) => {
+          // Czytamy pozycje z Reżysera (procenty)
+          let x = parseFloat(box.style.left);
+          let y = parseFloat(box.style.top);
+          let w = parseFloat(box.style.width);
+          let h = parseFloat(box.style.height);
+
+          if (!isNaN(x) && !isNaN(y)) {
+            broadcastCommand({
+              type: "transform-update",
+              targetId: box.dataset.id,
+              x: x,
+              y: y,
+              w: w,
+              h: h,
+            });
+          }
+        });
+      }
+
+      function renderFreeStage() {
+        const stage = document.getElementById("free-mode-stage");
+        let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+
+        Array.from(stage.children).forEach((child) => {
+          if (child.tagName === "P" || child.classList.contains("guide-line"))
+            return;
+          if (!guestIds.includes(child.dataset.id)) child.remove();
+        });
+
+        guestIds.forEach((id, index) => {
+          let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
+          const name = multiGuestsState[id]
+            ? multiGuestsState[id].name
+            : "Gość";
+
+          if (!box) {
+            box = document.createElement("div");
+            box.className = "stage-box";
+            box.dataset.id = id;
+            box.innerText = name;
+
+            box.style.width = CAM_WIDTH_PCT + "%";
+            box.style.height = CAM_HEIGHT_PCT + "%";
+            box.style.left = 2 + index * 2 + "%";
+            box.style.top = 2 + index * 2 + "%";
+
+            // --- DODANIE UCHWYTU SKALOWANIA ---
+            const handle = document.createElement("div");
+            handle.className = "resize-handle";
+            box.appendChild(handle);
+
+            setupInteractions(box);
+            stage.appendChild(box);
+          } else {
+            // Tylko tekst, nie resetujemy pozycji jeśli kafelek już jest
+            // (zabezpiecza przed resetem przy odświeżaniu listy gości)
+            if (box.childNodes[0].nodeType === 3)
+              box.childNodes[0].nodeValue = name;
+            else box.innerText = name;
+
+            // Przywróć uchwyt jeśli zniknął (np. przez innerText)
+            if (!box.querySelector(".resize-handle")) {
+              const handle = document.createElement("div");
+              handle.className = "resize-handle";
+              box.appendChild(handle);
+            }
+          }
+
+          if (isLayoutLocked) box.classList.add("locked");
+          else box.classList.remove("locked");
+        });
+      }
+
+      function setupInteractions(element) {
+        let isDragging = false;
+        let isResizing = false;
+
+        let startX, startY;
+        let startLeftPct, startTopPct;
+        let startWidthPct, startHeightPct;
+        let startWidthPx, clickOffsetX, clickOffsetY;
+
+        const handle = element.querySelector(".resize-handle");
+
+        element.addEventListener("mousedown", (e) => {
+          if (isLayoutLocked) return;
+
+          // Sprawdź czy kliknięto w uchwyt (Resize)
+          if (e.target === handle) {
+            isResizing = true;
+            e.stopPropagation(); // Nie uruchamiaj przesuwania
+          } else {
+            isDragging = true;
+          }
+
+          startX = e.clientX;
+          startY = e.clientY;
+          const stage = document.getElementById("free-mode-stage");
+
+          // Pobieramy startowe wartości w %
+          startLeftPct = parseFloat(element.style.left) || 0;
+          startTopPct = parseFloat(element.style.top) || 0;
+          startWidthPct = parseFloat(element.style.width) || CAM_WIDTH_PCT;
+          startHeightPct = parseFloat(element.style.height) || CAM_HEIGHT_PCT;
+
+          // Do obliczeń skalowania potrzebujemy szerokości w px
+          startWidthPx = element.clientWidth;
+
+          // Do przesuwania - offset kliknięcia
+          const rect = element.getBoundingClientRect();
+          clickOffsetX = e.clientX - rect.left;
+          clickOffsetY = e.clientY - rect.top;
+
+          element.style.zIndex = 1000;
+        });
+
+        document.addEventListener("mousemove", (e) => {
+          const stage = document.getElementById("free-mode-stage");
+          const stageW = stage.clientWidth;
+          const stageH = stage.clientHeight;
+
+          // --- LOGIKA SKALOWANIA ---
+          if (isResizing) {
+            const deltaX = e.clientX - startX;
+            // Nowa szerokość w pikselach
+            let newWidthPx = startWidthPx + deltaX;
+
+            // Limity (min 50px, max szerokość stołu)
+            newWidthPx = Math.max(50, Math.min(newWidthPx, stageW));
+
+            // Konwersja na procenty
+            let newWidthPct = (newWidthPx / stageW) * 100;
+
+            // Proporcje 16:9 (Height = Width * 9/16)
+            let newHeightPct = newWidthPct * (9 / 16);
+
+            // Aplikacja
+            element.style.width = newWidthPct + "%";
+            element.style.height = newHeightPct + "%";
+
+            // Broadcast
+            broadcastCommand({
+              type: "transform-update",
+              targetId: element.dataset.id,
+              x: parseFloat(element.style.left),
+              y: parseFloat(element.style.top),
+              w: parseFloat(newWidthPct.toFixed(4)),
+              h: parseFloat(newHeightPct.toFixed(4)),
+            });
+          }
+
+          // --- LOGIKA PRZESUWANIA (STARA, Z MAGNETYZMEM) ---
+          if (isDragging) {
+            const isAltPressed = e.altKey;
+
+            // Obliczamy pozycję X/Y myszki względem rogu stołu
+            const stageRect = stage.getBoundingClientRect();
+            let mouseX_Relative = e.clientX - stageRect.left;
+            let mouseY_Relative = e.clientY - stageRect.top;
+
+            // Odejmujemy offset
+            let newX_Px = mouseX_Relative - clickOffsetX;
+            let newY_Px = mouseY_Relative - clickOffsetY;
+
+            // Konwersja na %
+            let newX = (newX_Px / stageW) * 100;
+            let newY = (newY_Px / stageH) * 100;
+
+            const myW = parseFloat(element.style.width);
+            const myH = parseFloat(element.style.height);
+
+            // --- MAGNETYZM (tylko dla przesuwania) ---
+            const guideX = document.getElementById("guide-x");
+            const guideY = document.getElementById("guide-y");
+            let snappedX = false;
+            let snappedY = false;
+
+            if (!isAltPressed) {
+              const SNAP = 1.5;
+              const others = Array.from(
+                document.querySelectorAll(".stage-box"),
+              ).filter((b) => b !== element);
+
+              for (const other of others) {
+                const oX = parseFloat(other.style.left);
+                const oY = parseFloat(other.style.top);
+                const oW = parseFloat(other.style.width);
+                const oH = parseFloat(other.style.height);
+
+                if (Math.abs(newX - oX) < SNAP) {
+                  newX = oX;
+                  snappedX = true;
+                }
+                if (Math.abs(newX - (oX + oW)) < SNAP) {
+                  newX = oX + oW;
+                  snappedX = true;
+                }
+                if (Math.abs(newX + myW - oX) < SNAP) {
+                  newX = oX - myW;
+                  snappedX = true;
+                }
+                if (Math.abs(newX + myW - (oX + oW)) < SNAP) {
+                  newX = oX + oW - myW;
+                  snappedX = true;
+                }
+
+                if (Math.abs(newY - oY) < SNAP) {
+                  newY = oY;
+                  snappedY = true;
+                }
+                if (Math.abs(newY - (oY + oH)) < SNAP) {
+                  newY = oY + oH;
+                  snappedY = true;
+                }
+                if (Math.abs(newY + myH - oY) < SNAP) {
+                  newY = oY - myH;
+                  snappedY = true;
+                }
+                if (Math.abs(newY + myH - (oY + oH)) < SNAP) {
+                  newY = oY + oH - myH;
+                  snappedY = true;
+                }
+              }
+            }
+
+            if (snappedX) {
+              guideX.style.display = "block";
+              guideX.style.left = (newX * stageW) / 100 + "px";
+            } else guideX.style.display = "none";
+            if (snappedY) {
+              guideY.style.display = "block";
+              guideY.style.top = (newY * stageH) / 100 + "px";
+            } else guideY.style.display = "none";
+
+            // Granice
+            newX = Math.max(0, Math.min(newX, 100 - myW));
+            newY = Math.max(0, Math.min(newY, 100 - myH));
+
+            element.style.left = newX + "%";
+            element.style.top = newY + "%";
+
+            broadcastCommand({
+              type: "transform-update",
+              targetId: element.dataset.id,
+              x: parseFloat(newX.toFixed(4)),
+              y: parseFloat(newY.toFixed(4)),
+              w: parseFloat(myW.toFixed(4)),
+              h: parseFloat(myH.toFixed(4)),
+            });
+          }
+        });
+
+        document.addEventListener("mouseup", () => {
+          if (isDragging || isResizing) {
+            isDragging = false;
+            isResizing = false;
+            element.style.zIndex = "";
+            document.getElementById("guide-x").style.display = "none";
+            document.getElementById("guide-y").style.display = "none";
+          }
+        });
       }
     </script>
   </body>
