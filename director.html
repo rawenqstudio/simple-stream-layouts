@@ -304,7 +304,6 @@
       }
 
       #free-mode-stage {
-        /* POPRAWKA: Zmieniono z 'none' na 'block', bo i tak kontener nadrzędny jest ukryty */
         display: block;
         width: 100%;
         aspect-ratio: 16 / 9;
@@ -365,7 +364,6 @@
         opacity: 0.7;
       }
 
-      /* LINIE POMOCNICZE (GUIDES) */
       .guide-line {
         position: absolute;
         background-color: #ff0000;
@@ -1096,12 +1094,10 @@
         }
       }
 
-      // --- FREE MODE RENDERER ---
-
+      // --- FREE MODE RENDERER (NOWY) ---
       function toggleLayoutLock() {
         isLayoutLocked = !isLayoutLocked;
         const btn = document.getElementById("btn-lock-layout");
-
         if (isLayoutLocked) {
           btn.innerText = "🔒 Układ: ZABLOKOWANY";
           btn.className = "btn-tool btn-lock-on";
@@ -1109,8 +1105,6 @@
           btn.innerText = "🔓 Układ: ODBLOKOWANY";
           btn.className = "btn-tool btn-lock-off";
         }
-
-        // Odśwież kafelki
         renderFreeStage();
       }
 
@@ -1123,7 +1117,35 @@
           container.style.display = "block";
           broadcastCommand({ type: "layout", mode: "layout-free" });
           renderFreeStage();
+          // --- KLUCZOWA ZMIANA: WYMUSZENIE SYNCHRONIZACJI PRZY OTWARCIU ---
+          setTimeout(syncFreeStageToOBS, 100);
         }
+      }
+
+      function syncFreeStageToOBS() {
+        const stage = document.getElementById("free-mode-stage");
+        const boxes = stage.querySelectorAll(".stage-box");
+
+        boxes.forEach((box) => {
+          // Odczytujemy aktualne pozycje (procenty lub puste)
+          let x = parseFloat(box.style.left);
+          let y = parseFloat(box.style.top);
+          let w = parseFloat(box.style.width);
+          let h = parseFloat(box.style.height);
+
+          // Jeśli styl jest pusty (nowy kafelek), bierzemy domyślne
+          // i wysyłamy do OBS
+          if (!isNaN(x) && !isNaN(y)) {
+            broadcastCommand({
+              type: "transform-update",
+              targetId: box.dataset.id,
+              x: x,
+              y: y,
+              w: w,
+              h: h,
+            });
+          }
+        });
       }
 
       function renderFreeStage() {
@@ -1147,6 +1169,7 @@
             box.className = "stage-box";
             box.dataset.id = id;
             box.innerText = name;
+
             box.style.width = CAM_WIDTH_PCT + "%";
             box.style.height = CAM_HEIGHT_PCT + "%";
             box.style.left = 2 + index * 2 + "%";
@@ -1156,8 +1179,8 @@
             stage.appendChild(box);
           } else {
             box.innerText = name;
-            box.style.width = CAM_WIDTH_PCT + "%";
-            box.style.height = CAM_HEIGHT_PCT + "%";
+            if (!box.style.width) box.style.width = CAM_WIDTH_PCT + "%";
+            if (!box.style.height) box.style.height = CAM_HEIGHT_PCT + "%";
           }
 
           if (isLayoutLocked) box.classList.add("locked");
@@ -1171,7 +1194,7 @@
         let startLeftPct, startTopPct;
 
         element.addEventListener("mousedown", (e) => {
-          if (isLayoutLocked) return; // BLOKADA
+          if (isLayoutLocked) return;
 
           isDragging = true;
           startX = e.clientX;
@@ -1192,7 +1215,6 @@
         document.addEventListener("mousemove", (e) => {
           if (!isDragging) return;
 
-          // ALT wyłącza przyciąganie
           const isAltPressed = e.altKey;
 
           const stage = document.getElementById("free-mode-stage");
@@ -1208,7 +1230,6 @@
           let newX = startLeftPct + deltaXPct;
           let newY = startTopPct + deltaYPct;
 
-          // MAGNETYZM
           const guideX = document.getElementById("guide-x");
           const guideY = document.getElementById("guide-y");
           let snappedX = false;
@@ -1216,10 +1237,9 @@
 
           if (!isAltPressed) {
             const SNAP = 1.5;
-            const myW = CAM_WIDTH_PCT;
-            const myH = CAM_HEIGHT_PCT;
+            const myW = parseFloat(element.style.width);
+            const myH = parseFloat(element.style.height);
 
-            // Inne kafelki
             const others = Array.from(
               document.querySelectorAll(".stage-box"),
             ).filter((b) => b !== element);
@@ -1230,7 +1250,6 @@
               const oW = parseFloat(other.style.width);
               const oH = parseFloat(other.style.height);
 
-              // X
               if (Math.abs(newX - oX) < SNAP) {
                 newX = oX;
                 snappedX = true;
@@ -1248,7 +1267,6 @@
                 snappedX = true;
               }
 
-              // Y
               if (Math.abs(newY - oY) < SNAP) {
                 newY = oY;
                 snappedY = true;
@@ -1268,19 +1286,23 @@
             }
           }
 
-          // Linie pomocnicze
           if (snappedX) {
             guideX.style.display = "block";
             guideX.style.left = (newX * stageW) / 100 + "px";
           } else guideX.style.display = "none";
-
           if (snappedY) {
             guideY.style.display = "block";
             guideY.style.top = (newY * stageH) / 100 + "px";
           } else guideY.style.display = "none";
 
-          newX = Math.max(0, Math.min(newX, 100 - CAM_WIDTH_PCT));
-          newY = Math.max(0, Math.min(newY, 100 - CAM_HEIGHT_PCT));
+          newX = Math.max(
+            0,
+            Math.min(newX, 100 - parseFloat(element.style.width)),
+          );
+          newY = Math.max(
+            0,
+            Math.min(newY, 100 - parseFloat(element.style.height)),
+          );
 
           element.style.left = newX + "%";
           element.style.top = newY + "%";
@@ -1290,8 +1312,8 @@
             targetId: element.dataset.id,
             x: parseFloat(newX.toFixed(4)),
             y: parseFloat(newY.toFixed(4)),
-            w: parseFloat(CAM_WIDTH_PCT.toFixed(4)),
-            h: parseFloat(CAM_HEIGHT_PCT.toFixed(4)),
+            w: parseFloat(element.style.width),
+            h: parseFloat(element.style.height),
           });
         });
 
