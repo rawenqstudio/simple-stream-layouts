@@ -297,20 +297,18 @@
         background: #00796b;
       }
 
-      /* --- FREE MODE CANVAS (PRECYZYJNY FIX) --- */
-      #free-mode-stage {
+      /* --- FREE MODE CANVAS --- */
+      #free-mode-container {
         display: none;
+        margin-top: 20px;
+      } /* Kontener na cały tryb swobodny */
+
+      #free-mode-stage {
         width: 100%;
         aspect-ratio: 16 / 9;
         background: #000;
-
-        /* ZAMIANA BORDER NA OUTLINE */
-        /* Outline nie zabiera miejsca wewnątrz pudełka, więc 0% to faktyczna krawędź */
         outline: 2px solid #00d2ff;
-        border: none;
-
         position: relative;
-        margin-top: 20px;
         overflow: hidden;
         box-sizing: border-box;
         background-image:
@@ -321,10 +319,7 @@
       .stage-box {
         position: absolute;
         background: rgba(0, 123, 255, 0.8);
-
-        /* UJEDNOLICENIE RAMKI Z OBS (2px) */
         border: 2px solid white;
-
         color: white;
         font-size: 11px;
         display: flex;
@@ -348,6 +343,25 @@
         background: #28a745;
         width: 90%;
         margin-top: 20px;
+      }
+
+      /* Style dla przycisku blokady */
+      .btn-lock-on {
+        background: #dc3545;
+      }
+      .btn-lock-on:hover {
+        background: #c82333;
+      }
+      .btn-lock-off {
+        background: #28a745;
+      }
+      .btn-lock-off:hover {
+        background: #218838;
+      }
+      /* Kursor gdy zablokowane */
+      .stage-box.locked {
+        cursor: not-allowed !important;
+        opacity: 0.7;
       }
     </style>
   </head>
@@ -424,20 +438,33 @@
         <button class="btn-layout btn-free-mode" onclick="toggleFreeMode()">
           🔓 Swobodne Ustawianie (Free Mode)
         </button>
-        <div id="free-mode-stage">
-          <p
-            style="
-              color: #555;
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              width: 100%;
-              pointer-events: none;
-            "
+
+        <div id="free-mode-container">
+          <!-- PRZYCISK BLOKADY -->
+          <button
+            id="btn-lock-layout"
+            class="btn-tool btn-lock-off"
+            style="margin-bottom: 10px"
+            onclick="toggleLayoutLock()"
           >
-            Stół Montażowy (16:9)
-          </p>
+            🔓 Układ: ODBLOKOWANY
+          </button>
+
+          <div id="free-mode-stage">
+            <p
+              style="
+                color: #555;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 100%;
+                pointer-events: none;
+              "
+            >
+              Stół Montażowy (16:9)
+            </p>
+          </div>
         </div>
 
         <h2 style="margin-top: 30px">⚙️ Narzędzia:</h2>
@@ -667,6 +694,9 @@
       let iconsVisible = false;
       const currentWords = {};
 
+      // NOWOŚĆ: STAN BLOKADY
+      let isLayoutLocked = false;
+
       function toggleGamePanel() {
         const panel = document.getElementById("game-section");
         if (panel.style.display === "block") {
@@ -817,7 +847,7 @@
       }
       function handleIncomingConnection(connection) {
         connection.on("open", () =>
-          console.log("Połączenie:", connection.peer)
+          console.log("Połączenie:", connection.peer),
         );
         connection.on("data", (data) => {
           if (data.type === "register-obs") {
@@ -957,7 +987,7 @@
       function sendLayout(layoutName) {
         broadcastCommand({ type: "layout", mode: layoutName });
         if (layoutName !== "layout-free")
-          document.getElementById("free-mode-stage").style.display = "none";
+          document.getElementById("free-mode-container").style.display = "none";
       }
       function toggleGuestMic(id, currentMutedState) {
         if (isMulti) {
@@ -1045,14 +1075,32 @@
         }
       }
 
-      // --- FREE MODE RENDERER (PRECYZYJNY - PROCENTY) ---
+      // --- FREE MODE RENDERER ---
+
+      // NOWA FUNKCJA BLOKADY
+      function toggleLayoutLock() {
+        isLayoutLocked = !isLayoutLocked;
+        const btn = document.getElementById("btn-lock-layout");
+
+        if (isLayoutLocked) {
+          btn.innerText = "🔒 Układ: ZABLOKOWANY";
+          btn.className = "btn-tool btn-lock-on";
+        } else {
+          btn.innerText = "🔓 Układ: ODBLOKOWANY";
+          btn.className = "btn-tool btn-lock-off";
+        }
+
+        // Odśwież kafelki, aby zaktualizować kursor
+        renderFreeStage();
+      }
+
       function toggleFreeMode() {
-        const stage = document.getElementById("free-mode-stage");
-        if (stage.style.display === "block") {
-          stage.style.display = "none";
+        const container = document.getElementById("free-mode-container");
+        if (container.style.display === "block") {
+          container.style.display = "none";
           sendLayout("layout-grid");
         } else {
-          stage.style.display = "block";
+          container.style.display = "block";
           broadcastCommand({ type: "layout", mode: "layout-free" });
           renderFreeStage();
         }
@@ -1060,6 +1108,10 @@
 
       function renderFreeStage() {
         const stage = document.getElementById("free-mode-stage");
+        const scaleFactor = stage.clientWidth / OBS_WIDTH;
+        const blockW = CAM_WIDTH * scaleFactor;
+        const blockH = CAM_HEIGHT * scaleFactor;
+
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
 
         Array.from(stage.children).forEach((child) => {
@@ -1079,11 +1131,9 @@
             box.dataset.id = id;
             box.innerText = name;
 
-            // USTAWIENIE W PROCENTACH
+            // Style pozycjonowania (startowe)
             box.style.width = CAM_WIDTH_PCT + "%";
             box.style.height = CAM_HEIGHT_PCT + "%";
-
-            // Kaskada w procentach
             box.style.left = 2 + index * 2 + "%";
             box.style.top = 2 + index * 2 + "%";
 
@@ -1094,6 +1144,10 @@
             box.style.width = CAM_WIDTH_PCT + "%";
             box.style.height = CAM_HEIGHT_PCT + "%";
           }
+
+          // Aktualizacja stylów w zależności od blokady
+          if (isLayoutLocked) box.classList.add("locked");
+          else box.classList.remove("locked");
         });
       }
 
@@ -1103,16 +1157,16 @@
         let startLeftPct, startTopPct;
 
         element.addEventListener("mousedown", (e) => {
+          if (isLayoutLocked) return; // BLOKADA PRZESUWANIA
+
           isDragging = true;
           startX = e.clientX;
           startY = e.clientY;
           const stage = document.getElementById("free-mode-stage");
 
-          // POBIERAMY POZYCJĘ STARTOWĄ W PROCENTACH (z CSS, jeśli jest)
           startLeftPct = parseFloat(element.style.left) || 0;
           startTopPct = parseFloat(element.style.top) || 0;
 
-          // Fallback, jeśli brak CSS (rzadki przypadek, ale bezpieczny)
           if (!element.style.left.includes("%")) {
             startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
             startTopPct = (element.offsetTop / stage.clientHeight) * 100;
@@ -1125,34 +1179,28 @@
           if (!isDragging) return;
 
           const stage = document.getElementById("free-mode-stage");
-          const stageW = stage.clientWidth; // Szerokość bez obramowania
+          const stageW = stage.clientWidth;
           const stageH = stage.clientHeight;
 
-          // Delta w pikselach
           const deltaX = e.clientX - startX;
           const deltaY = e.clientY - startY;
 
-          // Konwersja delty na procenty
           const deltaXPct = (deltaX / stageW) * 100;
           const deltaYPct = (deltaY / stageH) * 100;
 
-          // Nowa pozycja = start + delta
           let newX = startLeftPct + deltaXPct;
           let newY = startTopPct + deltaYPct;
 
-          // Granice (0% do 100% minus rozmiar elementu w %)
           newX = Math.max(0, Math.min(newX, 100 - CAM_WIDTH_PCT));
           newY = Math.max(0, Math.min(newY, 100 - CAM_HEIGHT_PCT));
 
-          // Aplikujemy lokalnie
           element.style.left = newX + "%";
           element.style.top = newY + "%";
 
-          // Wysyłamy do OBS
           broadcastCommand({
             type: "transform-update",
             targetId: element.dataset.id,
-            x: parseFloat(newX.toFixed(4)), // Zaokrąglamy
+            x: parseFloat(newX.toFixed(4)),
             y: parseFloat(newY.toFixed(4)),
             w: parseFloat(CAM_WIDTH_PCT.toFixed(4)),
             h: parseFloat(CAM_HEIGHT_PCT.toFixed(4)),
