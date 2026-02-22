@@ -298,17 +298,14 @@
       }
 
       /* --- FREE MODE CANVAS --- */
-      #free-mode-container {
-        display: none;
-        margin-top: 20px;
-      } /* Kontener na cały tryb swobodny */
-
       #free-mode-stage {
+        display: none;
         width: 100%;
         aspect-ratio: 16 / 9;
         background: #000;
         outline: 2px solid #00d2ff;
         position: relative;
+        margin-top: 20px;
         overflow: hidden;
         box-sizing: border-box;
         background-image:
@@ -345,6 +342,25 @@
         margin-top: 20px;
       }
 
+      /* LINIE POMOCNICZE (GUIDES) */
+      .guide-line {
+        position: absolute;
+        background-color: #ff0000;
+        z-index: 999;
+        display: none; /* Domyślnie ukryte */
+        pointer-events: none;
+      }
+      .guide-x {
+        width: 100%;
+        height: 1px;
+        left: 0;
+      }
+      .guide-y {
+        height: 100%;
+        width: 1px;
+        top: 0;
+      }
+
       /* Style dla przycisku blokady */
       .btn-lock-on {
         background: #dc3545;
@@ -358,7 +374,6 @@
       .btn-lock-off:hover {
         background: #218838;
       }
-      /* Kursor gdy zablokowane */
       .stage-box.locked {
         cursor: not-allowed !important;
         opacity: 0.7;
@@ -439,8 +454,7 @@
           🔓 Swobodne Ustawianie (Free Mode)
         </button>
 
-        <div id="free-mode-container">
-          <!-- PRZYCISK BLOKADY -->
+        <div id="free-mode-container" style="display: none; margin-top: 20px">
           <button
             id="btn-lock-layout"
             class="btn-tool btn-lock-off"
@@ -451,6 +465,10 @@
           </button>
 
           <div id="free-mode-stage">
+            <!-- Linie pomocnicze -->
+            <div id="guide-x" class="guide-line guide-x"></div>
+            <div id="guide-y" class="guide-line guide-y"></div>
+
             <p
               style="
                 color: #555;
@@ -462,7 +480,8 @@
                 pointer-events: none;
               "
             >
-              Stół Montażowy (16:9)
+              Stół Montażowy (16:9)<br />
+              <small>Przytrzymaj <b>ALT</b>, aby wyłączyć przyciąganie.</small>
             </p>
           </div>
         </div>
@@ -694,7 +713,6 @@
       let iconsVisible = false;
       const currentWords = {};
 
-      // NOWOŚĆ: STAN BLOKADY
       let isLayoutLocked = false;
 
       function toggleGamePanel() {
@@ -1076,12 +1094,9 @@
       }
 
       // --- FREE MODE RENDERER ---
-
-      // NOWA FUNKCJA BLOKADY
       function toggleLayoutLock() {
         isLayoutLocked = !isLayoutLocked;
         const btn = document.getElementById("btn-lock-layout");
-
         if (isLayoutLocked) {
           btn.innerText = "🔒 Układ: ZABLOKOWANY";
           btn.className = "btn-tool btn-lock-on";
@@ -1089,8 +1104,6 @@
           btn.innerText = "🔓 Układ: ODBLOKOWANY";
           btn.className = "btn-tool btn-lock-off";
         }
-
-        // Odśwież kafelki, aby zaktualizować kursor
         renderFreeStage();
       }
 
@@ -1115,7 +1128,8 @@
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
 
         Array.from(stage.children).forEach((child) => {
-          if (child.tagName === "P") return;
+          if (child.tagName === "P" || child.classList.contains("guide-line"))
+            return;
           if (!guestIds.includes(child.dataset.id)) child.remove();
         });
 
@@ -1130,8 +1144,6 @@
             box.className = "stage-box";
             box.dataset.id = id;
             box.innerText = name;
-
-            // Style pozycjonowania (startowe)
             box.style.width = CAM_WIDTH_PCT + "%";
             box.style.height = CAM_HEIGHT_PCT + "%";
             box.style.left = 2 + index * 2 + "%";
@@ -1145,7 +1157,6 @@
             box.style.height = CAM_HEIGHT_PCT + "%";
           }
 
-          // Aktualizacja stylów w zależności od blokady
           if (isLayoutLocked) box.classList.add("locked");
           else box.classList.remove("locked");
         });
@@ -1157,7 +1168,7 @@
         let startLeftPct, startTopPct;
 
         element.addEventListener("mousedown", (e) => {
-          if (isLayoutLocked) return; // BLOKADA PRZESUWANIA
+          if (isLayoutLocked) return;
 
           isDragging = true;
           startX = e.clientX;
@@ -1178,6 +1189,9 @@
         document.addEventListener("mousemove", (e) => {
           if (!isDragging) return;
 
+          // SPRAWDZAMY CZY ALT JEST WCIŚNIĘTY
+          const isAltPressed = e.altKey;
+
           const stage = document.getElementById("free-mode-stage");
           const stageW = stage.clientWidth;
           const stageH = stage.clientHeight;
@@ -1190,6 +1204,86 @@
 
           let newX = startLeftPct + deltaXPct;
           let newY = startTopPct + deltaYPct;
+
+          // --- MAGNETYZM (SNAPPING) ---
+          const guideX = document.getElementById("guide-x");
+          const guideY = document.getElementById("guide-y");
+          let snappedX = false;
+          let snappedY = false;
+
+          // Jeśli ALT NIE jest wciśnięty, próbujemy przyciągać
+          if (!isAltPressed) {
+            const SNAP_THRESHOLD = 1.5; // Zasięg przyciągania w %
+            const myWidth = CAM_WIDTH_PCT;
+            const myHeight = CAM_HEIGHT_PCT;
+
+            // Pobieramy inne pudełka
+            const otherBoxes = Array.from(
+              document.querySelectorAll(".stage-box"),
+            ).filter((b) => b !== element);
+
+            for (const other of otherBoxes) {
+              const otherX = parseFloat(other.style.left);
+              const otherY = parseFloat(other.style.top);
+              const otherW = parseFloat(other.style.width);
+              const otherH = parseFloat(other.style.height);
+
+              // Oś X (Lewa krawędź do Lewej/Prawej innej)
+              if (Math.abs(newX - otherX) < SNAP_THRESHOLD) {
+                newX = otherX;
+                snappedX = true;
+              }
+              if (Math.abs(newX - (otherX + otherW)) < SNAP_THRESHOLD) {
+                newX = otherX + otherW;
+                snappedX = true;
+              }
+              // Prawa krawędź do Lewej/Prawej innej
+              if (Math.abs(newX + myWidth - otherX) < SNAP_THRESHOLD) {
+                newX = otherX - myWidth;
+                snappedX = true;
+              }
+              if (
+                Math.abs(newX + myWidth - (otherX + otherW)) < SNAP_THRESHOLD
+              ) {
+                newX = otherX + otherW - myWidth;
+                snappedX = true;
+              }
+
+              // Oś Y (Góra do Góry/Dołu innej)
+              if (Math.abs(newY - otherY) < SNAP_THRESHOLD) {
+                newY = otherY;
+                snappedY = true;
+              }
+              if (Math.abs(newY - (otherY + otherH)) < SNAP_THRESHOLD) {
+                newY = otherY + otherH;
+                snappedY = true;
+              }
+              // Dół do Góry/Dołu innej
+              if (Math.abs(newY + myHeight - otherY) < SNAP_THRESHOLD) {
+                newY = otherY - myHeight;
+                snappedY = true;
+              }
+              if (
+                Math.abs(newY + myHeight - (otherY + otherH)) < SNAP_THRESHOLD
+              ) {
+                newY = otherY + otherH - myHeight;
+                snappedY = true;
+              }
+            }
+          }
+
+          // Obsługa linii pomocniczych
+          if (snappedX) {
+            guideX.style.display = "block";
+            guideX.style.left = (newX * stageW) / 100 + "px"; // Pozycja linii w px dla pewności wizualnej
+          } else guideX.style.display = "none";
+
+          if (snappedY) {
+            guideY.style.display = "block";
+            guideY.style.top = (newY * stageH) / 100 + "px";
+          } else guideY.style.display = "none";
+
+          // -----------------------------
 
           newX = Math.max(0, Math.min(newX, 100 - CAM_WIDTH_PCT));
           newY = Math.max(0, Math.min(newY, 100 - CAM_HEIGHT_PCT));
@@ -1211,6 +1305,9 @@
           if (isDragging) {
             isDragging = false;
             element.style.zIndex = "";
+            // Ukryj linie po puszczeniu
+            document.getElementById("guide-x").style.display = "none";
+            document.getElementById("guide-y").style.display = "none";
           }
         });
       }
