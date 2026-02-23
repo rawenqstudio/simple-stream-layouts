@@ -302,7 +302,6 @@
         display: none;
         margin-top: 20px;
       }
-
       #free-mode-stage {
         display: block;
         width: 100%;
@@ -334,12 +333,18 @@
         line-height: 1.2;
         padding: 2px;
         box-sizing: border-box;
+        transition:
+          top 0.3s,
+          left 0.3s,
+          width 0.3s,
+          height 0.3s;
       }
       .stage-box:active {
         cursor: grabbing;
         border-color: yellow;
         z-index: 1000;
         background: rgba(0, 123, 255, 1);
+        transition: none;
       }
       .btn-free-mode {
         background: #28a745;
@@ -608,9 +613,11 @@
       const OBS_HEIGHT = 1080;
       const CAM_WIDTH = 320;
       const CAM_HEIGHT = 180;
+      // Stałe procentowe dla domyślnego rozmiaru
       const CAM_WIDTH_PCT = (CAM_WIDTH / OBS_WIDTH) * 100;
       const CAM_HEIGHT_PCT = (CAM_HEIGHT / OBS_HEIGHT) * 100;
 
+      // Funkcje pomocnicze
       function pxToW(px) {
         return (px / OBS_WIDTH) * 100;
       }
@@ -742,7 +749,7 @@
       const currentWords = {};
       let isLayoutLocked = false;
 
-      // ... [FUNKCJE GRY BEZ ZMIAN] ...
+      // ... [FUNKCJE GRY, POŁĄCZENIA, ETC. - BEZ ZMIAN] ...
       function toggleGamePanel() {
         const panel = document.getElementById("game-section");
         if (panel.style.display === "block") {
@@ -933,8 +940,6 @@
           `✅ OBS: ${obsClients.length} | Gości: ${guestConnections.length}`;
         document.getElementById("status-msg").style.color = "#00ff00";
       }
-
-      // --- POPRAWIONA OBSŁUGA DANYCH: Renderowanie Stolu przy każdej zmianie ---
       function handleData(data, sourceConn) {
         if (data.type === "guest-list" && !isMulti) {
           data.list.forEach((g) => {
@@ -945,7 +950,7 @@
           guestOrder = guestOrder.filter((id) => newIds.includes(id));
           refreshMultiModeUI();
           renderGameControls();
-          renderFreeStage(); // <- DODANO renderFreeStage()
+          renderFreeStage();
         }
         if (data.type === "stats-update") updateStats(data.stats);
         if (isMulti) {
@@ -963,7 +968,7 @@
               guestOrder.push(sourceConn.peer);
             refreshMultiModeUI();
             renderGameControls();
-            renderFreeStage(); // <- DODANO renderFreeStage()
+            renderFreeStage();
             updateStatusMsg();
           }
           if (data.type === "mic-status" && sourceConn) {
@@ -982,13 +987,13 @@
           }
         }
       }
-
       function refreshMultiModeUI() {
         const sortedList = [];
         guestOrder.forEach((id) => {
           if (multiGuestsState[id]) sortedList.push(multiGuestsState[id]);
         });
         renderGuestList(sortedList);
+        renderFreeStage();
       }
       function moveGuest(id, direction) {
         const index = guestOrder.indexOf(id);
@@ -1031,6 +1036,11 @@
         setTimeout(() => {
           btn.innerText = "📡 Wymuś połączenie z nowym OBS";
         }, 1000);
+      }
+      function sendLayout(layoutName) {
+        broadcastCommand({ type: "layout", mode: layoutName });
+        if (layoutName !== "layout-free")
+          document.getElementById("free-mode-container").style.display = "none";
       }
       function toggleGuestMic(id, currentMutedState) {
         if (isMulti) {
@@ -1118,75 +1128,25 @@
         }
       }
 
-      // --- POPRAWIONA FUNKCJA SENDLAYOUT (INTELIGENTNA) ---
+      // --- POPRAWIONA FUNKCJA SENDLAYOUT ---
       function sendLayout(layoutName) {
         const container = document.getElementById("free-mode-container");
         const isFreeModeOpen = container.style.display === "block";
 
         if (isFreeModeOpen) {
-          // Jeśli jesteśmy w Free Mode, NIE ZAMYKAJ GO.
-          // Zastosuj matematykę presetu na kafelki i wyślij wsp. do OBS
           applyPresetToFreeMode(layoutName);
         } else {
-          // Jeśli jesteśmy w zwykłym trybie, wyślij komendę CSS
           broadcastCommand({ type: "layout", mode: layoutName });
         }
       }
 
-      // --- FREE MODE ---
-      function toggleLayoutLock() {
-        isLayoutLocked = !isLayoutLocked;
-        const btn = document.getElementById("btn-lock-layout");
-        if (isLayoutLocked) {
-          btn.innerText = "🔒 Układ: ZABLOKOWANY";
-          btn.className = "btn-tool btn-lock-on";
-        } else {
-          btn.innerText = "🔓 Układ: ODBLOKOWANY";
-          btn.className = "btn-tool btn-lock-off";
-        }
-        renderFreeStage();
-      }
-
-      function toggleFreeMode() {
-        const container = document.getElementById("free-mode-container");
-        if (container.style.display === "block") {
-          container.style.display = "none";
-          sendLayout("layout-grid");
-        } else {
-          container.style.display = "block";
-          broadcastCommand({ type: "layout", mode: "layout-free" });
-          // Reset pozycji przy otwarciu
-          setTimeout(syncFreeStageToOBS, 100);
-          renderFreeStage();
-        }
-      }
-
-      function syncFreeStageToOBS() {
-        const stage = document.getElementById("free-mode-stage");
-        const boxes = stage.querySelectorAll(".stage-box");
-        boxes.forEach((box) => {
-          let x = parseFloat(box.style.left);
-          let y = parseFloat(box.style.top);
-          let w = parseFloat(box.style.width);
-          let h = parseFloat(box.style.height);
-          if (!isNaN(x) && !isNaN(y)) {
-            broadcastCommand({
-              type: "transform-update",
-              targetId: box.dataset.id,
-              x: x,
-              y: y,
-              w: w,
-              h: h,
-            });
-          }
-        });
-      }
-
+      // --- MATEMATYKA PRESETÓW (ZGODNA Z CSS) ---
       function applyPresetToFreeMode(layoutName) {
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
         const count = guestIds.length;
         if (count === 0) return;
 
+        // Ustawienia CSS z obs.html: gap 15px, padding 20px
         const GAP_PCT = pxToW(15);
         const PAD_PCT = pxToW(20);
         const PAD_Y_PCT = pxToH(20);
@@ -1195,34 +1155,42 @@
         if (layoutName === "layout-grid") {
           const cols = Math.ceil(Math.sqrt(count));
           const rows = Math.ceil(count / cols);
-          const availW = 100 - PAD_PCT * 2 - GAP_PCT * (cols - 1);
 
+          // Dokładne % szerokości z CSS obs.html
           let cellW_PCT;
           if (count === 1) cellW_PCT = 85;
           else if (count === 2) cellW_PCT = 48;
           else if (count <= 4) cellW_PCT = 45;
           else if (count <= 9) cellW_PCT = 32;
           else cellW_PCT = 23;
+
+          // Dokładne % wysokości z CSS obs.html
           let cellH_PCT;
           if (count === 1) cellH_PCT = 85;
           else if (count === 2) cellH_PCT = 60;
-          else if (count <= 4) cellH_PCT = 45;
           else if (count <= 6) cellH_PCT = 45;
           else if (count <= 9) cellH_PCT = 30;
           else cellH_PCT = 23;
 
-          const gridBlockW = cellW_PCT * cols + GAP_PCT * (cols - 1);
-          const gridBlockH = cellH_PCT * rows + pxToH(15) * (rows - 1);
-          const startX = (100 - gridBlockW) / 2;
-          const startY = (100 - gridBlockH) / 2;
+          // Obliczamy szerokość całej grupy, żeby wycentrować
+          // Jeśli ostatni rząd jest niepełny, to i tak musimy wiedzieć gdzie zacząć rysować siatkę
+          // W CSS Grid (flex) to działa auto. Tutaj symulujemy.
+
+          // Szerokość pełnego rzędu
+          const fullRowW = cellW_PCT * cols + GAP_PCT * (cols - 1);
+          const fullGridH = cellH_PCT * rows + pxToH(15) * (rows - 1);
+
+          const startY = (100 - fullGridH) / 2;
 
           guestIds.forEach((id, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
+
+            // Centrowanie wiersza (jeśli ostatni jest niepełny)
             const isLastRow = row === rows - 1;
             const itemsInRow = isLastRow ? count % cols || cols : cols;
             const rowW = cellW_PCT * itemsInRow + GAP_PCT * (itemsInRow - 1);
-            const rowStartX = startX + (gridBlockW - rowW) / 2;
+            const rowStartX = (100 - rowW) / 2;
 
             positions[id] = {
               x: rowStartX + col * (cellW_PCT + GAP_PCT),
@@ -1262,7 +1230,7 @@
         } else if (layoutName === "layout-bottom") {
           const w = pxToW(280);
           const h = pxToH(157);
-          const gap = pxToW(20);
+          const gap = pxToW(20); /* CSS margin:0 10px -> 20px gap */
           const totalW = count * w + (count - 1) * gap;
           const startX = Math.max(0, (100 - totalW) / 2);
           guestIds.forEach((id, i) => {
@@ -1288,14 +1256,22 @@
             };
           });
         } else if (layoutName === "layout-split") {
-          const w = pxToW(320);
-          const h = pxToH(180);
+          const w = pxToW(300);
+          const h = pxToH(169);
           const rowGap = pxToH(30);
+          // CSS: grid-template-columns: 320px 1fr 320px.
+          // Padding kontenera: 20px 40px.
+          // Wideo 300px jest wewnątrz kolumny 320px (zapas 20px).
+          // Jeśli justify-self: start (lewa kolumna) -> wideo zaczyna się od paddingu 40px.
+          // Jeśli justify-self: end (prawa kolumna) -> wideo kończy się na 100% - 40px.
+
+          const leftX = pxToW(40);
+          const rightX = 100 - pxToW(40) - w;
+
           const rows = Math.ceil(count / 2);
           const totalH = rows * h + (rows - 1) * rowGap;
           const startY = Math.max(0, (100 - totalH) / 2);
-          const leftX = pxToW(40);
-          const rightX = 100 - pxToW(40) - w;
+
           guestIds.forEach((id, i) => {
             const isRight = i % 2 !== 0;
             const row = Math.floor(i / 2);
@@ -1307,31 +1283,48 @@
             };
           });
         } else if (layoutName === "layout-center-stage") {
+          // CSS: 300px 1fr 300px. Padding 20px. Gap 15px.
           const sideW = pxToW(300);
           const sideH = pxToH(169);
           const gapY = pxToH(15);
-          const mainW = pxToW(1000);
-          const mainH = pxToH(562);
-          const leftColX = pxToW(20);
-          const rightColX = 100 - pxToW(20) - sideW;
-          const centerColX = (100 - mainW) / 2;
-          const centerColY = (100 - mainH) / 2;
+          const pad = pxToW(20);
+
+          // Main: max-height 90vh.
+          // Obliczamy dostępną szerokość środka: 100% - 2*pad - 2*300px - 2*15px(gap)
+          // W CSS Grid Gap to odstęp między kolumnami.
+          const gapX = pxToW(15);
+          const middleW_Available = 100 - 2 * pad - 2 * pxToW(300) - 2 * gapX;
+
+          // Wysokość głównego (16:9 z dostępnej szerokości)
+          let mainH = middleW_Available * (9 / 16) * (OBS_WIDTH / OBS_HEIGHT);
+          if (mainH > 90) mainH = 90; // Limit 90vh
+          const mainW = mainH * (16 / 9) * (OBS_HEIGHT / OBS_WIDTH);
+
+          const centerX = (100 - mainW) / 2;
+          const centerY = (100 - mainH) / 2;
+
+          const leftColX = pad;
+          // Prawa kolumna: dosunięta do prawej (padding)
+          // W CSS justify-self: end w kolumnie 300px.
+          // Kolumna zaczyna się: 100% - pad - 300px. Wideo ma 100% tej kolumny.
+          const rightColX = 100 - pad - pxToW(300);
+
+          // Boki - centrowanie w pionie
           const sideCount = Math.max(0, count - 1);
           const rowsPerSide = Math.ceil(sideCount / 2);
           const totalSideH = rowsPerSide * sideH + (rowsPerSide - 1) * gapY;
           const startSideY = (100 - totalSideH) / 2;
+
           let sideIdx = 0;
           guestIds.forEach((id, i) => {
             if (i === 0) {
-              positions[id] = {
-                x: centerColX,
-                y: centerColY,
-                w: mainW,
-                h: mainH,
-              };
+              positions[id] = { x: centerX, y: centerY, w: mainW, h: mainH };
             } else {
               const row = Math.floor(sideIdx / 2);
-              const isRight = sideIdx % 2 !== 0;
+              // CSS: i=1 (even child) -> col 1 (lewo). i=2 (odd child) -> col 3 (prawo).
+              // JS index i=1 -> Lewo. i=2 -> Prawo.
+              const isRight = i % 2 === 0;
+
               positions[id] = {
                 x: isRight ? rightColX : leftColX,
                 y: startSideY + row * (sideH + gapY),
@@ -1343,6 +1336,7 @@
           });
         }
 
+        // APLIKACJA
         const stage = document.getElementById("free-mode-stage");
         for (const [id, pos] of Object.entries(positions)) {
           let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
@@ -1361,6 +1355,56 @@
             });
           }
         }
+      }
+
+      // --- RENDER FREE STAGE (BEZ ZMIAN) ---
+      function toggleLayoutLock() {
+        isLayoutLocked = !isLayoutLocked;
+        const btn = document.getElementById("btn-lock-layout");
+        if (isLayoutLocked) {
+          btn.innerText = "🔒 Układ: ZABLOKOWANY";
+          btn.className = "btn-tool btn-lock-on";
+        } else {
+          btn.innerText = "🔓 Układ: ODBLOKOWANY";
+          btn.className = "btn-tool btn-lock-off";
+        }
+        renderFreeStage();
+      }
+
+      function toggleFreeMode() {
+        const container = document.getElementById("free-mode-container");
+        if (container.style.display === "block") {
+          container.style.display = "none";
+          sendLayout("layout-grid");
+        } else {
+          container.style.display = "block";
+          broadcastCommand({ type: "layout", mode: "layout-free" });
+          setTimeout(syncFreeStageToOBS, 100);
+          renderFreeStage();
+        }
+      }
+
+      function syncFreeStageToOBS() {
+        const stage = document.getElementById("free-mode-stage");
+        const boxes = stage.querySelectorAll(".stage-box");
+
+        boxes.forEach((box) => {
+          let x = parseFloat(box.style.left);
+          let y = parseFloat(box.style.top);
+          let w = parseFloat(box.style.width);
+          let h = parseFloat(box.style.height);
+
+          if (!isNaN(x) && !isNaN(y)) {
+            broadcastCommand({
+              type: "transform-update",
+              targetId: box.dataset.id,
+              x: x,
+              y: y,
+              w: w,
+              h: h,
+            });
+          }
+        });
       }
 
       function renderFreeStage() {
@@ -1384,13 +1428,16 @@
             box.className = "stage-box";
             box.dataset.id = id;
             box.innerText = name;
+
             box.style.width = CAM_WIDTH_PCT + "%";
             box.style.height = CAM_HEIGHT_PCT + "%";
             box.style.left = 2 + index * 2 + "%";
             box.style.top = 2 + index * 2 + "%";
+
             const handle = document.createElement("div");
             handle.className = "resize-handle";
             box.appendChild(handle);
+
             setupInteractions(box);
             stage.appendChild(box);
           } else {
@@ -1403,6 +1450,7 @@
               box.appendChild(handle);
             }
           }
+
           if (isLayoutLocked) box.classList.add("locked");
           else box.classList.remove("locked");
         });
@@ -1411,33 +1459,42 @@
       function setupInteractions(element) {
         let isDragging = false;
         let isResizing = false;
+
         let startX, startY;
         let startLeftPct, startTopPct;
-        let startWidthPx;
+        let startWidthPx, startHeightPx;
         let clickOffsetX, clickOffsetY;
+
         const handle = element.querySelector(".resize-handle");
 
         element.addEventListener("mousedown", (e) => {
           if (isLayoutLocked) return;
+
           const stage = document.getElementById("free-mode-stage");
+
           if (e.target === handle) {
             isResizing = true;
             e.stopPropagation();
           } else {
             isDragging = true;
           }
+
           startX = e.clientX;
           startY = e.clientY;
+
           startLeftPct = parseFloat(element.style.left) || 0;
           startTopPct = parseFloat(element.style.top) || 0;
-          startWidthPx = element.offsetWidth;
+          startWidthPx = element.offsetWidth; // PX
+
           if (!element.style.left.includes("%")) {
             startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
             startTopPct = (element.offsetTop / stage.clientHeight) * 100;
           }
+
           const rect = element.getBoundingClientRect();
           clickOffsetX = e.clientX - rect.left;
           clickOffsetY = e.clientY - rect.top;
+
           element.style.zIndex = 1000;
         });
 
@@ -1451,10 +1508,13 @@
             let newWidthPx = startWidthPx + deltaX;
             newWidthPx = Math.max(50, Math.min(newWidthPx, stageW));
             let newHeightPx = newWidthPx * (9 / 16);
+
             let newWidthPct = (newWidthPx / stageW) * 100;
             let newHeightPct = (newHeightPx / stageH) * 100;
+
             element.style.width = newWidthPct + "%";
             element.style.height = newHeightPct + "%";
+
             broadcastCommand({
               type: "transform-update",
               targetId: element.dataset.id,
@@ -1467,13 +1527,17 @@
 
           if (isDragging) {
             const isAltPressed = e.altKey;
+
             const stageRect = stage.getBoundingClientRect();
             let mouseX_Relative = e.clientX - stageRect.left;
             let mouseY_Relative = e.clientY - stageRect.top;
+
             let newX_Px = mouseX_Relative - clickOffsetX;
             let newY_Px = mouseY_Relative - clickOffsetY;
+
             let newX = (newX_Px / stageW) * 100;
             let newY = (newY_Px / stageH) * 100;
+
             const myW = parseFloat(element.style.width);
             const myH = parseFloat(element.style.height);
 
@@ -1487,11 +1551,13 @@
               const others = Array.from(
                 document.querySelectorAll(".stage-box"),
               ).filter((b) => b !== element);
+
               for (const other of others) {
                 const oX = parseFloat(other.style.left);
                 const oY = parseFloat(other.style.top);
                 const oW = parseFloat(other.style.width);
                 const oH = parseFloat(other.style.height);
+
                 if (Math.abs(newX - oX) < SNAP) {
                   newX = oX;
                   snappedX = true;
@@ -1508,6 +1574,7 @@
                   newX = oX + oW - myW;
                   snappedX = true;
                 }
+
                 if (Math.abs(newY - oY) < SNAP) {
                   newY = oY;
                   snappedY = true;
@@ -1538,8 +1605,10 @@
 
             newX = Math.max(0, Math.min(newX, 100 - myW));
             newY = Math.max(0, Math.min(newY, 100 - myH));
+
             element.style.left = newX + "%";
             element.style.top = newY + "%";
+
             broadcastCommand({
               type: "transform-update",
               targetId: element.dataset.id,
