@@ -297,12 +297,11 @@
         background: #00796b;
       }
 
-      /* --- FREE MODE CANVAS --- */
+      /* FREE MODE */
       #free-mode-container {
         display: none;
         margin-top: 20px;
       }
-
       #free-mode-stage {
         display: block;
         width: 100%;
@@ -334,19 +333,24 @@
         line-height: 1.2;
         padding: 2px;
         box-sizing: border-box;
+        transition:
+          top 0.3s,
+          left 0.3s,
+          width 0.3s,
+          height 0.3s;
       }
       .stage-box:active {
         cursor: grabbing;
         border-color: yellow;
         z-index: 1000;
         background: rgba(0, 123, 255, 1);
+        transition: none;
       }
       .btn-free-mode {
         background: #28a745;
         width: 90%;
         margin-top: 20px;
       }
-
       .resize-handle {
         width: 15px;
         height: 15px;
@@ -360,7 +364,6 @@
       .resize-handle:hover {
         background: linear-gradient(135deg, transparent 50%, yellow 50%);
       }
-
       .btn-lock-on {
         background: #dc3545;
       }
@@ -380,7 +383,6 @@
       .stage-box.locked .resize-handle {
         display: none;
       }
-
       .guide-line {
         position: absolute;
         background-color: #ff0000;
@@ -537,8 +539,8 @@
           🎮 Pokaż Panel Gier
         </button>
 
-        <!-- SEKCJA GIER -->
         <div id="game-section" class="game-section">
+          <!-- ... (Sekcja Gier bez zmian) ... -->
           <div id="game-menu">
             <h3>Wybierz Grę:</h3>
             <div class="game-menu-grid">
@@ -606,12 +608,7 @@
     <script>
       const OBS_WIDTH = 1920;
       const OBS_HEIGHT = 1080;
-      const CAM_WIDTH = 320;
-      const CAM_HEIGHT = 180;
-      const CAM_WIDTH_PCT = (CAM_WIDTH / OBS_WIDTH) * 100;
-      const CAM_HEIGHT_PCT = (CAM_HEIGHT / OBS_HEIGHT) * 100;
 
-      // Funkcje pomocnicze do pikseli (używane w matematyce presetów)
       function pxToW(px) {
         return (px / OBS_WIDTH) * 100;
       }
@@ -619,6 +616,7 @@
         return (px / OBS_HEIGHT) * 100;
       }
 
+      // BAZA DANYCH GIER I CONFIG (Skrócone dla czytelności, wklej całość)
       const gameData = {
         Zwierzęta: [
           "Słoń",
@@ -743,6 +741,7 @@
       const currentWords = {};
       let isLayoutLocked = false;
 
+      // ... [FUNKCJE GRY - BEZ ZMIAN] ...
       function toggleGamePanel() {
         const panel = document.getElementById("game-section");
         if (panel.style.display === "block") {
@@ -1030,7 +1029,11 @@
           btn.innerText = "📡 Wymuś połączenie z nowym OBS";
         }, 1000);
       }
-
+      function sendLayout(layoutName) {
+        broadcastCommand({ type: "layout", mode: layoutName });
+        if (layoutName !== "layout-free")
+          document.getElementById("free-mode-container").style.display = "none";
+      }
       function toggleGuestMic(id, currentMutedState) {
         if (isMulti) {
           const guest = multiGuestsState[id];
@@ -1117,75 +1120,15 @@
         }
       }
 
-      // --- POPRAWIONA FUNKCJA SENDLAYOUT ---
-      function sendLayout(layoutName) {
-        const container = document.getElementById("free-mode-container");
-        const isFreeModeOpen = container.style.display === "block";
-
-        if (isFreeModeOpen) {
-          applyPresetToFreeMode(layoutName);
-        } else {
-          broadcastCommand({ type: "layout", mode: layoutName });
-        }
-      }
-
-      function toggleLayoutLock() {
-        isLayoutLocked = !isLayoutLocked;
-        const btn = document.getElementById("btn-lock-layout");
-        if (isLayoutLocked) {
-          btn.innerText = "🔒 Układ: ZABLOKOWANY";
-          btn.className = "btn-tool btn-lock-on";
-        } else {
-          btn.innerText = "🔓 Układ: ODBLOKOWANY";
-          btn.className = "btn-tool btn-lock-off";
-        }
-        renderFreeStage();
-      }
-
-      function toggleFreeMode() {
-        const container = document.getElementById("free-mode-container");
-        if (container.style.display === "block") {
-          container.style.display = "none";
-          sendLayout("layout-grid");
-        } else {
-          container.style.display = "block";
-          broadcastCommand({ type: "layout", mode: "layout-free" });
-          setTimeout(syncFreeStageToOBS, 100);
-          renderFreeStage();
-        }
-      }
-
-      function syncFreeStageToOBS() {
-        const stage = document.getElementById("free-mode-stage");
-        const boxes = stage.querySelectorAll(".stage-box");
-
-        boxes.forEach((box) => {
-          let x = parseFloat(box.style.left);
-          let y = parseFloat(box.style.top);
-          let w = parseFloat(box.style.width);
-          let h = parseFloat(box.style.height);
-
-          if (!isNaN(x) && !isNaN(y)) {
-            broadcastCommand({
-              type: "transform-update",
-              targetId: box.dataset.id,
-              x: x,
-              y: y,
-              w: w,
-              h: h,
-            });
-          }
-        });
-      }
-
-      // --- MATEMATYKA PRESETÓW DLA FREE MODE ---
+      // --- POPRAWIONE OBLICZENIA PRESETÓW (NA BAZIE CSS z OBS) ---
       function applyPresetToFreeMode(layoutName) {
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
         const count = guestIds.length;
         if (count === 0) return;
 
+        // KONFIGURACJA CSS (1920x1080)
         const GAP_PCT = pxToW(15);
-        const PAD_PCT = pxToW(20);
+        const PAD_X_PCT = pxToW(20);
         const PAD_Y_PCT = pxToH(20);
 
         const positions = {};
@@ -1193,44 +1136,55 @@
         if (layoutName === "layout-grid") {
           const cols = Math.ceil(Math.sqrt(count));
           const rows = Math.ceil(count / cols);
-          const totalGridW = 100 - PAD_PCT * 2;
-          const totalGridH = 100 - PAD_Y_PCT * 2;
 
-          // Obliczamy szerokość komórki tak, by się zmieściły
-          let cellW = (totalGridW - GAP_PCT * (cols - 1)) / cols;
-          // Obliczamy wysokość na podstawie proporcji 16:9
-          let cellH = cellW * (9 / 16) * (OBS_WIDTH / OBS_HEIGHT); // Korekta proporcji ekranu
+          // Obliczamy szerokość dostępną dla kolumn (w %)
+          const totalGapW = GAP_PCT * (cols - 1);
+          const totalPadW = PAD_X_PCT * 2;
+          const availW = 100 - totalPadW - totalGapW;
 
-          // Sprawdzamy czy nie wychodzi poza wysokość
-          const requiredH = cellH * rows + pxToH(15) * (rows - 1);
-          if (requiredH > totalGridH) {
-            // Jeśli za wysokie, ograniczamy wysokość i przeliczamy szerokość
-            cellH = (totalGridH - pxToH(15) * (rows - 1)) / rows;
-            cellW = cellH * (16 / 9) * (OBS_HEIGHT / OBS_WIDTH);
-          }
+          // Szerokość jednej komórki
+          // Domyślne wartości z CSS obs.html (sztywne %)
+          let cellW_PCT;
+          if (count === 1) cellW_PCT = 85;
+          else if (count === 2) cellW_PCT = 48;
+          else if (count <= 4) cellW_PCT = 45;
+          else if (count <= 6) cellW_PCT = 32;
+          else if (count <= 9) cellW_PCT = 32;
+          else cellW_PCT = 23;
 
-          // Centrowanie
-          const finalGridW = cellW * cols + GAP_PCT * (cols - 1);
-          const finalGridH = cellH * rows + pxToH(15) * (rows - 1);
-          const startX = (100 - finalGridW) / 2;
-          const startY = (100 - finalGridH) / 2;
+          // Wysokość
+          let cellH_PCT;
+          if (count === 1) cellH_PCT = 85;
+          else if (count === 2) cellH_PCT = 60;
+          else if (count <= 4) cellH_PCT = 45;
+          else if (count <= 6) cellH_PCT = 45;
+          else if (count <= 9) cellH_PCT = 30;
+          else cellH_PCT = 23;
+
+          // Obliczamy całkowitą szerokość/wysokość grupy
+          // (To symuluje justify-content: center)
+          // Musimy wiedzieć ile kolumn ma PIERWSZY rząd (zawsze pełny)
+          const gridBlockW = cellW_PCT * cols + GAP_PCT * (cols - 1);
+          const gridBlockH = cellH_PCT * rows + pxToH(15) * (rows - 1);
+
+          const startX = (100 - gridBlockW) / 2;
+          const startY = (100 - gridBlockH) / 2;
 
           guestIds.forEach((id, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
 
-            // Centrowanie ostatniego rzędu
+            // Specjalna obsługa ostatniego rzędu (centrowanie niepełnego)
             const isLastRow = row === rows - 1;
-            const itemsInThisRow = isLastRow ? count % cols || cols : cols;
-            const rowW =
-              cellW * itemsInThisRow + GAP_PCT * (itemsInThisRow - 1);
-            const rowStartX = startX + (finalGridW - rowW) / 2;
+            const itemsInRow = isLastRow ? count % cols || cols : cols;
+            const rowW = cellW_PCT * itemsInRow + GAP_PCT * (itemsInRow - 1);
+            const rowStartX = startX + (gridBlockW - rowW) / 2;
 
             positions[id] = {
-              x: rowStartX + col * (cellW + GAP_PCT),
-              y: startY + row * (cellH + pxToH(15)),
-              w: cellW,
-              h: cellH,
+              x: rowStartX + col * (cellW_PCT + GAP_PCT),
+              y: startY + row * (cellH_PCT + pxToH(15)),
+              w: cellW_PCT,
+              h: cellH_PCT,
             };
           });
         } else if (layoutName === "layout-sidebar-right") {
@@ -1290,65 +1244,77 @@
             };
           });
         } else if (layoutName === "layout-split") {
-          const w = pxToW(300);
-          const h = pxToH(169);
+          // CSS: grid-template-columns: 320px 1fr 320px
+          const w = pxToW(320); // Było 300, w CSS jest 320 w gridzie? Nie, w split video-box ma width: 100% kolumny 320.
+          // Padding: 20px 40px
+          const h = pxToH(180);
           const rowGap = pxToH(30);
+          const padX = pxToW(40);
+
           const rows = Math.ceil(count / 2);
           const totalH = rows * h + (rows - 1) * rowGap;
           const startY = Math.max(0, (100 - totalH) / 2);
-          const leftX = pxToW(40);
-          const rightX = 100 - pxToW(40) - w;
+
           guestIds.forEach((id, i) => {
             const isRight = i % 2 !== 0;
             const row = Math.floor(i / 2);
             positions[id] = {
-              x: isRight ? rightX : leftX,
+              x: isRight ? 100 - padX - w : padX,
               y: startY + row * (h + rowGap),
               w: w,
               h: h,
             };
           });
         } else if (layoutName === "layout-center-stage") {
+          // CSS: 300px 1fr 300px. Padding 20px. Gap 15px.
+          // Main wideo: width 100% środkowej kolumny, max-height 90vh, aspect 16/9
           const sideW = pxToW(300);
           const sideH = pxToH(169);
           const gapY = pxToH(15);
-          const mainW = pxToW(1000);
-          const mainH = pxToH(562);
-          const leftColX = pxToW(20);
-          const rightColX = 100 - pxToW(20) - sideW;
-          const centerColX = (100 - mainW) / 2;
-          const centerColY = (100 - mainH) / 2;
+          const gapX = pxToW(15);
+          const pad = pxToW(20);
 
-          const sideCount = count - 1;
+          // Środek
+          const middleColW = 100 - pad * 2 - sideW * 2 - gapX * 2; // Dostępna szerokość w %
+          // Obliczamy wysokość środka z proporcji 16:9
+          let mainH = middleColW * (9 / 16) * (OBS_WIDTH / OBS_HEIGHT);
+          // Limit 90vh
+          if (mainH > 90) mainH = 90;
+          // Przeliczamy szerokość z powrotem jeśli wysokość ograniczona
+          const mainW = mainH * (16 / 9) * (OBS_HEIGHT / OBS_WIDTH);
+
+          // Pozycje X
+          const centerX = (100 - mainW) / 2;
+          const centerY = (100 - mainH) / 2;
+
+          // Boki
+          const sideCount = Math.max(0, count - 1);
           const rowsPerSide = Math.ceil(sideCount / 2);
           const totalSideH = rowsPerSide * sideH + (rowsPerSide - 1) * gapY;
           const startSideY = (100 - totalSideH) / 2;
 
-          let sideIndex = 0;
+          let sideIdx = 0;
           guestIds.forEach((id, i) => {
             if (i === 0) {
-              positions[id] = {
-                x: centerColX,
-                y: centerColY,
-                w: mainW,
-                h: mainH,
-              };
+              positions[id] = { x: centerX, y: centerY, w: mainW, h: mainH };
             } else {
+              const isRight = sideIdx % 2 !== 0;
               const row = Math.floor(sideIndex / 2);
-              const isRight = sideIndex % 2 !== 0;
-              // Ważne: sideIndex 0 (pierwszy boczny) to lewo.
-              // sideIndex 1 (drugi boczny) to prawo.
+              // CSS: justify-self: start (lewo) / end (prawo)
+              // Lewo: padding (20px)
+              // Prawo: 100% - padding - 300px
               positions[id] = {
-                x: isRight ? rightColX : leftColX,
+                x: isRight ? 100 - pad - sideW : pad,
                 y: startSideY + row * (sideH + gapY),
                 w: sideW,
                 h: sideH,
               };
-              sideIndex++;
+              sideIdx++;
             }
           });
         }
 
+        // APLIKACJA
         const stage = document.getElementById("free-mode-stage");
         for (const [id, pos] of Object.entries(positions)) {
           let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
@@ -1357,6 +1323,7 @@
             box.style.top = pos.y + "%";
             box.style.width = pos.w + "%";
             box.style.height = pos.h + "%";
+
             broadcastCommand({
               type: "transform-update",
               targetId: id,
@@ -1369,7 +1336,56 @@
         }
       }
 
-      // --- RENDER FREE STAGE (BEZ ZMIAN) ---
+      // --- RENDER FREE STAGE ---
+      function toggleLayoutLock() {
+        isLayoutLocked = !isLayoutLocked;
+        const btn = document.getElementById("btn-lock-layout");
+        if (isLayoutLocked) {
+          btn.innerText = "🔒 Układ: ZABLOKOWANY";
+          btn.className = "btn-tool btn-lock-on";
+        } else {
+          btn.innerText = "🔓 Układ: ODBLOKOWANY";
+          btn.className = "btn-tool btn-lock-off";
+        }
+        renderFreeStage();
+      }
+
+      function toggleFreeMode() {
+        const container = document.getElementById("free-mode-container");
+        if (container.style.display === "block") {
+          container.style.display = "none";
+          sendLayout("layout-grid");
+        } else {
+          container.style.display = "block";
+          broadcastCommand({ type: "layout", mode: "layout-free" });
+          setTimeout(syncFreeStageToOBS, 100);
+          renderFreeStage();
+        }
+      }
+
+      function syncFreeStageToOBS() {
+        const stage = document.getElementById("free-mode-stage");
+        const boxes = stage.querySelectorAll(".stage-box");
+
+        boxes.forEach((box) => {
+          let x = parseFloat(box.style.left);
+          let y = parseFloat(box.style.top);
+          let w = parseFloat(box.style.width);
+          let h = parseFloat(box.style.height);
+
+          if (!isNaN(x) && !isNaN(y)) {
+            broadcastCommand({
+              type: "transform-update",
+              targetId: box.dataset.id,
+              x: x,
+              y: y,
+              w: w,
+              h: h,
+            });
+          }
+        });
+      }
+
       function renderFreeStage() {
         const stage = document.getElementById("free-mode-stage");
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
@@ -1391,13 +1407,16 @@
             box.className = "stage-box";
             box.dataset.id = id;
             box.innerText = name;
+
             box.style.width = CAM_WIDTH_PCT + "%";
             box.style.height = CAM_HEIGHT_PCT + "%";
             box.style.left = 2 + index * 2 + "%";
             box.style.top = 2 + index * 2 + "%";
+
             const handle = document.createElement("div");
             handle.className = "resize-handle";
             box.appendChild(handle);
+
             setupInteractions(box);
             stage.appendChild(box);
           } else {
@@ -1410,6 +1429,7 @@
               box.appendChild(handle);
             }
           }
+
           if (isLayoutLocked) box.classList.add("locked");
           else box.classList.remove("locked");
         });
@@ -1428,25 +1448,32 @@
 
         element.addEventListener("mousedown", (e) => {
           if (isLayoutLocked) return;
+
           const stage = document.getElementById("free-mode-stage");
+
           if (e.target === handle) {
             isResizing = true;
             e.stopPropagation();
           } else {
             isDragging = true;
           }
+
           startX = e.clientX;
           startY = e.clientY;
+
           startLeftPct = parseFloat(element.style.left) || 0;
           startTopPct = parseFloat(element.style.top) || 0;
           startWidthPx = element.offsetWidth; // PX
+
           if (!element.style.left.includes("%")) {
             startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
             startTopPct = (element.offsetTop / stage.clientHeight) * 100;
           }
+
           const rect = element.getBoundingClientRect();
           clickOffsetX = e.clientX - rect.left;
           clickOffsetY = e.clientY - rect.top;
+
           element.style.zIndex = 1000;
         });
 
@@ -1460,10 +1487,13 @@
             let newWidthPx = startWidthPx + deltaX;
             newWidthPx = Math.max(50, Math.min(newWidthPx, stageW));
             let newHeightPx = newWidthPx * (9 / 16);
+
             let newWidthPct = (newWidthPx / stageW) * 100;
             let newHeightPct = (newHeightPx / stageH) * 100;
+
             element.style.width = newWidthPct + "%";
             element.style.height = newHeightPct + "%";
+
             broadcastCommand({
               type: "transform-update",
               targetId: element.dataset.id,
@@ -1476,13 +1506,17 @@
 
           if (isDragging) {
             const isAltPressed = e.altKey;
+
             const stageRect = stage.getBoundingClientRect();
             let mouseX_Relative = e.clientX - stageRect.left;
             let mouseY_Relative = e.clientY - stageRect.top;
+
             let newX_Px = mouseX_Relative - clickOffsetX;
             let newY_Px = mouseY_Relative - clickOffsetY;
+
             let newX = (newX_Px / stageW) * 100;
             let newY = (newY_Px / stageH) * 100;
+
             const myW = parseFloat(element.style.width);
             const myH = parseFloat(element.style.height);
 
@@ -1496,11 +1530,13 @@
               const others = Array.from(
                 document.querySelectorAll(".stage-box"),
               ).filter((b) => b !== element);
+
               for (const other of others) {
                 const oX = parseFloat(other.style.left);
                 const oY = parseFloat(other.style.top);
                 const oW = parseFloat(other.style.width);
                 const oH = parseFloat(other.style.height);
+
                 if (Math.abs(newX - oX) < SNAP) {
                   newX = oX;
                   snappedX = true;
@@ -1517,6 +1553,7 @@
                   newX = oX + oW - myW;
                   snappedX = true;
                 }
+
                 if (Math.abs(newY - oY) < SNAP) {
                   newY = oY;
                   snappedY = true;
@@ -1535,6 +1572,7 @@
                 }
               }
             }
+
             if (snappedX) {
               guideX.style.display = "block";
               guideX.style.left = (newX * stageW) / 100 + "px";
@@ -1546,8 +1584,10 @@
 
             newX = Math.max(0, Math.min(newX, 100 - myW));
             newY = Math.max(0, Math.min(newY, 100 - myH));
+
             element.style.left = newX + "%";
             element.style.top = newY + "%";
+
             broadcastCommand({
               type: "transform-update",
               targetId: element.dataset.id,
