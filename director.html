@@ -302,7 +302,6 @@
         display: none;
         margin-top: 20px;
       }
-
       #free-mode-stage {
         display: block;
         width: 100%;
@@ -606,10 +605,15 @@
     <script>
       const OBS_WIDTH = 1920;
       const OBS_HEIGHT = 1080;
-      const CAM_WIDTH = 320;
-      const CAM_HEIGHT = 180;
-      const CAM_WIDTH_PCT = (CAM_WIDTH / OBS_WIDTH) * 100;
-      const CAM_HEIGHT_PCT = (CAM_HEIGHT / OBS_HEIGHT) * 100;
+
+      // Funkcje pomocnicze do precyzyjnego przeliczania pixeli z CSS na procenty
+      // Uwzględniają marginesy i paddingi zgodne z obs.html
+      function pxToW(px) {
+        return (px / OBS_WIDTH) * 100;
+      }
+      function pxToH(px) {
+        return (px / OBS_HEIGHT) * 100;
+      }
 
       const gameData = {
         Zwierzęta: [
@@ -735,7 +739,7 @@
       const currentWords = {};
       let isLayoutLocked = false;
 
-      // ... [FUNKCJE GRY I NAWIGACJA - BEZ ZMIAN] ...
+      // ... [BEZ ZMIAN: Funkcje gry, połączenia, listy gości] ...
       function toggleGamePanel() {
         const panel = document.getElementById("game-section");
         if (panel.style.display === "block") {
@@ -820,7 +824,6 @@
           container.appendChild(row);
         });
       }
-
       window.onload = function () {
         if (!roomID) {
           document.getElementById("status-msg").innerText =
@@ -1023,6 +1026,11 @@
           btn.innerText = "📡 Wymuś połączenie z nowym OBS";
         }, 1000);
       }
+      function sendLayout(layoutName) {
+        broadcastCommand({ type: "layout", mode: layoutName });
+        if (layoutName !== "layout-free")
+          document.getElementById("free-mode-container").style.display = "none";
+      }
       function toggleGuestMic(id, currentMutedState) {
         if (isMulti) {
           const guest = multiGuestsState[id];
@@ -1109,7 +1117,7 @@
         }
       }
 
-      // --- FREE MODE RENDERER (POPRAWIONY) ---
+      // --- FREE MODE: POPRAWIONA MATEMATYKA (Zgodna z CSS) ---
       function toggleLayoutLock() {
         isLayoutLocked = !isLayoutLocked;
         const btn = document.getElementById("btn-lock-layout");
@@ -1127,12 +1135,10 @@
         const container = document.getElementById("free-mode-container");
         if (container.style.display === "block") {
           container.style.display = "none";
-          // WYMUSZAMY TRYB GRID PRZY ZAMKNIĘCIU
           sendLayout("layout-grid");
         } else {
           container.style.display = "block";
           broadcastCommand({ type: "layout", mode: "layout-free" });
-          // RESET POZYCJI I RENDER
           setTimeout(syncFreeStageToOBS, 100);
           renderFreeStage();
         }
@@ -1161,144 +1167,235 @@
         });
       }
 
-      // --- POPRAWIONA FUNKCJA SENDLAYOUT ---
-      function sendLayout(layoutName) {
-        const container = document.getElementById("free-mode-container");
-        const isFreeModeOpen = container.style.display === "block";
-
-        if (isFreeModeOpen) {
-          // JEŚLI FREE MODE OTWARTY -> ZASTOSUJ PRESET NA KAFELKI
-          applyPresetToFreeMode(layoutName);
-        } else {
-          // JEŚLI ZAMKNIĘTY -> WYŚLIJ ZWYKŁY CSS LAYOUT DO OBS
-          broadcastCommand({ type: "layout", mode: layoutName });
-        }
-      }
-
-      // --- MATEMATYKA UKŁADÓW (DLA FREE MODE) ---
+      // --- NOWA MATEMATYKA UKŁADÓW (Zgodna z CSS z obs.html) ---
       function applyPresetToFreeMode(layoutName) {
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
         const count = guestIds.length;
         if (count === 0) return;
 
-        const stageW = 100; // %
-        const stageH = 100; // %
+        // WARTOŚCI Z CSS (px) skonwertowane na %
+        // Pamiętaj: W obs.html: gap: 15px, padding: 20px
+        const GAP_PCT = pxToW(15);
+        const PAD_PCT = pxToW(20);
+        const PAD_Y_PCT = pxToH(20);
 
         const positions = {};
 
         if (layoutName === "layout-grid") {
           const cols = Math.ceil(Math.sqrt(count));
           const rows = Math.ceil(count / cols);
-          const margin = 2;
-          const availableW = stageW - margin * (cols + 1);
-          const availableH = stageH - margin * (rows + 1);
-          let cellW = availableW / cols;
-          let cellH = availableH / rows;
-          // Proporcje 16:9 -> H = W * 9/16, ale w % to działa inaczej.
-          // Uproszczenie: Przyjmijmy rozmiar mniejszego wymiaru.
-          // W OBS: width=45%, height=45% daje kwadratowy kontener (jeśli wideo 16:9, to ma pasy).
-          // Tutaj ustawiamy po prostu kafelki w siatce.
 
-          // Dla uproszczenia w Free Mode: Rozmiar dopasowany do siatki
-          const startX = (stageW - (cellW * cols + margin * (cols - 1))) / 2;
-          const startY = (stageH - (cellH * rows + margin * (rows - 1))) / 2;
+          // Obliczamy rozmiar kafelka, uwzględniając marginesy
+          // Wzór: (100% - (padding*2) - (gap * (cols-1))) / cols
+          const availW = 100 - PAD_PCT * 2 - GAP_PCT * (cols - 1);
+          const availH = 100 - PAD_Y_PCT * 2 - pxToH(15) * (rows - 1);
+
+          // Domyślna logika z CSS dla Grid (45%, 32% itd.) - odwzorujemy to
+          let cellW;
+          if (count === 1) cellW = 85;
+          else if (count === 2) cellW = 48;
+          else if (count <= 4) cellW = 45;
+          else if (count <= 9) cellW = 32;
+          else cellW = 23;
+
+          // Ustal proporcje
+          // W OBS height też jest procentowe. Jeśli Grid 2x2 to w=45%, h=45%.
+          let cellH;
+          if (count === 1) cellH = 85;
+          else if (count === 2) cellH = 60;
+          else if (count <= 4) cellH = 45;
+          else if (count <= 6)
+            cellH = 45; // 3x2
+          else if (count <= 9)
+            cellH = 30; // 3x3
+          else cellH = 23;
+
+          // Centrowanie bloku siatki
+          // Musimy obliczyć faktyczną szerokość całej grupy
+          // (cellW * cols) + (gap * (cols-1))
+          // Ale CSS Grid robi to automagicznie justify-content: center.
+          // Symulujemy to:
+
+          // Policzmy ile realnie kolumn jest w ostatnim rzędzie (może być mniej)
+          // Ale dla uproszczenia centrujemy cały blok
+          const totalGridW = cellW * cols + GAP_PCT * (cols - 1);
+          const totalGridH = cellH * rows + pxToH(15) * (rows - 1);
+
+          const startX = (100 - totalGridW) / 2;
+          const startY = (100 - totalGridH) / 2;
 
           guestIds.forEach((id, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
+
+            // Korekta dla ostatniego rzędu (jeśli niepełny - centrowanie)
+            // Liczba elementów w tym konkretnym rzędzie
+            const isLastRow = row === rows - 1;
+            const itemsInThisRow = isLastRow ? count % cols || cols : cols;
+            const rowWidth =
+              cellW * itemsInThisRow + GAP_PCT * (itemsInThisRow - 1);
+            const rowStartX = (100 - rowWidth) / 2;
+
             positions[id] = {
-              x: startX + col * (cellW + margin),
-              y: startY + row * (cellH + margin),
+              x: rowStartX + col * (cellW + GAP_PCT),
+              y: startY + row * (cellH + pxToH(15)),
               w: cellW,
               h: cellH,
             };
           });
         } else if (layoutName === "layout-sidebar-right") {
-          const w = CAM_WIDTH_PCT;
-          const h = CAM_HEIGHT_PCT;
-          const gap = 2;
+          const w = pxToW(320); // 16.66%
+          const h = pxToH(180); // 16.66%
+          const gap = pxToH(15); // 15px w pionie
+
           const totalH = count * h + (count - 1) * gap;
           const startY = Math.max(0, (100 - totalH) / 2);
+
           guestIds.forEach((id, i) => {
             positions[id] = {
-              x: 100 - w - 2,
+              x: 100 - w - pxToW(20), // Padding-right 20px
               y: startY + i * (h + gap),
               w: w,
               h: h,
             };
           });
         } else if (layoutName === "layout-sidebar-left") {
-          const w = CAM_WIDTH_PCT;
-          const h = CAM_HEIGHT_PCT;
-          const gap = 2;
+          const w = pxToW(320);
+          const h = pxToH(180);
+          const gap = pxToH(15);
           const totalH = count * h + (count - 1) * gap;
           const startY = Math.max(0, (100 - totalH) / 2);
-          guestIds.forEach((id, i) => {
-            positions[id] = { x: 2, y: startY + i * (h + gap), w: w, h: h };
-          });
-        } else if (layoutName === "layout-bottom") {
-          const w = CAM_WIDTH_PCT;
-          const h = CAM_HEIGHT_PCT;
-          const gap = 2;
-          const totalW = count * w + (count - 1) * gap;
-          const startX = Math.max(0, (100 - totalW) / 2);
+
           guestIds.forEach((id, i) => {
             positions[id] = {
-              x: startX + i * (w + gap),
-              y: 100 - h - 5,
+              x: pxToW(20), // Padding-left 20px
+              y: startY + i * (h + gap),
+              w: w,
+              h: h,
+            };
+          });
+        } else if (layoutName === "layout-bottom") {
+          const w = pxToW(280);
+          const h = pxToH(157);
+          const gap = pxToW(10); // margin 0 10px (czyli 20px odstępu między, ale CSS margin działa inaczej)
+          // W CSS: margin: 0 10px. Czyli każdy ma 10px po bokach. Razem 20px dziury.
+          const realGap = pxToW(20);
+
+          const totalW = count * w + (count - 1) * realGap;
+          const startX = (100 - totalW) / 2;
+
+          guestIds.forEach((id, i) => {
+            positions[id] = {
+              x: startX + i * (w + realGap),
+              y: 100 - h - pxToH(20), // Padding-bottom 20px
               w: w,
               h: h,
             };
           });
         } else if (layoutName === "layout-top") {
-          const w = CAM_WIDTH_PCT;
-          const h = CAM_HEIGHT_PCT;
-          const gap = 2;
-          const totalW = count * w + (count - 1) * gap;
-          const startX = Math.max(0, (100 - totalW) / 2);
+          const w = pxToW(280);
+          const h = pxToH(157);
+          const realGap = pxToW(20);
+          const totalW = count * w + (count - 1) * realGap;
+          const startX = (100 - totalW) / 2;
+
           guestIds.forEach((id, i) => {
-            positions[id] = { x: startX + i * (w + gap), y: 5, w: w, h: h };
+            positions[id] = {
+              x: startX + i * (w + realGap),
+              y: pxToH(20), // Padding-top 20px
+              w: w,
+              h: h,
+            };
           });
         } else if (layoutName === "layout-split") {
-          const w = CAM_WIDTH_PCT;
-          const h = CAM_HEIGHT_PCT;
-          const gap = 4;
+          const w = pxToW(300); // W CSS: width 300px
+          const h = pxToH(169); // 169px
+          // CSS: grid-template-columns: 320px 1fr 320px
+          // Wideo jest wewnątrz kolumny 320px, wycentrowane? Nie, justify-self: start/end
+          // Padding kontenera: 20px 40px
+
+          // Lewa kolumna: X = 40px (padding-left)
+          const leftX = pxToW(40);
+          // Prawa kolumna: X = 1920 - 40px - 300px (szerokość wideo)
+          const rightX = 100 - pxToW(40) - w;
+
+          const rowGap = pxToH(30);
           const rows = Math.ceil(count / 2);
-          const totalH = rows * h + (rows - 1) * gap;
-          const startY = Math.max(0, (100 - totalH) / 2);
+          const totalH = rows * h + (rows - 1) * rowGap;
+          const startY = (100 - totalH) / 2;
+
           guestIds.forEach((id, i) => {
             const isRight = i % 2 !== 0;
             const row = Math.floor(i / 2);
             positions[id] = {
-              x: isRight ? 100 - w - 5 : 5,
-              y: startY + row * (h + gap),
+              x: isRight ? rightX : leftX,
+              y: startY + row * (h + rowGap),
               w: w,
               h: h,
             };
           });
         } else if (layoutName === "layout-center-stage") {
-          const mainW = 50;
-          const mainH = mainW * (9 / 16);
-          const sideW = CAM_WIDTH_PCT;
-          const sideH = CAM_HEIGHT_PCT;
+          // CSS: 300px 1fr 300px. Padding 20px. Gap 15px.
+          // Środek: Grid auto. 1. dziecko ma grid-column: 2.
+          // Boki: grid-column 1 lub 3.
+
+          const sideW = pxToW(300); // CSS: width 100% w kolumnie 300px
+          const sideH = pxToH(169);
+          const gapY = pxToH(15);
+
+          // Główny: Automatyczny, ale ograniczony max-height: 90vh.
+          // Załóżmy, że zajmuje większość środka.
+          // W Free Mode musimy mu dać konkretny rozmiar.
+          const mainW = pxToW(1000);
+          const mainH = pxToH(562);
+
+          // Pozycje X
+          const leftColX = pxToW(20); // Padding left
+          const rightColX = 100 - pxToW(20) - sideW; // Padding right
+          const centerColX = (100 - mainW) / 2;
+          const centerColY = (100 - mainH) / 2;
+
+          // Oblicz start Y dla boków (żeby były wycentrowane względem main?)
+          // W CSS: align-content: center.
+          // Policzmy ile jest "rzędów bocznych" (bez króla)
+          const sideCount = count - 1;
+          const rowsPerSide = Math.ceil(sideCount / 2);
+          const totalSideH = rowsPerSide * sideH + (rowsPerSide - 1) * gapY;
+          const startSideY = (100 - totalSideH) / 2;
+
+          // Licznik dla boków
+          let sideIndex = 0;
+
           guestIds.forEach((id, i) => {
             if (i === 0) {
+              // Król
               positions[id] = {
-                x: (100 - mainW) / 2,
-                y: (100 - mainH) / 2,
+                x: centerColX,
+                y: centerColY,
                 w: mainW,
                 h: mainH,
               };
             } else {
-              const sideIndex = i - 1;
-              const isRight = sideIndex % 2 !== 0;
+              // Boki
+              // i=1 (lewo), i=2 (prawo), i=3 (lewo)...
+              // Ale CSS: nth-child(even) -> 1 kolumna (lewo). nth-child(odd) -> 3 kolumna (prawo).
+              // Goście są: 1(Main), 2(Lewo), 3(Prawo), 4(Lewo)...
+              const isRight = i % 2 !== 0; // i=1 (nieparzysty) -> Prawo? Nie, CSS: i=2 (parzysty) to lewo.
+              // W JS index 1 to drugi element (czyli w CSS nth-child(2) - even).
+              // Więc i=1 -> Lewo. i=2 -> Prawo.
+
+              const isLeft = i % 2 !== 0;
+
+              // Rząd dla tej strony
               const row = Math.floor(sideIndex / 2);
+
               positions[id] = {
-                x: isRight ? 100 - sideW - 2 : 2,
-                y: 10 + row * (sideH + 2),
+                x: isLeft ? leftColX : rightColX,
+                y: startSideY + row * (sideH + gapY),
                 w: sideW,
                 h: sideH,
               };
+              sideIndex++;
             }
           });
         }
@@ -1325,6 +1422,7 @@
         }
       }
 
+      // --- RENDER FREE STAGE (BEZ ZMIAN) ---
       function renderFreeStage() {
         const stage = document.getElementById("free-mode-stage");
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
@@ -1347,7 +1445,6 @@
             box.dataset.id = id;
             box.innerText = name;
 
-            // USTAWIENIE W PROCENTACH
             box.style.width = CAM_WIDTH_PCT + "%";
             box.style.height = CAM_HEIGHT_PCT + "%";
             box.style.left = 2 + index * 2 + "%";
@@ -1369,7 +1466,6 @@
               box.appendChild(handle);
             }
           }
-
           if (isLayoutLocked) box.classList.add("locked");
           else box.classList.remove("locked");
         });
@@ -1403,7 +1499,7 @@
 
           startLeftPct = parseFloat(element.style.left) || 0;
           startTopPct = parseFloat(element.style.top) || 0;
-          startWidthPx = element.offsetWidth; // PX dla resize
+          startWidthPx = element.offsetWidth; // PX
 
           if (!element.style.left.includes("%")) {
             startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
@@ -1422,13 +1518,10 @@
           const stageW = stage.clientWidth;
           const stageH = stage.clientHeight;
 
-          // --- RESIZE (ZACHOWANIE 16:9) ---
           if (isResizing) {
             const deltaX = e.clientX - startX;
             let newWidthPx = startWidthPx + deltaX;
             newWidthPx = Math.max(50, Math.min(newWidthPx, stageW));
-
-            // Kluczowa zmiana: Wysokość zależy od szerokości
             let newHeightPx = newWidthPx * (9 / 16);
 
             let newWidthPct = (newWidthPx / stageW) * 100;
@@ -1447,9 +1540,9 @@
             });
           }
 
-          // --- DRAG (Z MAGNETYZMEM) ---
           if (isDragging) {
             const isAltPressed = e.altKey;
+
             const stageRect = stage.getBoundingClientRect();
             let mouseX_Relative = e.clientX - stageRect.left;
             let mouseY_Relative = e.clientY - stageRect.top;
