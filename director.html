@@ -538,7 +538,7 @@
 
         <!-- SEKCJA GIER -->
         <div id="game-section" class="game-section">
-          <!-- ... (Sekcja Gier bez zmian) ... -->
+          <!-- ... (Sekcja Gier - bez zmian) ... -->
           <div id="game-menu">
             <h3>Wybierz Grę:</h3>
             <div class="game-menu-grid">
@@ -1121,7 +1121,8 @@
         }
       }
 
-      // --- FREE MODE RENDERER & LOGIC ---
+      // --- FREE MODE RENDERER ---
+
       function toggleLayoutLock() {
         isLayoutLocked = !isLayoutLocked;
         const btn = document.getElementById("btn-lock-layout");
@@ -1215,14 +1216,12 @@
 
           const gridBlockW = cellW_PCT * cols + GAP_PCT * (cols - 1);
           const gridBlockH = cellH_PCT * rows + pxToH(15) * (rows - 1);
-
           const startX = (100 - gridBlockW) / 2;
           const startY = (100 - gridBlockH) / 2;
 
           guestIds.forEach((id, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
-
             const isLastRow = row === rows - 1;
             const itemsInRow = isLastRow ? count % cols || cols : cols;
             const rowW = cellW_PCT * itemsInRow + GAP_PCT * (itemsInRow - 1);
@@ -1433,8 +1432,7 @@
           startLeftPct = parseFloat(element.style.left) || 0;
           startTopPct = parseFloat(element.style.top) || 0;
           startWidthPx = element.offsetWidth;
-          startHeightPx = element.offsetHeight; // FIX: Added for crop logic
-
+          startHeightPx = element.offsetHeight;
           if (!element.style.left.includes("%")) {
             startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
             startTopPct = (element.offsetTop / stage.clientHeight) * 100;
@@ -1452,21 +1450,46 @@
 
           if (isResizing) {
             const deltaX = e.clientX - startX;
-            const deltaY = e.clientY - startY; // Added for crop logic
+            const deltaY = e.clientY - startY;
 
+            // --- OBLICZANIE MAKSYMALNEJ DOSTĘPNEJ PRZESTRZENI ---
+            // Obliczamy pozycję LEFT elementu w pikselach
+            const currentLeftPx =
+              (parseFloat(element.style.left) / 100) * stageW;
+            const currentTopPx = (parseFloat(element.style.top) / 100) * stageH;
+
+            // Maksymalna szerokość to reszta stołu (Szerokość stołu - Pozycja X)
+            const maxAvailableWidth = stageW - currentLeftPx;
+            const maxAvailableHeight = stageH - currentTopPx;
+
+            // 1. Obliczamy nową szerokość
             let newWidthPx = startWidthPx + deltaX;
-            newWidthPx = Math.max(50, Math.min(newWidthPx, stageW));
+
+            // 2. Ograniczamy do (min 50px, max dostępna przestrzeń)
+            newWidthPx = Math.max(50, Math.min(newWidthPx, maxAvailableWidth));
 
             let newHeightPx;
 
-            // --- LOGIKA SHIFT (CROP) ---
             if (e.shiftKey) {
+              // CROP (Swobodne skalowanie)
               newHeightPx = startHeightPx + deltaY;
-              newHeightPx = Math.max(50, Math.min(newHeightPx, stageH));
+              newHeightPx = Math.max(
+                50,
+                Math.min(newHeightPx, maxAvailableHeight),
+              );
             } else {
+              // ASPECT RATIO 16:9
               newHeightPx = newWidthPx * (9 / 16);
+
+              // Sprawdzamy, czy wysokość nie wychodzi poza stół
+              if (newHeightPx > maxAvailableHeight) {
+                // Jeśli wychodzi, ograniczamy wysokość i przeliczamy szerokość z powrotem
+                newHeightPx = maxAvailableHeight;
+                newWidthPx = newHeightPx * (16 / 9);
+              }
             }
 
+            // Konwersja na procenty
             let newWidthPct = (newWidthPx / stageW) * 100;
             let newHeightPct = (newHeightPx / stageH) * 100;
 
@@ -1510,7 +1533,6 @@
                 const oY = parseFloat(other.style.top);
                 const oW = parseFloat(other.style.width);
                 const oH = parseFloat(other.style.height);
-                // ... (Pełna logika snapowania jak wcześniej) ...
                 if (Math.abs(newX - oX) < SNAP) {
                   newX = oX;
                   snappedX = true;
@@ -1545,13 +1567,6 @@
                 }
               }
             }
-            // Limitowanie pozycji wewnątrz stołu
-            const maxW_Px =
-              stageW - (parseFloat(element.style.width) / 100) * stageW; // Limit w PX jest bezpieczniejszy
-            // Wracamy do limitów w % dla prostoty, ale uwzględniając width:
-            newX = Math.max(0, Math.min(newX, 100 - myW));
-            newY = Math.max(0, Math.min(newY, 100 - myH));
-
             if (snappedX) {
               guideX.style.display = "block";
               guideX.style.left = (newX * stageW) / 100 + "px";
@@ -1561,6 +1576,8 @@
               guideY.style.top = (newY * stageH) / 100 + "px";
             } else guideY.style.display = "none";
 
+            newX = Math.max(0, Math.min(newX, 100 - myW));
+            newY = Math.max(0, Math.min(newY, 100 - myH));
             element.style.left = newX + "%";
             element.style.top = newY + "%";
             broadcastCommand({
