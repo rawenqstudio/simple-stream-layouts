@@ -24,6 +24,13 @@
         color: white;
         transition: 0.2s;
       }
+      /* Styl dla zablokowanych przycisków */
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        filter: grayscale(100%);
+      }
+
       .btn-layout {
         background: #007bff;
         width: 45%;
@@ -372,13 +379,15 @@
       .btn-lock-off:hover {
         background: #218838;
       }
+
+      /* KLASA BLOKADY */
       .stage-box.locked {
         cursor: not-allowed !important;
         opacity: 0.7;
       }
       .stage-box.locked .resize-handle {
         display: none;
-      }
+      } /* Ukrywa uchwyt, gdy zablokowane */
 
       .guide-line {
         position: absolute;
@@ -499,8 +508,8 @@
             >
               Stół Montażowy (16:9)<br />
               <small
-                >Przesuwanie: Chwyć środek (ALT = brak snapu)<br />Skalowanie:
-                Róg (<b>SHIFT</b> = crop/swobodne)</small
+                >Przesuwanie: Chwyć środek<br />Skalowanie: Chwyć prawy dolny
+                róg (SHIFT = crop)</small
               >
             </p>
           </div>
@@ -538,7 +547,7 @@
 
         <!-- SEKCJA GIER -->
         <div id="game-section" class="game-section">
-          <!-- ... (Sekcja Gier - bez zmian) ... -->
+          <!-- ... (Sekcja Gier bez zmian) ... -->
           <div id="game-menu">
             <h3>Wybierz Grę:</h3>
             <div class="game-menu-grid">
@@ -740,6 +749,8 @@
       let labelsVisible = false;
       let iconsVisible = false;
       const currentWords = {};
+
+      // ZMIENNA BLOKADY
       let isLayoutLocked = false;
 
       // ... [FUNKCJE GRY i P2P - BEZ ZMIAN] ...
@@ -1030,11 +1041,7 @@
           btn.innerText = "📡 Wymuś połączenie z nowym OBS";
         }, 1000);
       }
-      function sendLayout(layoutName) {
-        broadcastCommand({ type: "layout", mode: layoutName });
-        if (layoutName !== "layout-free")
-          document.getElementById("free-mode-container").style.display = "none";
-      }
+
       function toggleGuestMic(id, currentMutedState) {
         if (isMulti) {
           const guest = multiGuestsState[id];
@@ -1121,11 +1128,12 @@
         }
       }
 
-      // --- FREE MODE RENDERER ---
-
+      // --- FREE MODE RENDERER & LOGIC (Z PRZYWRÓCONĄ BLOKADĄ) ---
       function toggleLayoutLock() {
         isLayoutLocked = !isLayoutLocked;
         const btn = document.getElementById("btn-lock-layout");
+
+        // Zmiana tekstu i koloru przycisku blokady
         if (isLayoutLocked) {
           btn.innerText = "🔒 Układ: ZABLOKOWANY";
           btn.className = "btn-tool btn-lock-on";
@@ -1133,6 +1141,17 @@
           btn.innerText = "🔓 Układ: ODBLOKOWANY";
           btn.className = "btn-tool btn-lock-off";
         }
+
+        // BLOKOWANIE PRZYCISKÓW UKŁADÓW (GRID, SPLIT, ETC.)
+        const layoutButtons = document.querySelectorAll(
+          ".btn-layout:not(.btn-free-mode)",
+        );
+        layoutButtons.forEach((b) => {
+          b.disabled = isLayoutLocked;
+          b.style.opacity = isLayoutLocked ? "0.5" : "1";
+          b.style.cursor = isLayoutLocked ? "not-allowed" : "pointer";
+        });
+
         renderFreeStage();
       }
 
@@ -1174,13 +1193,13 @@
         const container = document.getElementById("free-mode-container");
         const isFreeModeOpen = container.style.display === "block";
 
+        // JEŚLI OTWARTE I ZABLOKOWANE -> PRZERWIJ (NIC NIE RÓB)
+        if (isFreeModeOpen && isLayoutLocked) {
+          // Opcjonalnie: alert("Układ jest zablokowany!");
+          return;
+        }
+
         if (isFreeModeOpen) {
-          if (isLayoutLocked) {
-            alert(
-              "Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon.",
-            );
-            return;
-          }
           applyPresetToFreeMode(layoutName);
         } else {
           broadcastCommand({ type: "layout", mode: layoutName });
@@ -1200,11 +1219,11 @@
         if (layoutName === "layout-grid") {
           const cols = Math.ceil(Math.sqrt(count));
           const rows = Math.ceil(count / cols);
-
           let cellW_PCT;
           if (count === 1) cellW_PCT = 85;
           else if (count === 2) cellW_PCT = 48;
           else if (count <= 4) cellW_PCT = 45;
+          else if (count <= 6) cellW_PCT = 32;
           else if (count <= 9) cellW_PCT = 32;
           else cellW_PCT = 23;
           let cellH_PCT;
@@ -1213,12 +1232,10 @@
           else if (count <= 6) cellH_PCT = 45;
           else if (count <= 9) cellH_PCT = 30;
           else cellH_PCT = 23;
-
           const gridBlockW = cellW_PCT * cols + GAP_PCT * (cols - 1);
           const gridBlockH = cellH_PCT * rows + pxToH(15) * (rows - 1);
           const startX = (100 - gridBlockW) / 2;
           const startY = (100 - gridBlockH) / 2;
-
           guestIds.forEach((id, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
@@ -1432,7 +1449,8 @@
           startLeftPct = parseFloat(element.style.left) || 0;
           startTopPct = parseFloat(element.style.top) || 0;
           startWidthPx = element.offsetWidth;
-          startHeightPx = element.offsetHeight;
+          startHeightPx = element.offsetHeight; // FIX: Added for crop logic
+
           if (!element.style.left.includes("%")) {
             startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
             startTopPct = (element.offsetTop / stage.clientHeight) * 100;
@@ -1453,7 +1471,6 @@
             const deltaY = e.clientY - startY;
 
             // --- OBLICZANIE MAKSYMALNEJ DOSTĘPNEJ PRZESTRZENI ---
-            // Obliczamy pozycję LEFT elementu w pikselach
             const currentLeftPx =
               (parseFloat(element.style.left) / 100) * stageW;
             const currentTopPx = (parseFloat(element.style.top) / 100) * stageH;
@@ -1471,25 +1488,19 @@
             let newHeightPx;
 
             if (e.shiftKey) {
-              // CROP (Swobodne skalowanie)
               newHeightPx = startHeightPx + deltaY;
               newHeightPx = Math.max(
                 50,
                 Math.min(newHeightPx, maxAvailableHeight),
               );
             } else {
-              // ASPECT RATIO 16:9
               newHeightPx = newWidthPx * (9 / 16);
-
-              // Sprawdzamy, czy wysokość nie wychodzi poza stół
               if (newHeightPx > maxAvailableHeight) {
-                // Jeśli wychodzi, ograniczamy wysokość i przeliczamy szerokość z powrotem
                 newHeightPx = maxAvailableHeight;
                 newWidthPx = newHeightPx * (16 / 9);
               }
             }
 
-            // Konwersja na procenty
             let newWidthPct = (newWidthPx / stageW) * 100;
             let newHeightPct = (newHeightPx / stageH) * 100;
 
