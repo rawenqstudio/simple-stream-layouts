@@ -538,6 +538,7 @@
 
         <!-- SEKCJA GIER -->
         <div id="game-section" class="game-section">
+          <!-- ... (Sekcja Gier bez zmian) ... -->
           <div id="game-menu">
             <h3>Wybierz Grę:</h3>
             <div class="game-menu-grid">
@@ -1029,6 +1030,11 @@
           btn.innerText = "📡 Wymuś połączenie z nowym OBS";
         }, 1000);
       }
+      function sendLayout(layoutName) {
+        broadcastCommand({ type: "layout", mode: layoutName });
+        if (layoutName !== "layout-free")
+          document.getElementById("free-mode-container").style.display = "none";
+      }
       function toggleGuestMic(id, currentMutedState) {
         if (isMulti) {
           const guest = multiGuestsState[id];
@@ -1180,7 +1186,6 @@
         }
       }
 
-      // --- FUNKCJA PRZELICZAJĄCA PRESETY (PEŁNA) ---
       function applyPresetToFreeMode(layoutName) {
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
         const count = guestIds.length;
@@ -1189,7 +1194,6 @@
         const GAP_PCT = pxToW(15);
         const PAD_PCT = pxToW(20);
         const PAD_Y_PCT = pxToH(20);
-
         const positions = {};
 
         if (layoutName === "layout-grid") {
@@ -1218,6 +1222,7 @@
           guestIds.forEach((id, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
+
             const isLastRow = row === rows - 1;
             const itemsInRow = isLastRow ? count % cols || cols : cols;
             const rowW = cellW_PCT * itemsInRow + GAP_PCT * (itemsInRow - 1);
@@ -1381,16 +1386,13 @@
             box.className = "stage-box";
             box.dataset.id = id;
             box.innerText = name;
-
             box.style.width = CAM_WIDTH_PCT + "%";
             box.style.height = CAM_HEIGHT_PCT + "%";
             box.style.left = 2 + index * 2 + "%";
             box.style.top = 2 + index * 2 + "%";
-
             const handle = document.createElement("div");
             handle.className = "resize-handle";
             box.appendChild(handle);
-
             setupInteractions(box);
             stage.appendChild(box);
           } else {
@@ -1403,7 +1405,6 @@
               box.appendChild(handle);
             }
           }
-
           if (isLayoutLocked) box.classList.add("locked");
           else box.classList.remove("locked");
         });
@@ -1412,45 +1413,35 @@
       function setupInteractions(element) {
         let isDragging = false;
         let isResizing = false;
-
         let startX, startY;
         let startLeftPct, startTopPct;
         let startWidthPx, startHeightPx;
         let clickOffsetX, clickOffsetY;
-
         const handle = element.querySelector(".resize-handle");
 
         element.addEventListener("mousedown", (e) => {
           if (isLayoutLocked) return;
-
           const stage = document.getElementById("free-mode-stage");
-
           if (e.target === handle) {
             isResizing = true;
             e.stopPropagation();
           } else {
             isDragging = true;
           }
-
           startX = e.clientX;
           startY = e.clientY;
-
           startLeftPct = parseFloat(element.style.left) || 0;
           startTopPct = parseFloat(element.style.top) || 0;
-          startWidthPx = element.offsetWidth; // PX
-
-          // POPRAWKA DO CROP: ZAPAMIĘTUJEMY TEŻ WYSOKOŚĆ W PX
-          startHeightPx = element.offsetHeight;
+          startWidthPx = element.offsetWidth;
+          startHeightPx = element.offsetHeight; // FIX: Added for crop logic
 
           if (!element.style.left.includes("%")) {
             startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
             startTopPct = (element.offsetTop / stage.clientHeight) * 100;
           }
-
           const rect = element.getBoundingClientRect();
           clickOffsetX = e.clientX - rect.left;
           clickOffsetY = e.clientY - rect.top;
-
           element.style.zIndex = 1000;
         });
 
@@ -1459,22 +1450,20 @@
           const stageW = stage.clientWidth;
           const stageH = stage.clientHeight;
 
-          // --- LOGIKA RESIZE + CROP (SHIFT) ---
           if (isResizing) {
             const deltaX = e.clientX - startX;
-            const deltaY = e.clientY - startY;
+            const deltaY = e.clientY - startY; // Added for crop logic
 
             let newWidthPx = startWidthPx + deltaX;
             newWidthPx = Math.max(50, Math.min(newWidthPx, stageW));
 
             let newHeightPx;
 
-            // JEŚLI SHIFT -> SWOBODNE SKALOWANIE (CROP)
+            // --- LOGIKA SHIFT (CROP) ---
             if (e.shiftKey) {
               newHeightPx = startHeightPx + deltaY;
               newHeightPx = Math.max(50, Math.min(newHeightPx, stageH));
             } else {
-              // INACZEJ -> SZTYWNE 16:9
               newHeightPx = newWidthPx * (9 / 16);
             }
 
@@ -1496,17 +1485,13 @@
 
           if (isDragging) {
             const isAltPressed = e.altKey;
-
             const stageRect = stage.getBoundingClientRect();
             let mouseX_Relative = e.clientX - stageRect.left;
             let mouseY_Relative = e.clientY - stageRect.top;
-
             let newX_Px = mouseX_Relative - clickOffsetX;
             let newY_Px = mouseY_Relative - clickOffsetY;
-
             let newX = (newX_Px / stageW) * 100;
             let newY = (newY_Px / stageH) * 100;
-
             const myW = parseFloat(element.style.width);
             const myH = parseFloat(element.style.height);
 
@@ -1520,13 +1505,12 @@
               const others = Array.from(
                 document.querySelectorAll(".stage-box"),
               ).filter((b) => b !== element);
-
               for (const other of others) {
                 const oX = parseFloat(other.style.left);
                 const oY = parseFloat(other.style.top);
                 const oW = parseFloat(other.style.width);
                 const oH = parseFloat(other.style.height);
-
+                // ... (Pełna logika snapowania jak wcześniej) ...
                 if (Math.abs(newX - oX) < SNAP) {
                   newX = oX;
                   snappedX = true;
@@ -1543,7 +1527,6 @@
                   newX = oX + oW - myW;
                   snappedX = true;
                 }
-
                 if (Math.abs(newY - oY) < SNAP) {
                   newY = oY;
                   snappedY = true;
@@ -1562,6 +1545,12 @@
                 }
               }
             }
+            // Limitowanie pozycji wewnątrz stołu
+            const maxW_Px =
+              stageW - (parseFloat(element.style.width) / 100) * stageW; // Limit w PX jest bezpieczniejszy
+            // Wracamy do limitów w % dla prostoty, ale uwzględniając width:
+            newX = Math.max(0, Math.min(newX, 100 - myW));
+            newY = Math.max(0, Math.min(newY, 100 - myH));
 
             if (snappedX) {
               guideX.style.display = "block";
@@ -1572,12 +1561,8 @@
               guideY.style.top = (newY * stageH) / 100 + "px";
             } else guideY.style.display = "none";
 
-            newX = Math.max(0, Math.min(newX, 100 - myW));
-            newY = Math.max(0, Math.min(newY, 100 - myH));
-
             element.style.left = newX + "%";
             element.style.top = newY + "%";
-
             broadcastCommand({
               type: "transform-update",
               targetId: element.dataset.id,
