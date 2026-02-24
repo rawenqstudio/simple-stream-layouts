@@ -345,6 +345,7 @@
         width: 90%;
         margin-top: 20px;
       }
+
       .resize-handle {
         width: 15px;
         height: 15px;
@@ -358,6 +359,7 @@
       .resize-handle:hover {
         background: linear-gradient(135deg, transparent 50%, yellow 50%);
       }
+
       .btn-lock-on {
         background: #dc3545;
       }
@@ -377,6 +379,7 @@
       .stage-box.locked .resize-handle {
         display: none;
       }
+
       .guide-line {
         position: absolute;
         background-color: #ff0000;
@@ -535,7 +538,6 @@
 
         <!-- SEKCJA GIER -->
         <div id="game-section" class="game-section">
-          <!-- ... -->
           <div id="game-menu">
             <h3>Wybierz Grę:</h3>
             <div class="game-menu-grid">
@@ -1027,11 +1029,6 @@
           btn.innerText = "📡 Wymuś połączenie z nowym OBS";
         }, 1000);
       }
-      function sendLayout(layoutName) {
-        broadcastCommand({ type: "layout", mode: layoutName });
-        if (layoutName !== "layout-free")
-          document.getElementById("free-mode-container").style.display = "none";
-      }
       function toggleGuestMic(id, currentMutedState) {
         if (isMulti) {
           const guest = multiGuestsState[id];
@@ -1118,24 +1115,87 @@
         }
       }
 
-      // --- FREE MODE RENDERER ---
+      // --- FREE MODE RENDERER & LOGIC ---
+      function toggleLayoutLock() {
+        isLayoutLocked = !isLayoutLocked;
+        const btn = document.getElementById("btn-lock-layout");
+        if (isLayoutLocked) {
+          btn.innerText = "🔒 Układ: ZABLOKOWANY";
+          btn.className = "btn-tool btn-lock-on";
+        } else {
+          btn.innerText = "🔓 Układ: ODBLOKOWANY";
+          btn.className = "btn-tool btn-lock-off";
+        }
+        renderFreeStage();
+      }
 
-      // Zmieniona funkcja applyPresetToFreeMode (skrócona tutaj - użyj tej samej co ostatnio, jest OK)
+      function toggleFreeMode() {
+        const container = document.getElementById("free-mode-container");
+        if (container.style.display === "block") {
+          container.style.display = "none";
+          sendLayout("layout-grid");
+        } else {
+          container.style.display = "block";
+          broadcastCommand({ type: "layout", mode: "layout-free" });
+          setTimeout(syncFreeStageToOBS, 100);
+          renderFreeStage();
+        }
+      }
+
+      function syncFreeStageToOBS() {
+        const stage = document.getElementById("free-mode-stage");
+        const boxes = stage.querySelectorAll(".stage-box");
+        boxes.forEach((box) => {
+          let x = parseFloat(box.style.left);
+          let y = parseFloat(box.style.top);
+          let w = parseFloat(box.style.width);
+          let h = parseFloat(box.style.height);
+          if (!isNaN(x) && !isNaN(y)) {
+            broadcastCommand({
+              type: "transform-update",
+              targetId: box.dataset.id,
+              x: x,
+              y: y,
+              w: w,
+              h: h,
+            });
+          }
+        });
+      }
+
+      function sendLayout(layoutName) {
+        const container = document.getElementById("free-mode-container");
+        const isFreeModeOpen = container.style.display === "block";
+
+        if (isFreeModeOpen) {
+          if (isLayoutLocked) {
+            alert(
+              "Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon.",
+            );
+            return;
+          }
+          applyPresetToFreeMode(layoutName);
+        } else {
+          broadcastCommand({ type: "layout", mode: layoutName });
+        }
+      }
+
+      // --- FUNKCJA PRZELICZAJĄCA PRESETY (PEŁNA) ---
       function applyPresetToFreeMode(layoutName) {
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
         const count = guestIds.length;
         if (count === 0) return;
+
         const GAP_PCT = pxToW(15);
         const PAD_PCT = pxToW(20);
         const PAD_Y_PCT = pxToH(20);
+
         const positions = {};
-        // ... (Kopiuj logikę z poprzedniego kroku, jest dobra) ...
-        // DLA SKRÓTU W TYM OKNIE UŻYWAM KODU Z POPRZEDNIEJ ODPOWIEDZI DLA GRID
+
         if (layoutName === "layout-grid") {
           const cols = Math.ceil(Math.sqrt(count));
           const rows = Math.ceil(count / cols);
-          // ... logika grid ...
-          // (Dla pewności wklejam pełną logikę z poprzedniej poprawki)
+
           let cellW_PCT;
           if (count === 1) cellW_PCT = 85;
           else if (count === 2) cellW_PCT = 48;
@@ -1148,10 +1208,13 @@
           else if (count <= 6) cellH_PCT = 45;
           else if (count <= 9) cellH_PCT = 30;
           else cellH_PCT = 23;
+
           const gridBlockW = cellW_PCT * cols + GAP_PCT * (cols - 1);
           const gridBlockH = cellH_PCT * rows + pxToH(15) * (rows - 1);
+
           const startX = (100 - gridBlockW) / 2;
           const startY = (100 - gridBlockH) / 2;
+
           guestIds.forEach((id, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
@@ -1166,11 +1229,117 @@
               h: cellH_PCT,
             };
           });
+        } else if (layoutName === "layout-sidebar-right") {
+          const w = pxToW(320);
+          const h = pxToH(180);
+          const gap = pxToH(15);
+          const totalH = count * h + (count - 1) * gap;
+          const startY = Math.max(0, (100 - totalH) / 2);
+          guestIds.forEach((id, i) => {
+            positions[id] = {
+              x: 100 - w - pxToW(20),
+              y: startY + i * (h + gap),
+              w: w,
+              h: h,
+            };
+          });
+        } else if (layoutName === "layout-sidebar-left") {
+          const w = pxToW(320);
+          const h = pxToH(180);
+          const gap = pxToH(15);
+          const totalH = count * h + (count - 1) * gap;
+          const startY = Math.max(0, (100 - totalH) / 2);
+          guestIds.forEach((id, i) => {
+            positions[id] = {
+              x: pxToW(20),
+              y: startY + i * (h + gap),
+              w: w,
+              h: h,
+            };
+          });
+        } else if (layoutName === "layout-bottom") {
+          const w = pxToW(280);
+          const h = pxToH(157);
+          const gap = pxToW(20);
+          const totalW = count * w + (count - 1) * gap;
+          const startX = Math.max(0, (100 - totalW) / 2);
+          guestIds.forEach((id, i) => {
+            positions[id] = {
+              x: startX + i * (w + gap),
+              y: 100 - h - pxToH(20),
+              w: w,
+              h: h,
+            };
+          });
+        } else if (layoutName === "layout-top") {
+          const w = pxToW(280);
+          const h = pxToH(157);
+          const gap = pxToW(20);
+          const totalW = count * w + (count - 1) * gap;
+          const startX = Math.max(0, (100 - totalW) / 2);
+          guestIds.forEach((id, i) => {
+            positions[id] = {
+              x: startX + i * (w + gap),
+              y: pxToH(20),
+              w: w,
+              h: h,
+            };
+          });
+        } else if (layoutName === "layout-split") {
+          const w = pxToW(320);
+          const h = pxToH(180);
+          const rowGap = pxToH(30);
+          const rows = Math.ceil(count / 2);
+          const totalH = rows * h + (rows - 1) * rowGap;
+          const startY = Math.max(0, (100 - totalH) / 2);
+          const leftX = pxToW(40);
+          const rightX = 100 - pxToW(40) - w;
+          guestIds.forEach((id, i) => {
+            const isRight = i % 2 !== 0;
+            const row = Math.floor(i / 2);
+            positions[id] = {
+              x: isRight ? rightX : leftX,
+              y: startY + row * (h + rowGap),
+              w: w,
+              h: h,
+            };
+          });
+        } else if (layoutName === "layout-center-stage") {
+          const sideW = pxToW(300);
+          const sideH = pxToH(169);
+          const gapY = pxToH(15);
+          const pad = pxToW(20);
+          const gapX = pxToW(15);
+          const middleW_Available = 100 - 2 * pad - 2 * sideW - 2 * gapX;
+          let mainH = middleW_Available * (9 / 16) * (OBS_WIDTH / OBS_HEIGHT);
+          if (mainH > 90) mainH = 90;
+          const mainW = mainH * (16 / 9) * (OBS_HEIGHT / OBS_WIDTH);
+          const centerX = (100 - mainW) / 2;
+          const centerY = (100 - mainH) / 2;
+          const leftColX = pad;
+          const rightColX = 100 - pad - sideW;
+          const sideCount = Math.max(0, count - 1);
+          const rowsPerSide = Math.ceil(sideCount / 2);
+          const totalSideH = rowsPerSide * sideH + (rowsPerSide - 1) * gapY;
+          const startSideY = (100 - totalSideH) / 2;
+          let sideIdx = 0;
+          guestIds.forEach((id, i) => {
+            if (i === 0) {
+              positions[id] = { x: centerX, y: centerY, w: mainW, h: mainH };
+            } else {
+              const row = Math.floor(sideIdx / 2);
+              const isRight = sideIdx % 2 !== 0;
+              positions[id] = {
+                x: isRight ? rightColX : leftColX,
+                y: startSideY + row * (sideH + gapY),
+                w: sideW,
+                h: sideH,
+              };
+              sideIdx++;
+            }
+          });
         }
-        // ... inne układy (jak wyżej) ...
-        // ZAPISZ TĘ FUNKCJĘ W CAŁOŚCI Z POPRZEDNIEJ ODPOWIEDZI
 
-        // APLIKACJA
         const stage = document.getElementById("free-mode-stage");
         for (const [id, pos] of Object.entries(positions)) {
           let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
@@ -1190,7 +1359,55 @@
           }
         }
       }
-      // *Upewnij się, że funkcja applyPresetToFreeMode jest pełna, tak jak w poprzednim kroku.*
+
+      function renderFreeStage() {
+        const stage = document.getElementById("free-mode-stage");
+        let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+
+        Array.from(stage.children).forEach((child) => {
+          if (child.tagName === "P" || child.classList.contains("guide-line"))
+            return;
+          if (!guestIds.includes(child.dataset.id)) child.remove();
+        });
+
+        guestIds.forEach((id, index) => {
+          let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
+          const name = multiGuestsState[id]
+            ? multiGuestsState[id].name
+            : "Gość";
+
+          if (!box) {
+            box = document.createElement("div");
+            box.className = "stage-box";
+            box.dataset.id = id;
+            box.innerText = name;
+
+            box.style.width = CAM_WIDTH_PCT + "%";
+            box.style.height = CAM_HEIGHT_PCT + "%";
+            box.style.left = 2 + index * 2 + "%";
+            box.style.top = 2 + index * 2 + "%";
+
+            const handle = document.createElement("div");
+            handle.className = "resize-handle";
+            box.appendChild(handle);
+
+            setupInteractions(box);
+            stage.appendChild(box);
+          } else {
+            if (box.childNodes[0].nodeType === 3)
+              box.childNodes[0].nodeValue = name;
+            else box.innerText = name;
+            if (!box.querySelector(".resize-handle")) {
+              const handle = document.createElement("div");
+              handle.className = "resize-handle";
+              box.appendChild(handle);
+            }
+          }
+
+          if (isLayoutLocked) box.classList.add("locked");
+          else box.classList.remove("locked");
+        });
+      }
 
       function setupInteractions(element) {
         let isDragging = false;
@@ -1242,23 +1459,22 @@
           const stageW = stage.clientWidth;
           const stageH = stage.clientHeight;
 
+          // --- LOGIKA RESIZE + CROP (SHIFT) ---
           if (isResizing) {
             const deltaX = e.clientX - startX;
-            const deltaY = e.clientY - startY; // Potrzebne do cropa
+            const deltaY = e.clientY - startY;
 
             let newWidthPx = startWidthPx + deltaX;
             newWidthPx = Math.max(50, Math.min(newWidthPx, stageW));
 
             let newHeightPx;
 
-            // --- LOGIKA SHIFT (CROP) ---
+            // JEŚLI SHIFT -> SWOBODNE SKALOWANIE (CROP)
             if (e.shiftKey) {
-              // Free aspect ratio (Crop)
               newHeightPx = startHeightPx + deltaY;
-              // Limit wysokości
               newHeightPx = Math.max(50, Math.min(newHeightPx, stageH));
             } else {
-              // Lock 16:9 (Scale)
+              // INACZEJ -> SZTYWNE 16:9
               newHeightPx = newWidthPx * (9 / 16);
             }
 
@@ -1280,13 +1496,17 @@
 
           if (isDragging) {
             const isAltPressed = e.altKey;
+
             const stageRect = stage.getBoundingClientRect();
             let mouseX_Relative = e.clientX - stageRect.left;
             let mouseY_Relative = e.clientY - stageRect.top;
+
             let newX_Px = mouseX_Relative - clickOffsetX;
             let newY_Px = mouseY_Relative - clickOffsetY;
+
             let newX = (newX_Px / stageW) * 100;
             let newY = (newY_Px / stageH) * 100;
+
             const myW = parseFloat(element.style.width);
             const myH = parseFloat(element.style.height);
 
@@ -1300,11 +1520,13 @@
               const others = Array.from(
                 document.querySelectorAll(".stage-box"),
               ).filter((b) => b !== element);
+
               for (const other of others) {
                 const oX = parseFloat(other.style.left);
                 const oY = parseFloat(other.style.top);
                 const oW = parseFloat(other.style.width);
                 const oH = parseFloat(other.style.height);
+
                 if (Math.abs(newX - oX) < SNAP) {
                   newX = oX;
                   snappedX = true;
@@ -1321,6 +1543,7 @@
                   newX = oX + oW - myW;
                   snappedX = true;
                 }
+
                 if (Math.abs(newY - oY) < SNAP) {
                   newY = oY;
                   snappedY = true;
@@ -1339,6 +1562,7 @@
                 }
               }
             }
+
             if (snappedX) {
               guideX.style.display = "block";
               guideX.style.left = (newX * stageW) / 100 + "px";
@@ -1350,8 +1574,10 @@
 
             newX = Math.max(0, Math.min(newX, 100 - myW));
             newY = Math.max(0, Math.min(newY, 100 - myH));
+
             element.style.left = newX + "%";
             element.style.top = newY + "%";
+
             broadcastCommand({
               type: "transform-update",
               targetId: element.dataset.id,
