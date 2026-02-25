@@ -303,7 +303,7 @@
         background: #00796b;
       }
 
-      /* --- FREE MODE CANVAS --- */
+      /* FREE MODE */
       #free-mode-container {
         display: none;
         margin-top: 20px;
@@ -351,7 +351,6 @@
         width: 90%;
         margin-top: 20px;
       }
-
       .resize-handle {
         width: 15px;
         height: 15px;
@@ -365,7 +364,6 @@
       .resize-handle:hover {
         background: linear-gradient(135deg, transparent 50%, yellow 50%);
       }
-
       .btn-lock-on {
         background: #dc3545;
       }
@@ -385,7 +383,6 @@
       .stage-box.locked .resize-handle {
         display: none;
       }
-
       .guide-line {
         position: absolute;
         background-color: #ff0000;
@@ -474,6 +471,7 @@
           </button>
         </div>
 
+        <!-- FREE MODE -->
         <button class="btn-layout btn-free-mode" onclick="toggleFreeMode()">
           🔓 Swobodne Ustawianie (Free Mode)
         </button>
@@ -487,7 +485,6 @@
           >
             🔓 Układ: ODBLOKOWANY
           </button>
-
           <div id="free-mode-stage">
             <div id="guide-x" class="guide-line guide-x"></div>
             <div id="guide-y" class="guide-line guide-y"></div>
@@ -505,14 +502,13 @@
               Stół Montażowy (16:9)<br />
               <small
                 >Przesuwanie: Chwyć środek (ALT = brak snapu)<br />Skalowanie:
-                Róg (<b>SHIFT</b> = crop)</small
+                Róg (<b>SHIFT</b> = crop/swobodne)</small
               >
             </p>
           </div>
         </div>
 
         <h2 style="margin-top: 30px">⚙️ Narzędzia:</h2>
-        <!-- NOWY PRZYCISK RAMEK (Domyślnie zielony) -->
         <button
           class="btn-tool btn-toggle-on"
           id="btn-borders"
@@ -622,7 +618,6 @@
       const CAM_HEIGHT = 180;
       const CAM_WIDTH_PCT = (CAM_WIDTH / OBS_WIDTH) * 100;
       const CAM_HEIGHT_PCT = (CAM_HEIGHT / OBS_HEIGHT) * 100;
-
       function pxToW(px) {
         return (px / OBS_WIDTH) * 100;
       }
@@ -744,15 +739,18 @@
       const peer = new Peer(isMulti ? roomID : undefined, {
         config: { iceServers: selectedConfig },
       });
+
       let conn = null;
       const obsClients = [];
       const guestConnections = [];
       const multiGuestsState = {};
       let guestOrder = [];
 
+      // STANY GLOBALNE
       let labelsVisible = false;
       let iconsVisible = false;
-      let bordersVisible = true; // NOWOŚĆ: Ramki domyślnie widoczne
+      let bordersVisible = true;
+      let currentLayoutMode = "layout-grid"; // Zapamiętujemy układ dla nowych OBSów
 
       const currentWords = {};
       let isLayoutLocked = false;
@@ -892,6 +890,7 @@
         renderGameControls();
         renderFreeStage();
       }
+
       function connectToOBS() {
         const targetId = document.getElementById("target-id").value;
         conn = peer.connect(targetId);
@@ -901,6 +900,12 @@
           document.getElementById("status-msg").style.color = "#00ff00";
           document.getElementById("control-panel").style.display = "block";
           conn.send({ type: "director-hello" });
+
+          // Synchronizacja stanu dla trybu Standard
+          conn.send({ type: "toggle-labels", show: labelsVisible });
+          conn.send({ type: "toggle-icons", show: iconsVisible });
+          conn.send({ type: "toggle-borders", show: bordersVisible });
+          conn.send({ type: "layout", mode: currentLayoutMode });
         });
         conn.on("data", (data) => handleData(data));
         conn.on("error", (err) => alert("Błąd: " + err));
@@ -915,12 +920,12 @@
             obsClients.push(connection);
             updateStatusMsg();
 
-            // WYSYŁANIE AKTUALNEGO STANU NARZĘDZI DO NOWEGO OBS
+            // Synchronizacja stanu dla NOWEGO OBS'a w trybie Multi
             connection.send({ type: "toggle-labels", show: labelsVisible });
             connection.send({ type: "toggle-icons", show: iconsVisible });
-            connection.send({ type: "toggle-borders", show: bordersVisible }); // Dodano ramki
+            connection.send({ type: "toggle-borders", show: bordersVisible });
+            connection.send({ type: "layout", mode: currentLayoutMode });
 
-            connection.send({ type: "layout", mode: "layout-grid" });
             if (guestOrder.length > 0)
               connection.send({ type: "reorder-guests", order: guestOrder });
           }
@@ -1050,6 +1055,7 @@
           btn.innerText = "📡 Wymuś połączenie z nowym OBS";
         }, 1000);
       }
+
       function toggleGuestMic(id, currentMutedState) {
         if (isMulti) {
           const guest = multiGuestsState[id];
@@ -1084,7 +1090,6 @@
         broadcastCommand({ type: "toggle-mirror", targetId: id });
       }
 
-      // --- FUNKCJE NARZĘDZI ---
       function toggleLabels() {
         labelsVisible = !labelsVisible;
         broadcastCommand({ type: "toggle-labels", show: labelsVisible });
@@ -1095,13 +1100,11 @@
         broadcastCommand({ type: "toggle-icons", show: iconsVisible });
         updateToolBtn("btn-icons", iconsVisible, "🔇 Ikony Mute");
       }
-
       function toggleBorders() {
         bordersVisible = !bordersVisible;
         broadcastCommand({ type: "toggle-borders", show: bordersVisible });
         updateToolBtn("btn-borders", bordersVisible, "🔳 Ramki");
       }
-
       function updateToolBtn(id, state, text) {
         const btn = document.getElementById(id);
         btn.innerText = state ? `${text}: WIDOCZNE` : `${text}: UKRYTE`;
@@ -1109,7 +1112,6 @@
           ? "btn-tool btn-toggle-on"
           : "btn-tool btn-toggle-off";
       }
-      // -------------------------
 
       function renderGuestList(list) {
         const container = document.getElementById("guest-list");
@@ -1147,16 +1149,67 @@
         }
       }
 
+      function toggleLayoutLock() {
+        isLayoutLocked = !isLayoutLocked;
+        const btn = document.getElementById("btn-lock-layout");
+        if (isLayoutLocked) {
+          btn.innerText = "🔒 Układ: ZABLOKOWANY";
+          btn.className = "btn-tool btn-lock-on";
+        } else {
+          btn.innerText = "🔓 Układ: ODBLOKOWANY";
+          btn.className = "btn-tool btn-lock-off";
+        }
+
+        const layoutButtons = document.querySelectorAll(
+          ".btn-layout:not(.btn-free-mode)",
+        );
+        layoutButtons.forEach((b) => {
+          b.disabled = isLayoutLocked;
+        });
+        renderFreeStage();
+      }
+
+      function toggleFreeMode() {
+        const container = document.getElementById("free-mode-container");
+        if (container.style.display === "block") {
+          container.style.display = "none";
+          sendLayout("layout-grid");
+        } else {
+          container.style.display = "block";
+          broadcastCommand({ type: "layout", mode: "layout-free" });
+          setTimeout(syncFreeStageToOBS, 100);
+          renderFreeStage();
+        }
+      }
+
+      function syncFreeStageToOBS() {
+        const stage = document.getElementById("free-mode-stage");
+        const boxes = stage.querySelectorAll(".stage-box");
+        boxes.forEach((box) => {
+          let x = parseFloat(box.style.left);
+          let y = parseFloat(box.style.top);
+          let w = parseFloat(box.style.width);
+          let h = parseFloat(box.style.height);
+          if (!isNaN(x) && !isNaN(y)) {
+            broadcastCommand({
+              type: "transform-update",
+              targetId: box.dataset.id,
+              x: x,
+              y: y,
+              w: w,
+              h: h,
+            });
+          }
+        });
+      }
+
       function sendLayout(layoutName) {
+        currentLayoutMode = layoutName; // Zapisujemy stan
         const container = document.getElementById("free-mode-container");
         const isFreeModeOpen = container.style.display === "block";
-        if (isFreeModeOpen && isLayoutLocked) {
-          alert(
-            "Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon.",
-          );
-          return;
-        }
+
         if (isFreeModeOpen) {
+          if (isLayoutLocked) return;
           applyPresetToFreeMode(layoutName);
         } else {
           broadcastCommand({ type: "layout", mode: layoutName });
@@ -1188,10 +1241,12 @@
           else if (count <= 6) cellH_PCT = 45;
           else if (count <= 9) cellH_PCT = 30;
           else cellH_PCT = 23;
+
           const gridBlockW = cellW_PCT * cols + GAP_PCT * (cols - 1);
           const gridBlockH = cellH_PCT * rows + pxToH(15) * (rows - 1);
           const startX = (100 - gridBlockW) / 2;
           const startY = (100 - gridBlockH) / 2;
+
           guestIds.forEach((id, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
@@ -1337,62 +1392,6 @@
         }
       }
 
-      function toggleLayoutLock() {
-        isLayoutLocked = !isLayoutLocked;
-        const btn = document.getElementById("btn-lock-layout");
-        if (isLayoutLocked) {
-          btn.innerText = "🔒 Układ: ZABLOKOWANY";
-          btn.className = "btn-tool btn-lock-on";
-        } else {
-          btn.innerText = "🔓 Układ: ODBLOKOWANY";
-          btn.className = "btn-tool btn-lock-off";
-        }
-
-        const layoutButtons = document.querySelectorAll(
-          ".btn-layout:not(.btn-free-mode)",
-        );
-        layoutButtons.forEach((b) => {
-          b.disabled = isLayoutLocked;
-          b.style.opacity = isLayoutLocked ? "0.5" : "1";
-          b.style.cursor = isLayoutLocked ? "not-allowed" : "pointer";
-        });
-        renderFreeStage();
-      }
-
-      function toggleFreeMode() {
-        const container = document.getElementById("free-mode-container");
-        if (container.style.display === "block") {
-          container.style.display = "none";
-          sendLayout("layout-grid");
-        } else {
-          container.style.display = "block";
-          broadcastCommand({ type: "layout", mode: "layout-free" });
-          setTimeout(syncFreeStageToOBS, 100);
-          renderFreeStage();
-        }
-      }
-
-      function syncFreeStageToOBS() {
-        const stage = document.getElementById("free-mode-stage");
-        const boxes = stage.querySelectorAll(".stage-box");
-        boxes.forEach((box) => {
-          let x = parseFloat(box.style.left);
-          let y = parseFloat(box.style.top);
-          let w = parseFloat(box.style.width);
-          let h = parseFloat(box.style.height);
-          if (!isNaN(x) && !isNaN(y)) {
-            broadcastCommand({
-              type: "transform-update",
-              targetId: box.dataset.id,
-              x: x,
-              y: y,
-              w: w,
-              h: h,
-            });
-          }
-        });
-      }
-
       function renderFreeStage() {
         const stage = document.getElementById("free-mode-stage");
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
@@ -1433,7 +1432,6 @@
               box.appendChild(handle);
             }
           }
-
           if (isLayoutLocked) box.classList.add("locked");
           else box.classList.remove("locked");
         });
@@ -1507,7 +1505,6 @@
 
             let newWidthPct = (newWidthPx / stageW) * 100;
             let newHeightPct = (newHeightPx / stageH) * 100;
-
             element.style.width = newWidthPct + "%";
             element.style.height = newHeightPct + "%";
             broadcastCommand({
@@ -1581,7 +1578,6 @@
                 }
               }
             }
-
             if (snappedX) {
               guideX.style.display = "block";
               guideX.style.left = (newX * stageW) / 100 + "px";

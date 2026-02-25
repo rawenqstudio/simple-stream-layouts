@@ -5,11 +5,9 @@
     <title>WIDOK OBS</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-      /* GLOBALNY RESET - KLUCZOWY DLA PRECYZJI */
       * {
         box-sizing: border-box;
       }
-
       body,
       html {
         margin: 0;
@@ -49,7 +47,6 @@
         transform: scaleX(-1);
       }
 
-      /* OVERLAYS */
       .mute-icon {
         position: absolute;
         top: 10px;
@@ -84,13 +81,10 @@
       #video-container:not(.show-icons) .mute-icon {
         display: none !important;
       }
-
-      /* NOWOŚĆ: UKRYWANIE RAMEK */
       #video-container.hide-borders .video-box {
         border: none !important;
       }
 
-      /* KARTKA CZÓŁKO */
       .game-card {
         position: absolute;
         top: 5%;
@@ -125,7 +119,7 @@
         }
       }
 
-      /* --- FREE MODE --- */
+      /* UKŁADY */
       .layout-free {
         position: relative;
         width: 100%;
@@ -143,7 +137,6 @@
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
       }
 
-      /* --- GRID --- */
       .layout-grid {
         display: flex;
         flex-wrap: wrap;
@@ -151,6 +144,7 @@
         align-content: center;
         gap: 15px;
         padding: 20px;
+        height: 100vh;
       }
       .layout-grid .video-box {
         width: 45%;
@@ -187,7 +181,6 @@
         height: 23%;
       }
 
-      /* --- PASKI --- */
       .layout-sidebar-right {
         display: flex;
         flex-direction: column;
@@ -202,7 +195,6 @@
         height: 180px;
         margin: 0;
       }
-
       .layout-sidebar-left {
         display: flex;
         flex-direction: column;
@@ -217,7 +209,6 @@
         height: 180px;
         margin: 0;
       }
-
       .layout-bottom {
         display: flex;
         flex-direction: row;
@@ -232,7 +223,6 @@
         height: 157px;
         margin: 0;
       }
-
       .layout-top {
         display: flex;
         flex-direction: row;
@@ -248,7 +238,6 @@
         margin: 0;
       }
 
-      /* --- SPECJALNE --- */
       .layout-split {
         display: grid;
         grid-template-columns: 320px 1fr 320px;
@@ -271,7 +260,6 @@
         grid-column: 3;
         justify-self: end;
       }
-
       .layout-center-stage {
         display: grid;
         grid-template-columns: 300px 1fr 300px;
@@ -362,7 +350,6 @@
       function connectToDirector(targetId) {
         directorConn = peer.connect(targetId);
         directorConn.on("open", () => {
-          console.log("Połączono z Reżyserem.");
           directorConn.send({ type: "register-obs" });
         });
         directorConn.on("data", (data) => handleData(data));
@@ -378,7 +365,6 @@
             conn: null,
           };
         guests[call.peer].call = call;
-
         if (useULL) {
           setTimeout(() => {
             const pc = call.peerConnection;
@@ -395,15 +381,16 @@
             }
           }, 500);
         }
-
         call.on("stream", (stream) => addVideo(stream, call.peer));
         call.on("close", () => removeGuest(call.peer));
         call.on("error", () => removeGuest(call.peer));
-
         const pc = call.peerConnection;
         pc.oniceconnectionstatechange = () => {
-          const s = pc.iceConnectionState;
-          if (s === "disconnected" || s === "failed" || s === "closed")
+          if (
+            pc.iceConnectionState === "disconnected" ||
+            pc.iceConnectionState === "failed" ||
+            pc.iceConnectionState === "closed"
+          )
             removeGuest(call.peer);
         };
       });
@@ -421,8 +408,18 @@
       });
 
       function handleData(data, conn) {
+        // --- POPRAWIONA LOGIKA UKŁADU ---
         if (data.type === "layout") {
-          container.className = data.mode;
+          // Usuń TYLKO klasy layoutowe, zostaw te od ramek i napisów
+          const classesToRemove = [];
+          container.classList.forEach((c) => {
+            if (c.startsWith("layout-")) classesToRemove.push(c);
+          });
+          classesToRemove.forEach((c) => container.classList.remove(c));
+
+          // Dodaj nowy układ
+          container.classList.add(data.mode);
+
           if (data.mode !== "layout-free") {
             document.querySelectorAll(".video-box").forEach((box) => {
               box.style.top = "";
@@ -432,6 +429,7 @@
             });
           }
         }
+
         if (data.type === "transform-update") {
           const box = document.getElementById(`box-${data.targetId}`);
           if (box) {
@@ -442,7 +440,6 @@
           }
         }
 
-        // --- ODBIÓR KOMEND UI ---
         if (data.type === "toggle-labels") {
           if (data.show) container.classList.add("show-labels");
           else container.classList.remove("show-labels");
@@ -462,7 +459,6 @@
             if (box) container.appendChild(box);
           });
         }
-
         if (data.type === "add-fake-guest")
           addFakeVideo(data.id, data.name, data.img);
         if (data.type === "refresh-cam") {
@@ -470,7 +466,6 @@
             Object.keys(guests).forEach((id) => performRefresh(id));
           else performRefresh(data.targetId);
         }
-
         if (data.type === "toggle-mirror") {
           const box = document.getElementById(`box-${data.targetId}`);
           if (box) {
@@ -485,7 +480,6 @@
             }
           }
         }
-
         if (data.type === "game-deal") {
           document.querySelectorAll(".game-card").forEach((el) => el.remove());
           for (const [id, word] of Object.entries(data.cards)) {
@@ -498,7 +492,6 @@
         if (data.type === "game-clear") {
           document.querySelectorAll(".game-card").forEach((el) => el.remove());
         }
-
         if (data.type === "remote-mute") {
           if (guests[data.targetId] && guests[data.targetId].conn) {
             guests[data.targetId].conn.send({
@@ -513,7 +506,6 @@
           guests[conn.peer].name = data.name || "Gość";
           guests[conn.peer].conn = conn;
           updateLabel(conn.peer, data.name);
-
           const box = document.getElementById(`box-${conn.peer}`);
           if (box) {
             const card = box.querySelector(".game-card");
@@ -521,9 +513,8 @@
               card &&
               hideTargetName &&
               data.name.toLowerCase().trim() === hideTargetName
-            ) {
+            )
               card.classList.add("self-hidden");
-            }
           }
           sendGuestListToDirector();
         }
@@ -554,7 +545,6 @@
         }
         box.appendChild(card);
       }
-
       function updateGuestCount() {
         const count = container.querySelectorAll(".video-box").length;
         container.setAttribute("data-count", count);
@@ -582,7 +572,6 @@
                 const bytes = videoStats.bytesReceived;
                 const prevBytes = statsCache[peerId]?.bytes || 0;
                 const bitrate = ((bytes - prevBytes) * 8) / 1000;
-
                 const jitterBufferDelay = videoStats.jitterBufferDelay || 0;
                 const jitterBufferEmitted =
                   videoStats.jitterBufferEmittedCount || 1;
@@ -593,7 +582,6 @@
                 let currentLatency = 0;
                 if (deltaEmitted > 0)
                   currentLatency = deltaDelay / deltaEmitted;
-
                 const box = document.getElementById(`box-${peerId}`);
                 if (box) {
                   const video = box.querySelector("video");
@@ -658,7 +646,6 @@
         updateGuestCount();
         sendGuestListToDirector();
       }
-
       function addVideo(stream, id) {
         if (document.getElementById(`box-${id}`)) return;
         heartbeats[id] = Date.now();
@@ -693,7 +680,6 @@
         video.play().catch((e) => console.error(e));
         audio.play().catch((e) => console.warn(e));
       }
-
       function performRefresh(id) {
         const box = document.getElementById(`box-${id}`);
         if (!box) return;
@@ -711,7 +697,6 @@
           }, 100);
         }
       }
-
       function removeGuest(id) {
         if (document.getElementById(`box-${id}`)) {
           document.getElementById(`box-${id}`).remove();
@@ -722,7 +707,6 @@
           sendGuestListToDirector();
         }
       }
-
       function updateLabel(id, name) {
         const label = document.getElementById(`label-${id}`);
         if (label) {
@@ -734,12 +718,10 @@
           }
         }
       }
-
       function toggleMuteIcon(id, isMuted) {
         const icon = document.getElementById(`mute-${id}`);
         if (icon) icon.style.display = isMuted ? "block" : "none";
       }
-
       function sendGuestListToDirector() {
         if (directorConn && directorConn.open) {
           const safeList = Object.keys(guests).map((id) => ({
