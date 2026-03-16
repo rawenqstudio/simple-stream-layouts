@@ -25,7 +25,6 @@
         transition: all 0.5s ease;
         position: relative;
       }
-
       .video-box {
         position: relative;
         overflow: hidden;
@@ -34,7 +33,6 @@
         background: #000;
         transition: all 0.5s ease;
       }
-
       video,
       img.fake-cam {
         width: 100%;
@@ -119,47 +117,58 @@
         }
       }
 
-      /* --- LOKALNY PANEL STEROWANIA --- */
+      /* --- LOKALNY PANEL STEROWANIA (GIGANTYCZNY DLA OBS INTERACT) --- */
       #local-panel {
         position: absolute;
-        bottom: 20px;
-        right: 20px;
+        bottom: 40px;
+        right: 40px;
         background: rgba(0, 0, 0, 0.85);
-        border: 1px solid #555;
-        border-radius: 8px;
-        padding: 15px;
+        border: 3px solid #555;
+        border-radius: 15px;
+        padding: 30px;
         z-index: 9999;
-        display: none; /* Domyślnie ukryty, pokazywany tylko przez JS gdy &local=1 */
+        display: none;
         opacity: 0;
         transition: opacity 0.4s ease;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.9);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+        width: 500px; /* BARDZO SZEROKI */
       }
       #local-panel.visible {
         opacity: 1;
       }
       #local-panel h4 {
         color: #00d2ff;
-        margin: 0 0 10px 0;
-        font-size: 14px;
+        margin: 0 0 20px 0;
+        font-size: 28px;
         text-align: center;
+        text-transform: uppercase;
+      }
+
+      .local-btn-container {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
       }
       #local-panel button {
         background: #444;
         color: white;
-        border: none;
-        padding: 8px 12px;
-        margin: 3px;
-        border-radius: 4px;
+        border: 2px solid #666;
+        padding: 15px 25px;
+        margin: 5px;
+        border-radius: 10px;
         cursor: pointer;
-        font-size: 12px;
+        font-size: 22px;
         font-weight: bold;
         transition: 0.2s;
+        flex-grow: 1;
       }
       #local-panel button:hover {
         background: #007bff;
+        border-color: #00d2ff;
       }
 
-      /* --- UKŁADY --- */
+      /* UKŁADY */
       .layout-free {
         position: relative;
         width: 100%;
@@ -235,7 +244,6 @@
         height: 180px;
         margin: 0;
       }
-
       .layout-sidebar-left {
         display: flex;
         flex-direction: column;
@@ -250,7 +258,6 @@
         height: 180px;
         margin: 0;
       }
-
       .layout-bottom {
         display: flex;
         flex-direction: row;
@@ -265,7 +272,6 @@
         height: 157px;
         margin: 0;
       }
-
       .layout-top {
         display: flex;
         flex-direction: row;
@@ -342,32 +348,26 @@
 
     <!-- PANEL LOKALNEGO STEROWANIA -->
     <div id="local-panel">
-      <h4>🛠 Niezależny Układ</h4>
-      <div
-        style="
-          display: flex;
-          gap: 5px;
-          flex-wrap: wrap;
-          width: 220px;
-          justify-content: center;
-        "
-      >
+      <h4>Własny Układ</h4>
+      <div class="local-btn-container">
         <button
           onclick="setLocalLayout('layout-grid')"
-          style="width: 100%; background: #6f42c1"
+          style="background: #6f42c1; width: 100%"
         >
           🔳 Siatka
         </button>
-        <button onclick="setLocalLayout('layout-top')">⬆️</button>
-        <button onclick="setLocalLayout('layout-bottom')">⬇️</button>
-        <button onclick="setLocalLayout('layout-sidebar-left')">⬅️</button>
-        <button onclick="setLocalLayout('layout-sidebar-right')">➡️</button>
-        <button onclick="setLocalLayout('layout-split')" style="width: 45%">
+        <button onclick="setLocalLayout('layout-top')">⬆️ Góra</button>
+        <button onclick="setLocalLayout('layout-bottom')">⬇️ Dół</button>
+        <button onclick="setLocalLayout('layout-sidebar-left')">⬅️ Lewo</button>
+        <button onclick="setLocalLayout('layout-sidebar-right')">
+          ➡️ Prawo
+        </button>
+        <button onclick="setLocalLayout('layout-split')" style="width: 40%">
           ↔️ Split
         </button>
         <button
           onclick="setLocalLayout('layout-center-stage')"
-          style="width: 45%"
+          style="width: 40%"
         >
           ⭐️ Center
         </button>
@@ -380,7 +380,7 @@
       const useStunOnly = urlParams.get("stunonly");
       const useULL = urlParams.get("ull");
       const isMulti = urlParams.get("multi");
-      const isLocal = urlParams.get("local") === "1"; // NOWOŚĆ: Flaga trybu lokalnego
+      const isLocal = urlParams.get("local") === "1";
       const hideTargetName = urlParams.get("hide")
         ? urlParams.get("hide").toLowerCase().trim()
         : null;
@@ -391,6 +391,16 @@
             { urls: "stun:stun.l.google.com:19302" },
             {
               urls: "turn:openrelay.metered.ca:80?transport=udp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:80?transport=tcp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:443?transport=udp",
               username: "openrelayproject",
               credential: "openrelayproject",
             },
@@ -413,32 +423,30 @@
 
       let hidePanelTimeout;
 
-      // Inicjalizacja trybu Local
       if (isLocal) {
         console.log(
           "🛠 Uruchomiono tryb lokalny. OBS zignoruje rozkazy układu od Reżysera.",
         );
         const localPanel = document.getElementById("local-panel");
         localPanel.style.display = "block";
-
-        // Wymuszenie domyślnego układu na starcie, żeby nie było pustego ekranu
         container.className = "layout-grid";
 
-        // Pokaż menu przy ruchu myszką (w trybie Interakcji w OBS)
-        window.addEventListener("mousemove", () => {
+        // Pokaż menu przy ruchu myszką LUB kliknięciu w OBS
+        const showPanel = () => {
           localPanel.classList.add("visible");
           clearTimeout(hidePanelTimeout);
-          // Ukryj po 3 sekundach bezruchu
+          // Ukryj po 5 sekundach dla większego komfortu
           hidePanelTimeout = setTimeout(() => {
             localPanel.classList.remove("visible");
-          }, 3000);
-        });
+          }, 5000);
+        };
+
+        window.addEventListener("mousemove", showPanel);
+        window.addEventListener("mousedown", showPanel); // Reakcja na klik w OBS
       }
 
-      // Funkcja do lokalnej zmiany układu (wywoływana z lokalnego panelu)
       function setLocalLayout(mode) {
         container.className = mode;
-        // Czyszczenie stylów inline (po pozycjonowaniu absolutnym), jeśli jakieś były
         document.querySelectorAll(".video-box").forEach((box) => {
           box.style.top = "";
           box.style.left = "";
@@ -470,7 +478,6 @@
             conn: null,
           };
         guests[call.peer].call = call;
-
         if (useULL) {
           setTimeout(() => {
             const pc = call.peerConnection;
@@ -487,11 +494,9 @@
             }
           }, 500);
         }
-
         call.on("stream", (stream) => addVideo(stream, call.peer));
         call.on("close", () => removeGuest(call.peer));
         call.on("error", () => removeGuest(call.peer));
-
         const pc = call.peerConnection;
         pc.oniceconnectionstatechange = () => {
           if (
@@ -516,12 +521,13 @@
       });
 
       function handleData(data, conn) {
-        // --- BLOKADA KOMEND W TRYBIE LOKALNYM ---
-        // Jeśli isLocal jest true, omijamy komendy dotyczące LAYOUTU i POZYCJONOWANIA.
-        // Zezwalamy na dodawanie gości, imiona, ikony, wyciszanie i grę w czółko.
-
         if (data.type === "layout" && !isLocal) {
-          container.className = data.mode;
+          const classesToRemove = [];
+          container.classList.forEach((c) => {
+            if (c.startsWith("layout-")) classesToRemove.push(c);
+          });
+          classesToRemove.forEach((c) => container.classList.remove(c));
+          container.classList.add(data.mode);
           if (data.mode !== "layout-free") {
             document.querySelectorAll(".video-box").forEach((box) => {
               box.style.top = "";
@@ -546,7 +552,6 @@
             if (box) container.appendChild(box);
           });
         }
-        // ----------------------------------------
 
         if (data.type === "toggle-labels") {
           if (data.show) container.classList.add("show-labels");
@@ -568,7 +573,6 @@
             Object.keys(guests).forEach((id) => performRefresh(id));
           else performRefresh(data.targetId);
         }
-
         if (data.type === "toggle-mirror") {
           const box = document.getElementById(`box-${data.targetId}`);
           if (box) {
@@ -680,6 +684,7 @@
                 const bytes = videoStats.bytesReceived;
                 const prevBytes = statsCache[peerId]?.bytes || 0;
                 const bitrate = ((bytes - prevBytes) * 8) / 1000;
+
                 const jitterBufferDelay = videoStats.jitterBufferDelay || 0;
                 const jitterBufferEmitted =
                   videoStats.jitterBufferEmittedCount || 1;

@@ -174,24 +174,6 @@
           </div>
         </label>
       </div>
-
-      <!-- NOWA OPCJA: LOKALNY OBS -->
-      <div class="option-box" style="border-color: #17a2b8">
-        <label class="checkbox-label">
-          <input
-            type="checkbox"
-            id="local-mode"
-            style="width: 20px; height: 20px"
-          />
-          <div>
-            <strong>🛠️ Niezależny OBS (Ignoruj Reżysera)</strong><br />
-            <small style="color: #888"
-              >OBS nie reaguje na zmianę układu przez Reżysera. Pozwala na
-              własne układanie przez "Interakcję" w OBS.</small
-            >
-          </div>
-        </label>
-      </div>
       <br />
 
       <button class="create-btn" onclick="createRoom()">
@@ -246,23 +228,18 @@
         const isStunOnly = document.getElementById("stun-only").checked;
         const isULL = document.getElementById("ull-mode").checked;
         const isMulti = document.getElementById("multi-mode").checked;
-        const isLocal = document.getElementById("local-mode").checked;
 
         let baseParams = `?room=${roomId}`;
         if (isStunOnly) baseParams += "&stunonly=1";
         if (isULL) baseParams += "&ull=1";
         if (isMulti) baseParams += "&multi=1";
 
-        // OBS link otrzymuje parametr &local=1 jeśli opcja jest zaznaczona
-        let obsParams = baseParams;
-        if (isLocal) obsParams += "&local=1";
-
         let baseUrl = window.location.href;
         if (baseUrl.endsWith("index.html"))
           baseUrl = baseUrl.replace("index.html", "");
         if (!baseUrl.endsWith("/")) baseUrl += "/";
 
-        const obsUrl = `${baseUrl}obs.html${obsParams}`;
+        const obsUrl = `${baseUrl}obs.html${baseParams}`;
         const directorUrl = `${baseUrl}director.html${baseParams}`;
         const guestUrl = `${baseUrl}guest.html${baseParams}`;
 
@@ -279,7 +256,7 @@
           groupDir.style.order = "1";
           groupObs.style.order = "2";
           labelDir.innerHTML = "1. Panel Reżysera (⚠️ URUCHOM JAKO PIERWSZY):";
-          labelObs.innerHTML = "2. Link do OBS (Odbiornik):";
+          labelObs.innerHTML = "2. Link do GŁÓWNEGO OBS (Podporządkowany):";
           labelDir.style.color = "#ff9800";
         } else {
           groupObs.style.order = "1";
