@@ -1,1 +1,308 @@
-<!doctype html><html lang="pl"><head><meta charset="UTF-8"><title>StreamLayouts - Generator Pokoi</title><style>body{font-family:"Segoe UI",sans-serif;background:#1a1a1a;color:#fff;text-align:center;padding-top:50px;margin:0}.container{max-width:600px;margin:0 auto;background:#2a2a2a;padding:40px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.5)}h1{margin-bottom:30px;color:#00d2ff}.create-btn{background:linear-gradient(45deg,#00d2ff,#3a7bd5);border:none;padding:15px 30px;color:#fff;font-size:1.2em;border-radius:30px;cursor:pointer;transition:transform .2s}.create-btn:hover{transform:scale(1.05)}#links-area{display:none;margin-top:30px;text-align:left;flex-direction:column}.link-group{margin-bottom:20px;background:#333;padding:15px;border-radius:8px}.link-group label{display:block;color:#aaa;font-size:.9em;margin-bottom:5px;font-weight:700}.link-group input{width:95%;padding:10px;background:#111;border:1px solid #444;color:#fff;border-radius:5px;display:block;margin-bottom:10px}.action-btn{font-size:.9em;padding:8px 15px;border:none;color:#fff;cursor:pointer;border-radius:3px;margin-right:5px;transition:.2s}.copy-btn{background:#555}.copy-btn:hover{background:#777}.open-btn{background:#28a745}.open-btn:hover{background:#218838}.option-box{margin:10px 0;padding:10px;border:1px dashed #555;border-radius:5px;display:block;text-align:left}.checkbox-label{cursor:pointer;color:#ddd;display:flex;align-items:center;gap:10px}.footer-credits{position:fixed;bottom:15px;right:20px;color:#666;font-size:.85em;font-family:monospace;user-select:none;pointer-events:none}</style></head><body><div class="container"><h1>🎥 Stream Layout Generator</h1><p>Stwórz pokój, wyślij linki i steruj układem kamer w OBS.</p><div class="option-box"><label class="checkbox-label"><input type="checkbox" id="stun-only" style="width:20px;height:20px" checked="checked"><div><strong>🚀 Tryb Turbo (STUN Only)</strong><br><small style="color:#888">Niższe opóźnienie (P2P), ale może nie działać na LTE.</small></div></label></div><div class="option-box" style="border-color:#d63384"><label class="checkbox-label"><input type="checkbox" id="ull-mode" style="width:20px;height:20px" checked="checked"><div><strong>⚡ Ultra Low Latency (Brak bufora)</strong><br><small style="color:#888">Wyłącza wygładzanie ruchu w OBS.</small></div></label></div><div class="option-box" style="border-color:#ff9800"><label class="checkbox-label"><input type="checkbox" id="multi-mode" style="width:20px;height:20px" checked="checked"><div><strong>👥 Multi-Viewer Mode (Wiele OBS-ów)</strong><br><small style="color:#888">Wymaga uruchomienia Reżysera jako pierwszego. Wymaga dobrego łącza.</small></div></label></div><br><button class="create-btn" onclick="createRoom()">+ Stwórz Nowy Pokój</button><div id="links-area"><div class="link-group" id="group-obs"><label id="label-obs">Link do OBS:</label> <input type="text" id="obs-link" readonly="readonly"> <button class="action-btn copy-btn" onclick='copy("obs-link")'>📋 Kopiuj</button> <button class="action-btn open-btn" onclick='openLink("obs-link")'>↗ Otwórz</button></div><div class="link-group" id="group-dir"><label id="label-dir">Panel Reżysera:</label> <input type="text" id="director-link" readonly="readonly"> <button class="action-btn copy-btn" onclick='copy("director-link")'>📋 Kopiuj</button> <button class="action-btn open-btn" onclick='openLink("director-link")'>↗ Otwórz</button></div><div class="link-group" id="group-guest" style="order:3"><label id="label-guest">3. Link dla Gości (Wyślij znajomym):</label> <input type="text" id="guest-link" readonly="readonly"> <button class="action-btn copy-btn" onclick='copy("guest-link")'>📋 Kopiuj</button> <button class="action-btn open-btn" onclick='openLink("guest-link")'>↗ Otwórz</button></div></div></div><div class="footer-credits">from xrawenq for Goodiez</div><script>function createRoom(){const e=Math.random().toString(36).substring(2,9),t=document.getElementById("stun-only").checked,n=document.getElementById("ull-mode").checked,o=document.getElementById("multi-mode").checked;let l=`?room=${e}`;t&&(l+="&stunonly=1"),n&&(l+="&ull=1"),o&&(l+="&multi=1");let d=window.location.href;d.endsWith("index.html")&&(d=d.replace("index.html","")),d.endsWith("/")||(d+="/");const m=`${d}obs.html${l}`,r=`${d}director.html${l}`,c=`${d}guest.html${l}`;document.getElementById("obs-link").value=m,document.getElementById("director-link").value=r,document.getElementById("guest-link").value=c;const i=document.getElementById("group-obs"),u=document.getElementById("group-dir"),s=document.getElementById("label-obs"),y=document.getElementById("label-dir");o?(u.style.order="1",i.style.order="2",y.innerHTML="1. Panel Reżysera (⚠️ URUCHOM JAKO PIERWSZY):",s.innerHTML="2. Link do OBS (Odbiornik):",y.style.color="#ff9800"):(i.style.order="1",u.style.order="2",s.innerHTML="1. Link do OBS (Wklej jako Browser Source):",y.innerHTML="2. Panel Reżysera (Sterowanie):",y.style.color="#aaa"),document.getElementById("links-area").style.display="flex"}function copy(e){document.getElementById(e).select(),document.execCommand("copy")}function openLink(e){const t=document.getElementById(e).value;t?window.open(t,"_blank"):alert("Najpierw wygeneruj pokój!")}</script></body></html>
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>StreamLayouts - Generator Pokoi</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #1a1a1a;
+        color: white;
+        text-align: center;
+        padding-top: 50px;
+        margin: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #2a2a2a;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+      h1 {
+        margin-bottom: 30px;
+        color: #00d2ff;
+      }
+
+      .create-btn {
+        background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+        border: none;
+        padding: 15px 30px;
+        color: white;
+        font-size: 1.2em;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .create-btn:hover {
+        transform: scale(1.05);
+      }
+
+      #links-area {
+        display: none;
+        margin-top: 30px;
+        text-align: left;
+        flex-direction: column;
+      }
+      .link-group {
+        margin-bottom: 20px;
+        background: #333;
+        padding: 15px;
+        border-radius: 8px;
+      }
+      .link-group label {
+        display: block;
+        color: #aaa;
+        font-size: 0.9em;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      .link-group input {
+        width: 95%;
+        padding: 10px;
+        background: #111;
+        border: 1px solid #444;
+        color: #fff;
+        border-radius: 5px;
+        display: block;
+        margin-bottom: 10px;
+      }
+
+      .action-btn {
+        font-size: 0.9em;
+        padding: 8px 15px;
+        border: none;
+        color: white;
+        cursor: pointer;
+        border-radius: 3px;
+        margin-right: 5px;
+        transition: 0.2s;
+      }
+      .copy-btn {
+        background: #555;
+      }
+      .copy-btn:hover {
+        background: #777;
+      }
+      .open-btn {
+        background: #28a745;
+      }
+      .open-btn:hover {
+        background: #218838;
+      }
+
+      .option-box {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px dashed #555;
+        border-radius: 5px;
+        display: block;
+        text-align: left;
+      }
+      .checkbox-label {
+        cursor: pointer;
+        color: #ddd;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .footer-credits {
+        position: fixed;
+        bottom: 15px;
+        right: 20px;
+        color: #666;
+        font-size: 0.85em;
+        font-family: monospace;
+        user-select: none;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎥 Stream Layout Generator</h1>
+      <p>Stwórz pokój, wyślij linki i steruj układem kamer w OBS.</p>
+
+      <div class="option-box">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            id="stun-only"
+            style="width: 20px; height: 20px"
+            checked
+          />
+          <div>
+            <strong>🚀 Tryb Turbo (STUN Only)</strong><br />
+            <small style="color: #888"
+              >Niższe opóźnienie (P2P), ale może nie działać na LTE.</small
+            >
+          </div>
+        </label>
+      </div>
+
+      <div class="option-box" style="border-color: #d63384">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            id="ull-mode"
+            style="width: 20px; height: 20px"
+            checked
+          />
+          <div>
+            <strong>⚡ Ultra Low Latency (Brak bufora)</strong><br />
+            <small style="color: #888">Wyłącza wygładzanie ruchu w OBS.</small>
+          </div>
+        </label>
+      </div>
+
+      <div class="option-box" style="border-color: #ff9800">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            id="multi-mode"
+            style="width: 20px; height: 20px"
+            checked
+          />
+          <div>
+            <strong>👥 Multi-Viewer Mode (Wiele OBS-ów)</strong><br />
+            <small style="color: #888"
+              >Wymaga uruchomienia Reżysera jako pierwszego. Wymaga dobrego
+              łącza.</small
+            >
+          </div>
+        </label>
+      </div>
+
+      <!-- NOWA OPCJA: LOKALNY OBS -->
+      <div class="option-box" style="border-color: #17a2b8">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            id="local-mode"
+            style="width: 20px; height: 20px"
+          />
+          <div>
+            <strong>🛠️ Niezależny OBS (Ignoruj Reżysera)</strong><br />
+            <small style="color: #888"
+              >OBS nie reaguje na zmianę układu przez Reżysera. Pozwala na
+              własne układanie przez "Interakcję" w OBS.</small
+            >
+          </div>
+        </label>
+      </div>
+      <br />
+
+      <button class="create-btn" onclick="createRoom()">
+        + Stwórz Nowy Pokój
+      </button>
+
+      <div id="links-area">
+        <div class="link-group" id="group-obs">
+          <label id="label-obs">Link do OBS (Wklej jako Browser Source):</label>
+          <input type="text" id="obs-link" readonly />
+          <button class="action-btn copy-btn" onclick="copy('obs-link')">
+            📋 Kopiuj
+          </button>
+          <button class="action-btn open-btn" onclick="openLink('obs-link')">
+            ↗ Otwórz
+          </button>
+        </div>
+
+        <div class="link-group" id="group-dir">
+          <label id="label-dir">Panel Reżysera:</label>
+          <input type="text" id="director-link" readonly />
+          <button class="action-btn copy-btn" onclick="copy('director-link')">
+            📋 Kopiuj
+          </button>
+          <button
+            class="action-btn open-btn"
+            onclick="openLink('director-link')"
+          >
+            ↗ Otwórz
+          </button>
+        </div>
+
+        <div class="link-group" id="group-guest" style="order: 3">
+          <label id="label-guest">3. Link dla Gości (Wyślij znajomym):</label>
+          <input type="text" id="guest-link" readonly />
+          <button class="action-btn copy-btn" onclick="copy('guest-link')">
+            📋 Kopiuj
+          </button>
+          <button class="action-btn open-btn" onclick="openLink('guest-link')">
+            ↗ Otwórz
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-credits">from xrawenq for Goodiez</div>
+
+    <script>
+      function createRoom() {
+        const roomId = Math.random().toString(36).substring(2, 9);
+
+        const isStunOnly = document.getElementById("stun-only").checked;
+        const isULL = document.getElementById("ull-mode").checked;
+        const isMulti = document.getElementById("multi-mode").checked;
+        const isLocal = document.getElementById("local-mode").checked;
+
+        let baseParams = `?room=${roomId}`;
+        if (isStunOnly) baseParams += "&stunonly=1";
+        if (isULL) baseParams += "&ull=1";
+        if (isMulti) baseParams += "&multi=1";
+
+        // OBS link otrzymuje parametr &local=1 jeśli opcja jest zaznaczona
+        let obsParams = baseParams;
+        if (isLocal) obsParams += "&local=1";
+
+        let baseUrl = window.location.href;
+        if (baseUrl.endsWith("index.html"))
+          baseUrl = baseUrl.replace("index.html", "");
+        if (!baseUrl.endsWith("/")) baseUrl += "/";
+
+        const obsUrl = `${baseUrl}obs.html${obsParams}`;
+        const directorUrl = `${baseUrl}director.html${baseParams}`;
+        const guestUrl = `${baseUrl}guest.html${baseParams}`;
+
+        document.getElementById("obs-link").value = obsUrl;
+        document.getElementById("director-link").value = directorUrl;
+        document.getElementById("guest-link").value = guestUrl;
+
+        const groupObs = document.getElementById("group-obs");
+        const groupDir = document.getElementById("group-dir");
+        const labelObs = document.getElementById("label-obs");
+        const labelDir = document.getElementById("label-dir");
+
+        if (isMulti) {
+          groupDir.style.order = "1";
+          groupObs.style.order = "2";
+          labelDir.innerHTML = "1. Panel Reżysera (⚠️ URUCHOM JAKO PIERWSZY):";
+          labelObs.innerHTML = "2. Link do OBS (Odbiornik):";
+          labelDir.style.color = "#ff9800";
+        } else {
+          groupObs.style.order = "1";
+          groupDir.style.order = "2";
+          labelObs.innerHTML = "1. Link do OBS (Wklej jako Browser Source):";
+          labelDir.innerHTML = "2. Panel Reżysera (Sterowanie):";
+          labelDir.style.color = "#aaa";
+        }
+
+        document.getElementById("links-area").style.display = "flex";
+      }
+
+      function copy(elementId) {
+        const copyText = document.getElementById(elementId);
+        copyText.select();
+        document.execCommand("copy");
+      }
+
+      function openLink(elementId) {
+        const url = document.getElementById(elementId).value;
+        if (url) window.open(url, "_blank");
+        else alert("Najpierw wygeneruj pokój!");
+      }
+    </script>
+  </body>
+</html>
