@@ -1,1 +1,670 @@
-<!doctype html><html lang="pl"><head><meta charset="UTF-8"><title>GOŚĆ - Ustawienia</title><script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script><style>body{font-family:"Segoe UI",sans-serif;text-align:center;background:#222;color:#fff;padding:20px;margin:0}.container{max-width:600px;margin:0 auto;background:#333;padding:20px;border-radius:10px;box-shadow:0 0 20px rgba(0,0,0,.5)}h1{margin-top:0;color:#00d2ff}.video-wrapper{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;margin-bottom:20px;border:2px solid #555}video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}#mute-indicator{position:absolute;top:10px;right:10px;background:red;color:#fff;padding:5px 10px;border-radius:5px;font-weight:700;display:none;box-shadow:0 0 5px #000;font-size:.8em;z-index:10}.settings-group{text-align:left;margin-bottom:15px}label{display:block;margin-bottom:5px;color:#ccc;font-size:.9em}input[type=text],select{width:100%;padding:10px;background:#222;border:1px solid #555;color:#fff;border-radius:5px;box-sizing:border-box}.checkbox-group{display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer}input[type=checkbox]{width:20px;height:20px;cursor:pointer}button{padding:15px;font-size:18px;font-weight:700;cursor:pointer;background:#28a745;color:#fff;border:none;border-radius:5px;width:100%;margin-top:10px;transition:.2s}button:hover{background:#218838}button:disabled{background:#555;cursor:not-allowed;color:#aaa}#logs{margin-top:20px;color:#aaa;font-size:.8em;text-align:left;background:#111;padding:10px;border-radius:5px;font-family:monospace;max-height:150px;overflow-y:auto}.error{color:#f44}.success{color:#0f0}#target-id{display:none}#monitor-area{display:none;margin-top:20px;border-top:1px solid #555;padding-top:15px}.btn-monitor{background:#ff9800;color:#fff}.btn-monitor:hover{background:#e68900}.footer-credits{position:fixed;bottom:15px;right:20px;color:#666;font-size:.85em;font-family:monospace;user-select:none;pointer-events:none}</style></head><body><div class="container"><h1>Ustawienia Studia</h1><div class="video-wrapper"><video id="localVideo" autoplay muted playsinline></video><div id="mute-indicator">🔇 WYCISZONY</div></div><div class="settings-group"><label>📷 Wybierz Kamerę:</label> <select id="videoSource" onchange="startPreview()"></select></div><div class="settings-group"><label>🎤 Wybierz Mikrofon:</label> <select id="audioSource" onchange="startPreview()"></select></div><div class="settings-group"><label class="checkbox-group"><input type="checkbox" id="start-muted" checked="checked"> <span>Dołącz z wyciszonym mikrofonem</span></label> <label class="checkbox-group" title="Wymusza wysoki bitrate (6 Mbps)"><input type="checkbox" id="high-bitrate" checked="checked"> <span>🔥 Unlock Bitrate</span></label></div><div class="settings-group"><label>Twoje Imię <span style="color:#ffeb3b;font-size:.9em;font-weight:400">(Wymagane do gry)</span>:</label> <input type="text" id="username" placeholder="Wpisz swoje imię..."></div><input type="text" id="target-id"> <button id="join-btn" onclick="joinRoom()" disabled="disabled">Ładowanie kamery...</button><div id="monitor-area"><p style="margin-bottom:5px;color:#ccc">Potrzebujesz widzieć grę i innych?</p><label class="checkbox-group" style="justify-content:center;margin-bottom:15px"><input type="checkbox" id="local-monitor" checked="checked" onchange="regenerateLink()"> <span style="font-size:.85em;color:#00d2ff">🛠️ Niezależny Podgląd (Zmieniaj układ samemu)</span></label> <button id="btn-open-monitor" class="btn-monitor">📋 Skopiuj Link Podglądu</button></div><div id="logs"></div></div><div class="footer-credits">from xrawenq for Goodiez</div><script>function log(e,t="info"){const n=document.getElementById("logs"),o=document.createElement("div");o.innerText=`> ${e}`,"error"===t&&(o.className="error"),"success"===t&&(o.className="success"),n.prepend(o),console.log(e)}const urlParams=new URLSearchParams(window.location.search),useStunOnly=urlParams.get("stunonly"),isMulti=urlParams.get("multi"),selectedConfig=useStunOnly?[{urls:"stun:stun.l.google.com:19302"}]:[{urls:"stun:stun.l.google.com:19302"},{urls:"turn:openrelay.metered.ca:80?transport=udp",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:80?transport=tcp",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:443?transport=udp",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:443?transport=tcp",username:"openrelayproject",credential:"openrelayproject"}],peer=new Peer(void 0,{config:{iceServers:selectedConfig}});let localStream=null,globalConn=null,directorConn=null;const activeCallIds=[],videoSelect=document.getElementById("videoSource"),audioSelect=document.getElementById("audioSource"),joinBtn=document.getElementById("join-btn");async function requestPermissions(){try{(await navigator.mediaDevices.getUserMedia({video:!0,audio:!0})).getTracks().forEach(e=>e.stop())}catch(e){log("Błąd uprawnień: "+e.name,"error"),alert("Musisz zezwolić na dostęp do kamery i mikrofonu!"),joinBtn.innerText="BRAK DOSTĘPU"}}async function getDevices(){const e=await navigator.mediaDevices.enumerateDevices();videoSelect.innerHTML="",audioSelect.innerHTML="",e.forEach(e=>{const t=document.createElement("option");t.value=e.deviceId,"videoinput"===e.kind?(t.text=e.label||`Kamera ${videoSelect.length+1}`,videoSelect.appendChild(t)):"audioinput"===e.kind&&(t.text=e.label||`Mikrofon ${audioSelect.length+1}`,audioSelect.appendChild(t))})}async function startPreview(){joinBtn.disabled=!0,joinBtn.innerText="Ustawianie kamery...",localStream&&localStream.getTracks().forEach(e=>e.stop());const e={video:{deviceId:videoSelect.value?{exact:videoSelect.value}:void 0,width:{ideal:1920},height:{ideal:1080}},audio:{deviceId:audioSelect.value?{exact:audioSelect.value}:void 0}};try{localStream=await navigator.mediaDevices.getUserMedia(e),document.getElementById("localVideo").srcObject=localStream,checkMuteState(),joinBtn.disabled=!1,joinBtn.innerText="DOŁĄCZ DO STUDIA",log("Kamera gotowa. Możesz dołączyć.","success")}catch(e){log("Błąd podglądu: "+e.name,"error"),joinBtn.innerText="BŁĄD KAMERY"}}function checkMuteState(){if(!localStream)return;const e=document.getElementById("start-muted").checked,t=localStream.getAudioTracks()[0];t&&(t.enabled=!e,toggleMuteUI(e))}function toggleMuteUI(e){document.getElementById("mute-indicator").style.display=e?"block":"none"}async function joinRoom(){const e=document.getElementById("target-id").value,t=document.getElementById("username").value.trim(),n=document.getElementById("high-bitrate").checked;joinBtn.disabled=!0,joinBtn.innerText="Łączenie...",videoSelect.disabled=!0,audioSelect.disabled=!0,generateMonitorLink(),log("Dzwonię do OBS...");const o=localStream.getVideoTracks()[0];o&&"contentHint"in o&&(o.contentHint="motion",log("Ustawiono priorytet: Motion")),isMulti?(log("Tryb Multi: Łączę z Reżyserem..."),directorConn=peer.connect(e),directorConn.on("open",()=>{log("Połączono z Reżyserem. Pobieram listę ekranów...","success"),directorConn.send({type:"get-obs-list"}),directorConn.send({type:"identify",name:t});const e=document.getElementById("start-muted").checked;directorConn.send({type:"mic-status",muted:e}),setInterval(()=>{directorConn.open&&directorConn.send({type:"heartbeat"})},2e3)}),directorConn.on("data",e=>{"obs-list"===e.type&&(log(`Aktualizacja listy OBS: znaleziono ${e.targets.length}`),e.targets.forEach(e=>{activeCallIds.includes(e)||callSingleOBS(e,t,n)}),joinBtn.innerText="JESTEŚ NA WIZJI (MULTI)",joinBtn.style.background="#dc3545",document.getElementById("monitor-area").style.display="block"),"force-sync"===e.type&&(log("Otrzymano rozkaz synchronizacji...","info"),directorConn.send({type:"get-obs-list"})),handleRemoteCommand(e)})):(log("Tryb Standard: Dzwonię do OBS..."),callSingleOBS(e,t,n)),window.addEventListener("beforeunload",()=>{directorConn&&directorConn.open&&directorConn.send({type:"leave"}),globalConn&&globalConn.open&&globalConn.send({type:"leave"})})}function regenerateLink(){generateMonitorLink()}function generateMonitorLink(){const e=document.getElementById("btn-open-monitor"),t=document.getElementById("target-id").value,n=document.getElementById("username").value.trim(),o=document.getElementById("local-monitor").checked;let a=window.location.href.split("guest.html")[0],i=`?room=${t}`;useStunOnly&&(i+="&stunonly=1"),isMulti&&(i+="&multi=1"),n&&(i+=`&hide=${encodeURIComponent(n)}`),o&&(i+="&local=1");const c=`${a}obs.html${i}`;e.onclick=()=>{navigator.clipboard.writeText(c).then(()=>{const t=e.innerText;e.innerText="✅ Skopiowano!",e.style.background="#28a745",setTimeout(()=>{e.innerText=t,e.style.background=""},2e3)}).catch(e=>{console.error("Błąd kopiowania:",e),alert("Nie udało się skopiować automatycznie. Twój link to:\n"+c)})}}function callSingleOBS(e,t,n){log(`Dzwonię do ekranu: ${e}`),activeCallIds.push(e);const o=peer.call(e,localStream),a=peer.connect(e);isMulti||(globalConn=a),a.on("open",()=>{const e=document.getElementById("start-muted").checked;a.send({type:"identify",name:t}),a.send({type:"mic-status",muted:e}),isMulti||(log("Połączenie zestawione!","success"),document.getElementById("join-btn").innerText="JESTEŚ NA WIZJI",document.getElementById("join-btn").style.background="#dc3545")}),o.on("close",()=>{const t=activeCallIds.indexOf(e);t>-1&&activeCallIds.splice(t,1)}),o.on("error",()=>{const t=activeCallIds.indexOf(e);t>-1&&activeCallIds.splice(t,1)}),n&&setTimeout(()=>{const e=o.peerConnection.getSenders().find(e=>"video"===e.track.kind);if(e){const t=e.getParameters();t.encodings||(t.encodings=[{}]),t.encodings[0].maxBitrate=6e6,e.setParameters(t).then(()=>{}).catch(e=>{})}},1e3),a.on("data",e=>handleRemoteCommand(e)),setInterval(()=>{a.open&&a.send({type:"heartbeat"})},2e3)}function handleRemoteCommand(e){if("mute-cmd"===e.type){const t=localStream.getAudioTracks()[0];if(t){t.enabled=!e.state,toggleMuteUI(e.state),document.getElementById("start-muted").checked=e.state;const n={type:"mic-status",muted:e.state};directorConn&&directorConn.open&&directorConn.send(n),globalConn&&globalConn.open&&globalConn.send(n)}}}window.onload=async function(){const e=urlParams.get("room");e?(document.getElementById("target-id").value=e,log(`Pokój wykryty: ${e}`),joinBtn.disabled=!0,joinBtn.innerText="Inicjalizacja...",await requestPermissions(),await getDevices(),startPreview()):(log("BŁĄD: Brak ID pokoju w linku.","error"),joinBtn.disabled=!0,joinBtn.innerText="BŁĘDNY LINK")},document.getElementById("start-muted").addEventListener("change",checkMuteState),peer.on("open",e=>log(`Gotowy. Twoje ID: ${e}`,"success"))</script></body></html>
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>GOŚĆ - Ustawienia</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        text-align: center;
+        background: #222;
+        color: white;
+        padding: 20px;
+        margin: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #333;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      }
+      h1 {
+        margin-top: 0;
+        color: #00d2ff;
+      }
+
+      .video-wrapper {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16/9;
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        border: 2px solid #555;
+      }
+      /* Usunięto transform: scaleX(-1) stąd, bo teraz steruje tym JS */
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      #mute-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: red;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-weight: bold;
+        display: none;
+        box-shadow: 0 0 5px black;
+        font-size: 0.8em;
+        z-index: 10;
+      }
+
+      .settings-group {
+        text-align: left;
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        color: #ccc;
+        font-size: 0.9em;
+      }
+      select,
+      input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        background: #222;
+        border: 1px solid #555;
+        color: white;
+        border-radius: 5px;
+        box-sizing: border-box;
+      }
+
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        cursor: pointer;
+      }
+      input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+
+      button {
+        padding: 15px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        width: 100%;
+        margin-top: 10px;
+        transition: 0.2s;
+      }
+      button:hover {
+        background: #218838;
+      }
+      button:disabled {
+        background: #555;
+        cursor: not-allowed;
+        color: #aaa;
+      }
+
+      #logs {
+        margin-top: 20px;
+        color: #aaa;
+        font-size: 0.8em;
+        text-align: left;
+        background: #111;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        max-height: 150px;
+        overflow-y: auto;
+      }
+      .error {
+        color: #ff4444;
+      }
+      .success {
+        color: #00ff00;
+      }
+
+      #target-id {
+        display: none;
+      }
+      #monitor-area {
+        display: none;
+        margin-top: 20px;
+        border-top: 1px solid #555;
+        padding-top: 15px;
+      }
+      .btn-monitor {
+        background: #ff9800;
+        color: white;
+      }
+      .btn-monitor:hover {
+        background: #e68900;
+      }
+      .footer-credits {
+        position: fixed;
+        bottom: 15px;
+        right: 20px;
+        color: #666;
+        font-size: 0.85em;
+        font-family: monospace;
+        user-select: none;
+        pointer-events: none;
+      }
+
+      /* --- STYL DLA KADROWANIA --- */
+      .crop-controls {
+        background: #222;
+        padding: 15px;
+        border-radius: 5px;
+        border: 1px solid #444;
+        margin-bottom: 15px;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .slider-row span {
+        width: 70px;
+        font-size: 0.85em;
+        color: #aaa;
+        text-align: left;
+      }
+      .slider-row input[type="range"] {
+        flex-grow: 1;
+        cursor: pointer;
+      }
+      .btn-reset-crop {
+        padding: 8px;
+        font-size: 14px;
+        background: #555;
+        margin-top: 5px;
+      }
+      .btn-reset-crop:hover {
+        background: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Ustawienia Studia</h1>
+
+      <div class="video-wrapper">
+        <video id="localVideo" autoplay muted playsinline></video>
+        <div id="mute-indicator">🔇 WYCISZONY</div>
+      </div>
+
+      <!-- NOWOŚĆ: KADROWANIE -->
+      <div class="crop-controls">
+        <label style="margin-bottom: 10px; font-weight: bold; color: #fff"
+          >🖼️ Kadrowanie obrazu (Zostanie wysłane do OBS):</label
+        >
+        <div class="slider-row">
+          <span>🔍 Zoom:</span>
+          <input
+            type="range"
+            id="cam-z"
+            min="1"
+            max="3"
+            step="0.05"
+            value="1"
+            oninput="updateTransform()"
+          />
+        </div>
+        <div class="slider-row">
+          <span>↔️ Poziom:</span>
+          <input
+            type="range"
+            id="cam-x"
+            min="-50"
+            max="50"
+            step="1"
+            value="0"
+            oninput="updateTransform()"
+          />
+        </div>
+        <div class="slider-row">
+          <span>↕️ Pion:</span>
+          <input
+            type="range"
+            id="cam-y"
+            min="-50"
+            max="50"
+            step="1"
+            value="0"
+            oninput="updateTransform()"
+          />
+        </div>
+        <button onclick="resetTransform()" class="btn-reset-crop">
+          Początkowy Kadr
+        </button>
+      </div>
+
+      <div class="settings-group">
+        <label>📷 Wybierz Kamerę:</label>
+        <select id="videoSource" onchange="startPreview()"></select>
+      </div>
+
+      <div class="settings-group">
+        <label>🎤 Wybierz Mikrofon:</label>
+        <select id="audioSource" onchange="startPreview()"></select>
+      </div>
+
+      <div class="settings-group">
+        <label class="checkbox-group"
+          ><input type="checkbox" id="start-muted" checked />
+          <span>Dołącz z wyciszonym mikrofonem</span></label
+        >
+        <label class="checkbox-group" title="Wymusza wysoki bitrate (6 Mbps)"
+          ><input type="checkbox" id="high-bitrate" checked />
+          <span>🔥 Unlock Bitrate</span></label
+        >
+      </div>
+
+      <div class="settings-group">
+        <label
+          >Twoje Imię
+          <span style="color: #ffeb3b; font-size: 0.9em; font-weight: normal"
+            >(Wymagane do gry)</span
+          >:</label
+        >
+        <input type="text" id="username" placeholder="Wpisz swoje imię..." />
+      </div>
+
+      <input type="text" id="target-id" />
+      <button id="join-btn" onclick="joinRoom()" disabled>
+        Ładowanie kamery...
+      </button>
+
+      <div id="monitor-area">
+        <p style="margin-bottom: 5px; color: #ccc">
+          Potrzebujesz widzieć grę i innych?
+        </p>
+        <label
+          class="checkbox-group"
+          style="justify-content: center; margin-bottom: 15px"
+        >
+          <input
+            type="checkbox"
+            id="local-monitor"
+            checked
+            onchange="regenerateLink()"
+          />
+          <span style="font-size: 0.85em; color: #00d2ff"
+            >🛠️ Niezależny Podgląd (Zmieniaj układ samemu)</span
+          >
+        </label>
+        <button id="btn-open-monitor" class="btn-monitor">
+          📋 Skopiuj Link Podglądu (Ukryj moje hasło)
+        </button>
+      </div>
+
+      <div id="logs"></div>
+    </div>
+
+    <div class="footer-credits">from xrawenq for Goodiez</div>
+
+    <script>
+      function log(msg, type = "info") {
+        const logs = document.getElementById("logs");
+        const p = document.createElement("div");
+        p.innerText = `> ${msg}`;
+        if (type === "error") p.className = "error";
+        if (type === "success") p.className = "success";
+        logs.prepend(p);
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const useStunOnly = urlParams.get("stunonly");
+      const isMulti = urlParams.get("multi");
+
+      const selectedConfig = useStunOnly
+        ? [{ urls: "stun:stun.l.google.com:19302" }]
+        : [
+            { urls: "stun:stun.l.google.com:19302" },
+            {
+              urls: "turn:openrelay.metered.ca:80?transport=udp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:80?transport=tcp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:443?transport=udp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:443?transport=tcp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+          ];
+
+      const peer = new Peer(undefined, {
+        config: { iceServers: selectedConfig },
+      });
+
+      let localStream = null;
+      let globalConn = null;
+      let directorConn = null;
+      const activeCallIds = [];
+      const videoSelect = document.getElementById("videoSource");
+      const audioSelect = document.getElementById("audioSource");
+      const joinBtn = document.getElementById("join-btn");
+
+      // --- ZMIENNE KADROWANIA ---
+      let currentTransform = { z: 1, x: 0, y: 0 };
+
+      function updateTransform() {
+        currentTransform.z = parseFloat(document.getElementById("cam-z").value);
+        currentTransform.x = parseFloat(document.getElementById("cam-x").value);
+        currentTransform.y = parseFloat(document.getElementById("cam-y").value);
+
+        // Aplikacja na lokalnym podglądzie (z nałożonym na sztywno efektem lustra u gościa)
+        const vid = document.getElementById("localVideo");
+        vid.style.transform = `scale(${-currentTransform.z}, ${currentTransform.z}) translate(${-currentTransform.x}%, ${currentTransform.y}%)`;
+
+        // Wysyłanie do OBS / Reżysera
+        const payload = {
+          type: "guest-cam-transform",
+          transform: currentTransform,
+        };
+        if (isMulti && directorConn && directorConn.open) {
+          directorConn.send(payload);
+        } else if (!isMulti && globalConn && globalConn.open) {
+          globalConn.send(payload);
+        }
+      }
+
+      function resetTransform() {
+        document.getElementById("cam-z").value = 1;
+        document.getElementById("cam-x").value = 0;
+        document.getElementById("cam-y").value = 0;
+        updateTransform();
+      }
+      // -------------------------
+
+      window.onload = async function () {
+        const roomID = urlParams.get("room");
+        if (roomID) {
+          document.getElementById("target-id").value = roomID;
+          log(`Pokój wykryty: ${roomID}`);
+          joinBtn.disabled = true;
+          joinBtn.innerText = "Inicjalizacja...";
+          await requestPermissions();
+          await getDevices();
+          startPreview();
+          updateTransform(); // Uruchom podgląd CSS
+        } else {
+          log("BŁĄD: Brak ID pokoju w linku.", "error");
+          joinBtn.disabled = true;
+          joinBtn.innerText = "BŁĘDNY LINK";
+        }
+      };
+
+      async function requestPermissions() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
+          stream.getTracks().forEach((track) => track.stop());
+        } catch (err) {
+          log("Błąd uprawnień: " + err.name, "error");
+          alert("Musisz zezwolić na dostęp do kamery i mikrofonu!");
+          joinBtn.innerText = "BRAK DOSTĘPU";
+        }
+      }
+      async function getDevices() {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        videoSelect.innerHTML = "";
+        audioSelect.innerHTML = "";
+        devices.forEach((device) => {
+          const option = document.createElement("option");
+          option.value = device.deviceId;
+          if (device.kind === "videoinput") {
+            option.text = device.label || `Kamera ${videoSelect.length + 1}`;
+            videoSelect.appendChild(option);
+          } else if (device.kind === "audioinput") {
+            option.text = device.label || `Mikrofon ${audioSelect.length + 1}`;
+            audioSelect.appendChild(option);
+          }
+        });
+      }
+
+      async function startPreview() {
+        joinBtn.disabled = true;
+        joinBtn.innerText = "Ustawianie kamery...";
+        if (localStream)
+          localStream.getTracks().forEach((track) => track.stop());
+        const constraints = {
+          video: {
+            deviceId: videoSelect.value
+              ? { exact: videoSelect.value }
+              : undefined,
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+          audio: {
+            deviceId: audioSelect.value
+              ? { exact: audioSelect.value }
+              : undefined,
+          },
+        };
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia(constraints);
+          document.getElementById("localVideo").srcObject = localStream;
+          checkMuteState();
+          joinBtn.disabled = false;
+          joinBtn.innerText = "DOŁĄCZ DO STUDIA";
+          log("Kamera gotowa. Możesz dołączyć.", "success");
+        } catch (err) {
+          log("Błąd podglądu: " + err.name, "error");
+          joinBtn.innerText = "BŁĄD KAMERY";
+        }
+      }
+
+      document
+        .getElementById("start-muted")
+        .addEventListener("change", checkMuteState);
+      function checkMuteState() {
+        if (!localStream) return;
+        const shouldBeMuted = document.getElementById("start-muted").checked;
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (audioTrack) {
+          audioTrack.enabled = !shouldBeMuted;
+          toggleMuteUI(shouldBeMuted);
+        }
+      }
+      function toggleMuteUI(isMuted) {
+        const ind = document.getElementById("mute-indicator");
+        ind.style.display = isMuted ? "block" : "none";
+      }
+
+      peer.on("open", (id) => log(`Gotowy. Twoje ID: ${id}`, "success"));
+
+      async function joinRoom() {
+        const targetId = document.getElementById("target-id").value;
+        const username = document.getElementById("username").value.trim();
+        const highBitrate = document.getElementById("high-bitrate").checked;
+
+        joinBtn.disabled = true;
+        joinBtn.innerText = "Łączenie...";
+        videoSelect.disabled = true;
+        audioSelect.disabled = true;
+        generateMonitorLink(targetId, username);
+
+        log(`Dzwonię do OBS...`);
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack && "contentHint" in videoTrack) {
+          videoTrack.contentHint = "motion";
+        }
+
+        if (isMulti) {
+          directorConn = peer.connect(targetId);
+          directorConn.on("open", () => {
+            log("Połączono z Reżyserem. Pobieram listę ekranów...", "success");
+            directorConn.send({ type: "get-obs-list" });
+            directorConn.send({ type: "identify", name: username });
+            const isMuted = document.getElementById("start-muted").checked;
+            directorConn.send({ type: "mic-status", muted: isMuted });
+
+            // WYSYŁAMY AKTUALNY KADR PRZY POŁĄCZENIU
+            directorConn.send({
+              type: "guest-cam-transform",
+              transform: currentTransform,
+            });
+
+            setInterval(() => {
+              if (directorConn.open) directorConn.send({ type: "heartbeat" });
+            }, 2000);
+          });
+
+          directorConn.on("data", (data) => {
+            if (data.type === "obs-list") {
+              log(`Aktualizacja listy OBS: znaleziono ${data.targets.length}`);
+              data.targets.forEach((obsId) => {
+                if (!activeCallIds.includes(obsId)) {
+                  callSingleOBS(obsId, username, highBitrate);
+                }
+              });
+              joinBtn.innerText = "JESTEŚ NA WIZJI (MULTI)";
+              joinBtn.style.background = "#dc3545";
+              document.getElementById("monitor-area").style.display = "block";
+            }
+            if (data.type === "force-sync") {
+              log("Otrzymano rozkaz synchronizacji...", "info");
+              directorConn.send({ type: "get-obs-list" });
+            }
+            handleRemoteCommand(data);
+          });
+        } else {
+          callSingleOBS(targetId, username, highBitrate);
+        }
+
+        window.addEventListener("beforeunload", () => {
+          if (directorConn && directorConn.open)
+            directorConn.send({ type: "leave" });
+          if (globalConn && globalConn.open) globalConn.send({ type: "leave" });
+        });
+      }
+
+      function regenerateLink() {
+        generateMonitorLink(
+          document.getElementById("target-id").value,
+          document.getElementById("username").value.trim(),
+        );
+      }
+
+      function generateMonitorLink(roomID, username) {
+        const btnMonitor = document.getElementById("btn-open-monitor");
+        let baseUrl = window.location.href.split("guest.html")[0];
+        let params = `?room=${roomID}`;
+        if (useStunOnly) params += "&stunonly=1";
+        if (isMulti) params += "&multi=1";
+        if (username) params += `&hide=${encodeURIComponent(username)}`;
+        if (document.getElementById("local-monitor").checked)
+          params += "&local=1";
+
+        const obsUrl = `${baseUrl}obs.html${params}`;
+        btnMonitor.onclick = () => {
+          navigator.clipboard
+            .writeText(obsUrl)
+            .then(() => {
+              const originalText = btnMonitor.innerText;
+              btnMonitor.innerText = "✅ Skopiowano!";
+              btnMonitor.style.background = "#28a745";
+              setTimeout(() => {
+                btnMonitor.innerText = originalText;
+                btnMonitor.style.background = "";
+              }, 2000);
+            })
+            .catch((err) => {
+              alert("Twój link to:\n" + obsUrl);
+            });
+        };
+      }
+
+      function callSingleOBS(obsId, username, highBitrate) {
+        log(`Dzwonię do ekranu: ${obsId}`);
+        activeCallIds.push(obsId);
+        const call = peer.call(obsId, localStream);
+        const conn = peer.connect(obsId);
+        if (!isMulti) globalConn = conn;
+
+        conn.on("open", () => {
+          const isMuted = document.getElementById("start-muted").checked;
+          conn.send({ type: "identify", name: username });
+          conn.send({ type: "mic-status", muted: isMuted });
+          // WYSYŁAMY AKTUALNY KADR DO OBS W TRYBIE STANDARD
+          conn.send({
+            type: "guest-cam-transform",
+            transform: currentTransform,
+          });
+
+          if (!isMulti) {
+            log("Połączenie zestawione!", "success");
+            document.getElementById("join-btn").innerText = "JESTEŚ NA WIZJI";
+            document.getElementById("join-btn").style.background = "#dc3545";
+          }
+        });
+        call.on("close", () => {
+          const idx = activeCallIds.indexOf(obsId);
+          if (idx > -1) activeCallIds.splice(idx, 1);
+        });
+        call.on("error", () => {
+          const idx = activeCallIds.indexOf(obsId);
+          if (idx > -1) activeCallIds.splice(idx, 1);
+        });
+        if (highBitrate) {
+          setTimeout(() => {
+            const pc = call.peerConnection;
+            const sender = pc
+              .getSenders()
+              .find((s) => s.track.kind === "video");
+            if (sender) {
+              const params = sender.getParameters();
+              if (!params.encodings) params.encodings = [{}];
+              params.encodings[0].maxBitrate = 6000000;
+              sender
+                .setParameters(params)
+                .then(() => {})
+                .catch((e) => {});
+            }
+          }, 1000);
+        }
+        conn.on("data", (data) => handleRemoteCommand(data));
+        setInterval(() => {
+          if (conn.open) conn.send({ type: "heartbeat" });
+        }, 2000);
+      }
+
+      function handleRemoteCommand(data) {
+        if (data.type === "mute-cmd") {
+          const audioTrack = localStream.getAudioTracks()[0];
+          if (audioTrack) {
+            audioTrack.enabled = !data.state;
+            toggleMuteUI(data.state);
+            document.getElementById("start-muted").checked = data.state;
+            const msg = { type: "mic-status", muted: data.state };
+            if (directorConn && directorConn.open) directorConn.send(msg);
+            if (globalConn && globalConn.open) globalConn.send(msg);
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

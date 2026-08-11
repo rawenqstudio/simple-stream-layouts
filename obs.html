@@ -1,1 +1,883 @@
-<!doctype html><html lang="pl"><head><meta charset="UTF-8"><title>WIDOK OBS</title><script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script><style>*{box-sizing:border-box}body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:0 0;font-family:"Segoe UI",sans-serif}#video-container{width:100%;height:100%;transition:all .5s ease;position:relative}.video-box{position:relative;overflow:hidden;border:2px solid #fff;box-shadow:0 0 15px rgba(0,0,0,.7);background:#000;transition:all .5s ease}img.fake-cam,video{width:100%;height:100%;object-fit:cover;display:block}img.mirror-effect,video.mirror-effect{transform:scaleX(-1)}.mute-icon{position:absolute;top:10px;right:10px;color:red;font-size:24px;background:rgba(0,0,0,.5);padding:5px;border-radius:50%;display:none;z-index:20}.label{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,.7);color:#fff;padding:5px 15px;border-radius:4px;font-size:1.2rem;font-weight:700;text-shadow:1px 1px 2px #000;border-left:4px solid #00d2ff;z-index:10;display:none}#video-container:not(.show-labels) .label{display:none!important}#video-container:not(.show-icons) .mute-icon{display:none!important}#video-container.hide-borders .video-box{border:none!important}.game-card{position:absolute;top:5%;left:50%;transform:translateX(-50%);background:#ffeb3b;color:#000;padding:10px 20px;font-size:2em;font-weight:800;text-transform:uppercase;border-radius:5px;box-shadow:0 5px 15px rgba(0,0,0,.5);z-index:50;text-align:center;border:2px solid #fdd835;animation:popIn .5s cubic-bezier(.175,.885,.32,1.275);white-space:nowrap}.game-card.self-hidden{opacity:0!important;pointer-events:none}@keyframes popIn{0%{transform:translateX(-50%) scale(0) rotate(-10deg);opacity:0}100%{transform:translateX(-50%) scale(1) rotate(0);opacity:1}}#local-panel{position:absolute;bottom:40px;right:40px;background:rgba(0,0,0,.85);border:3px solid #555;border-radius:15px;padding:30px;z-index:9999;display:none;opacity:0;transition:opacity .4s ease;box-shadow:0 10px 40px rgba(0,0,0,.9);width:500px}#local-panel.visible{opacity:1}#local-panel h4{color:#00d2ff;margin:0 0 20px 0;font-size:28px;text-align:center;text-transform:uppercase}.local-btn-container{display:flex;gap:15px;flex-wrap:wrap;justify-content:center}#local-panel button{background:#444;color:#fff;border:2px solid #666;padding:15px 25px;margin:5px;border-radius:10px;cursor:pointer;font-size:22px;font-weight:700;transition:.2s;flex-grow:1}#local-panel button:hover{background:#007bff;border-color:#00d2ff}.layout-free{position:relative;width:100%;height:100%}.layout-free .video-box{position:absolute;transition:width .2s,height .2s,top .1s,left .1s;width:320px;height:180px;box-shadow:0 0 5px rgba(0,0,0,.8)}.layout-grid{display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:15px;padding:20px;height:100vh}.layout-grid .video-box{width:45%;height:45%}.layout-grid[data-count="1"] .video-box{width:85%;height:85%}.layout-grid[data-count="2"] .video-box{width:48%;height:60%}.layout-grid[data-count="3"] .video-box,.layout-grid[data-count="4"] .video-box{width:45%;height:45%}.layout-grid[data-count="5"] .video-box,.layout-grid[data-count="6"] .video-box{width:32%;height:45%}.layout-grid[data-count="7"] .video-box,.layout-grid[data-count="8"] .video-box,.layout-grid[data-count="9"] .video-box{width:32%;height:30%}.layout-grid[data-count="10"] .video-box,.layout-grid[data-count="11"] .video-box,.layout-grid[data-count="12"] .video-box{width:23%;height:23%}.layout-sidebar-right{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding-right:20px;height:100vh;gap:15px}.layout-sidebar-right .video-box{width:320px;height:180px;margin:0}.layout-sidebar-left{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding-left:20px;height:100vh;gap:15px}.layout-sidebar-left .video-box{width:320px;height:180px;margin:0}.layout-bottom{display:flex;flex-direction:row;justify-content:center;align-items:flex-end;padding-bottom:20px;height:100vh;gap:20px}.layout-bottom .video-box{width:280px;height:157px;margin:0}.layout-top{display:flex;flex-direction:row;justify-content:center;align-items:flex-start;padding-top:20px;height:100vh;gap:20px}.layout-top .video-box{width:280px;height:157px;margin:0}.layout-split{display:grid;grid-template-columns:320px 1fr 320px;grid-auto-rows:min-content;align-content:center;row-gap:30px;padding:20px 40px;height:100vh}.layout-split .video-box{width:100%;height:180px;margin:0}.layout-split .video-box:nth-child(odd){grid-column:1;justify-self:start}.layout-split .video-box:nth-child(2n){grid-column:3;justify-self:end}.layout-center-stage{display:grid;grid-template-columns:300px 1fr 300px;grid-auto-rows:min-content;gap:15px;padding:20px;height:100vh;align-content:center}.layout-center-stage .video-box{width:100%;height:169px;margin:0}.layout-center-stage .video-box:first-child{grid-column:2;grid-row:1/span 10;width:100%;height:auto;max-height:90vh;aspect-ratio:16/9;align-self:center;z-index:10;box-shadow:0 0 30px rgba(0,0,0,.8)}.layout-center-stage .video-box:nth-child(2n){grid-column:1}.layout-center-stage .video-box:nth-child(odd):not(:first-child){grid-column:3}</style></head><body><div id="video-container" class="layout-grid" data-count="0"></div><div id="local-panel"><h4>Własny Układ</h4><div class="local-btn-container"><button onclick='setLocalLayout("layout-grid")' style="background:#6f42c1;width:100%">🔳 Siatka</button> <button onclick='setLocalLayout("layout-top")'>⬆️ Góra</button> <button onclick='setLocalLayout("layout-bottom")'>⬇️ Dół</button> <button onclick='setLocalLayout("layout-sidebar-left")'>⬅️ Lewo</button> <button onclick='setLocalLayout("layout-sidebar-right")'>➡️ Prawo</button> <button onclick='setLocalLayout("layout-split")' style="width:40%">↔️ Split</button> <button onclick='setLocalLayout("layout-center-stage")' style="width:40%">⭐️ Center</button></div></div><script>const urlParams=new URLSearchParams(window.location.search),myID=urlParams.get("room")||"test-room",useStunOnly=urlParams.get("stunonly"),useULL=urlParams.get("ull"),isMulti=urlParams.get("multi"),isLocal="1"===urlParams.get("local"),hideTargetName=urlParams.get("hide")?urlParams.get("hide").toLowerCase().trim():null,selectedConfig=useStunOnly?[{urls:"stun:stun.l.google.com:19302"}]:[{urls:"stun:stun.l.google.com:19302"},{urls:"turn:openrelay.metered.ca:80?transport=udp",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:80?transport=tcp",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:443?transport=udp",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:443?transport=tcp",username:"openrelayproject",credential:"openrelayproject"}],peer=new Peer(isMulti?void 0:myID,{config:{iceServers:selectedConfig}}),container=document.getElementById("video-container"),guests={},heartbeats={};let directorConn=null;const statsCache={};let hidePanelTimeout;if(isLocal){console.log("🛠 Uruchomiono tryb lokalny. OBS zignoruje rozkazy układu od Reżysera.");const e=document.getElementById("local-panel");e.style.display="block",container.className="layout-grid";const t=()=>{e.classList.add("visible"),clearTimeout(hidePanelTimeout),hidePanelTimeout=setTimeout(()=>{e.classList.remove("visible")},5e3)};window.addEventListener("mousemove",t),window.addEventListener("mousedown",t)}function setLocalLayout(e){container.className=e,document.querySelectorAll(".video-box").forEach(e=>{e.style.top="",e.style.left="",e.style.width="",e.style.height=""})}function connectToDirector(e){directorConn=peer.connect(e),directorConn.on("open",()=>{directorConn.send({type:"register-obs"})}),directorConn.on("data",e=>handleData(e))}function handleData(e,t){if("layout"===e.type&&!isLocal){const t=[];container.classList.forEach(e=>{e.startsWith("layout-")&&t.push(e)}),t.forEach(e=>container.classList.remove(e)),container.classList.add(e.mode),"layout-free"!==e.mode&&document.querySelectorAll(".video-box").forEach(e=>{e.style.top="",e.style.left="",e.style.width="",e.style.height=""})}if("transform-update"===e.type&&!isLocal){const t=document.getElementById(`box-${e.targetId}`);t&&(t.style.left=e.x+"%",t.style.top=e.y+"%",t.style.width=e.w+"%",t.style.height=e.h+"%")}if("reorder-guests"!==e.type||isLocal||e.order.forEach(e=>{const t=document.getElementById(`box-${e}`);t&&container.appendChild(t)}),"toggle-labels"===e.type&&(e.show?container.classList.add("show-labels"):container.classList.remove("show-labels")),"toggle-icons"===e.type&&(e.show?container.classList.add("show-icons"):container.classList.remove("show-icons")),"toggle-borders"===e.type&&(e.show?container.classList.remove("hide-borders"):container.classList.add("hide-borders")),"add-fake-guest"===e.type&&addFakeVideo(e.id,e.name,e.img),"refresh-cam"===e.type&&("all"===e.targetId?Object.keys(guests).forEach(e=>performRefresh(e)):performRefresh(e.targetId)),"toggle-mirror"===e.type){const t=document.getElementById(`box-${e.targetId}`);if(t){const o=t.querySelector("video")||t.querySelector("img");o&&(o.classList.toggle("mirror-effect"),guests[e.targetId]&&(guests[e.targetId].mirrored=o.classList.contains("mirror-effect")),sendGuestListToDirector())}}if("game-deal"===e.type){document.querySelectorAll(".game-card").forEach(e=>e.remove());for(const[t,o]of Object.entries(e.cards))setGameCard(t,o)}if("game-update-card"===e.type&&setGameCard(e.targetId,e.word),"game-clear"===e.type&&document.querySelectorAll(".game-card").forEach(e=>e.remove()),"remote-mute"===e.type&&guests[e.targetId]&&guests[e.targetId].conn&&guests[e.targetId].conn.send({type:"mute-cmd",state:e.state}),"identify"===e.type&&t){guests[t.peer]||(guests[t.peer]={name:"Gość",muted:!1,mirrored:!1}),guests[t.peer].name=e.name||"Gość",guests[t.peer].conn=t,updateLabel(t.peer,e.name);const o=document.getElementById(`box-${t.peer}`);if(o){const t=o.querySelector(".game-card");t&&hideTargetName&&e.name.toLowerCase().trim()===hideTargetName&&t.classList.add("self-hidden")}sendGuestListToDirector()}"mic-status"===e.type&&t&&guests[t.peer]&&(guests[t.peer].muted=e.muted,toggleMuteIcon(t.peer,e.muted),sendGuestListToDirector()),"heartbeat"===e.type&&t&&(heartbeats[t.peer]=Date.now()),"leave"===e.type&&t&&removeGuest(t.peer)}function setGameCard(e,t){const o=document.getElementById(`box-${e}`);if(!o)return;let n=o.querySelector(".game-card");n&&n.remove();const r=document.createElement("div");r.className="game-card",r.innerText=t,hideTargetName&&guests[e]&&guests[e].name&&guests[e].name.toLowerCase().trim()===hideTargetName&&r.classList.add("self-hidden"),o.appendChild(r)}function updateGuestCount(){const e=container.querySelectorAll(".video-box").length;container.setAttribute("data-count",e)}function addFakeVideo(e,t,o){if(document.getElementById(`box-${e}`))return;guests[e]={name:t,muted:!1,mirrored:!1,conn:null};const n=document.createElement("div");n.className="video-box",n.id=`box-${e}`,n.style.order=999;const r=document.createElement("img");r.src=o,r.className="fake-cam";const s=document.createElement("div");s.className="label",s.id=`label-${e}`,s.innerText=t;const a=document.createElement("div");a.className="mute-icon",a.innerText="🔇",a.id=`mute-${e}`,n.appendChild(r),n.appendChild(s),n.appendChild(a),container.appendChild(n),updateGuestCount(),sendGuestListToDirector()}function addVideo(e,t){if(document.getElementById(`box-${t}`))return;heartbeats[t]=Date.now(),statsCache[t]={bytes:0,delayTotal:0,emittedTotal:0};const o=document.createElement("div");o.className="video-box",o.id=`box-${t}`,o.style.order=999;const n=document.createElement("video");n.srcObject=e,n.muted=!0,n.autoplay=!0,n.playsInline=!0;const r=document.createElement("audio");r.srcObject=e,r.muted=!1,r.autoplay=!0,r.id=`audio-${t}`;const s=document.createElement("div");s.className="label",s.id=`label-${t}`;const a=document.createElement("div");a.className="mute-icon",a.innerText="🔇",a.id=`mute-${t}`,o.appendChild(n),o.appendChild(s),o.appendChild(a),o.appendChild(r),container.appendChild(o),updateGuestCount(),n.play().catch(e=>console.error(e)),r.play().catch(e=>console.warn(e))}function performRefresh(e){const t=document.getElementById(`box-${e}`);if(!t)return;const o=t.querySelector("video"),n=t.querySelector("audio");if(o&&o.srcObject){const e=o.srcObject;o.srcObject=null,n&&(n.srcObject=null),setTimeout(()=>{o.srcObject=e,n&&(n.srcObject=e),o.play().catch(e=>console.log(e)),n&&n.play().catch(e=>console.log(e))},100)}}function removeGuest(e){document.getElementById(`box-${e}`)&&(document.getElementById(`box-${e}`).remove(),delete guests[e],delete heartbeats[e],delete statsCache[e],updateGuestCount(),sendGuestListToDirector())}function updateLabel(e,t){const o=document.getElementById(`label-${e}`);o&&(t&&""!==t.trim()?(o.innerText=t,o.style.display="block"):o.style.display="none")}function toggleMuteIcon(e,t){const o=document.getElementById(`mute-${e}`);o&&(o.style.display=t?"block":"none")}function sendGuestListToDirector(){if(directorConn&&directorConn.open){const e=Object.keys(guests).map(e=>({id:e,name:guests[e].name,muted:guests[e].muted,mirrored:guests[e].mirrored}));directorConn.send({type:"guest-list",list:e})}}peer.on("open",e=>{console.log("OBS gotowy. ID: "+e),isMulti&&connectToDirector(myID)}),peer.on("call",e=>{e.answer(),guests[e.peer]||(guests[e.peer]={name:"Łączenie...",muted:!1,mirrored:!1,conn:null}),guests[e.peer].call=e,useULL&&setTimeout(()=>{const t=e.peerConnection;t&&t.getReceivers&&t.getReceivers().forEach(e=>{e.track&&"video"===e.track.kind&&"playoutDelayHint"in e&&(e.playoutDelayHint=0)})},500),e.on("stream",t=>addVideo(t,e.peer)),e.on("close",()=>removeGuest(e.peer)),e.on("error",()=>removeGuest(e.peer));const t=e.peerConnection;t.oniceconnectionstatechange=()=>{"disconnected"!==t.iceConnectionState&&"failed"!==t.iceConnectionState&&"closed"!==t.iceConnectionState||removeGuest(e.peer)}}),peer.on("connection",e=>{e.on("data",t=>{"director-hello"===t.type&&(directorConn=e,sendGuestListToDirector()),handleData(t,e)}),e.on("close",()=>removeGuest(e.peer)),e.on("error",()=>removeGuest(e.peer))}),setInterval(async()=>{const e=Date.now(),t={};for(const o in guests){if(o.startsWith("fake-"))continue;if(heartbeats[o]&&e-heartbeats[o]>7e3){removeGuest(o);continue}const n=guests[o];if(n.call&&n.call.peerConnection)try{const e=await n.call.peerConnection.getStats();let r=null;if(e.forEach(e=>{"inbound-rtp"===e.type&&"video"===e.kind&&(r=e)}),r){const e=r.bytesReceived,n=8*(e-(statsCache[o]?.bytes||0))/1e3,s=r.jitterBufferDelay||0,a=r.jitterBufferEmittedCount||1,c=statsCache[o]?.delayTotal||0,l=statsCache[o]?.emittedTotal||0,i=a-l;let d=0;i>0&&(d=(s-c)/i);const u=document.getElementById(`box-${o}`);if(u){const e=u.querySelector("video");e&&!e.paused&&(d>.2?1.05!==e.playbackRate&&(e.playbackRate=1.05):d<.15&&1!==e.playbackRate&&(e.playbackRate=1),d>2&&performRefresh(o))}statsCache[o]={bytes:e,delayTotal:s,emittedTotal:a},t[o]={bitrate:Math.round(n),packetLoss:r.packetsLost||0,resolution:r.frameWidth&&r.frameHeight?`${r.frameWidth}x${r.frameHeight}`:"N/A"}}}catch(e){}}directorConn&&directorConn.open&&Object.keys(t).length>0&&directorConn.send({type:"stats-update",stats:t})},1e3)</script></body></html>
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>WIDOK OBS</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+        font-family: "Segoe UI", sans-serif;
+      }
+
+      #video-container {
+        width: 100%;
+        height: 100%;
+        transition: all 0.5s ease;
+        position: relative;
+      }
+
+      .video-box {
+        position: relative;
+        overflow: hidden;
+        border: 2px solid white;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+        background: #000;
+        transition: all 0.5s ease;
+      }
+
+      /* USUNIĘTO .mirror-effect z CSS, bo robimy to w JS, żeby można było używać Zooma */
+      video,
+      img.fake-cam {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.2s ease; /* Płynne zoomowanie */
+      }
+
+      .mute-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: red;
+        font-size: 24px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 5px;
+        border-radius: 50%;
+        display: none;
+        z-index: 20;
+      }
+      .label {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 5px 15px;
+        border-radius: 4px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px black;
+        border-left: 4px solid #00d2ff;
+        z-index: 10;
+        display: none;
+      }
+
+      #video-container:not(.show-labels) .label {
+        display: none !important;
+      }
+      #video-container:not(.show-icons) .mute-icon {
+        display: none !important;
+      }
+      #video-container.hide-borders .video-box {
+        border: none !important;
+      }
+
+      .game-card {
+        position: absolute;
+        top: 5%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ffeb3b;
+        color: #000;
+        padding: 10px 20px;
+        font-size: 2em;
+        font-weight: 800;
+        text-transform: uppercase;
+        border-radius: 5px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        z-index: 50;
+        text-align: center;
+        border: 2px solid #fdd835;
+        animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        white-space: nowrap;
+      }
+      .game-card.self-hidden {
+        opacity: 0 !important;
+        pointer-events: none;
+      }
+      @keyframes popIn {
+        0% {
+          transform: translateX(-50%) scale(0) rotate(-10deg);
+          opacity: 0;
+        }
+        100% {
+          transform: translateX(-50%) scale(1) rotate(0deg);
+          opacity: 1;
+        }
+      }
+
+      /* LOKALNY PANEL */
+      #local-panel {
+        position: absolute;
+        bottom: 40px;
+        right: 40px;
+        background: rgba(0, 0, 0, 0.85);
+        border: 3px solid #555;
+        border-radius: 15px;
+        padding: 30px;
+        z-index: 9999;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+        width: 500px;
+      }
+      #local-panel.visible {
+        opacity: 1;
+      }
+      #local-panel h4 {
+        color: #00d2ff;
+        margin: 0 0 20px 0;
+        font-size: 28px;
+        text-align: center;
+        text-transform: uppercase;
+      }
+      .local-btn-container {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      #local-panel button {
+        background: #444;
+        color: white;
+        border: 2px solid #666;
+        padding: 15px 25px;
+        margin: 5px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 22px;
+        font-weight: bold;
+        transition: 0.2s;
+        flex-grow: 1;
+      }
+      #local-panel button:hover {
+        background: #007bff;
+        border-color: #00d2ff;
+      }
+
+      /* UKŁADY */
+      .layout-free {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .layout-free .video-box {
+        position: absolute;
+        transition:
+          width 0.2s,
+          height 0.2s,
+          top 0.1s,
+          left 0.1s;
+        width: 320px;
+        height: 180px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+      }
+
+      .layout-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-content: center;
+        gap: 15px;
+        padding: 20px;
+        height: 100vh;
+      }
+      .layout-grid .video-box {
+        width: 45%;
+        height: 45%;
+      }
+      .layout-grid[data-count="1"] .video-box {
+        width: 85%;
+        height: 85%;
+      }
+      .layout-grid[data-count="2"] .video-box {
+        width: 48%;
+        height: 60%;
+      }
+      .layout-grid[data-count="3"] .video-box,
+      .layout-grid[data-count="4"] .video-box {
+        width: 45%;
+        height: 45%;
+      }
+      .layout-grid[data-count="5"] .video-box,
+      .layout-grid[data-count="6"] .video-box {
+        width: 32%;
+        height: 45%;
+      }
+      .layout-grid[data-count="7"] .video-box,
+      .layout-grid[data-count="8"] .video-box,
+      .layout-grid[data-count="9"] .video-box {
+        width: 32%;
+        height: 30%;
+      }
+      .layout-grid[data-count="10"] .video-box,
+      .layout-grid[data-count="11"] .video-box,
+      .layout-grid[data-count="12"] .video-box {
+        width: 23%;
+        height: 23%;
+      }
+
+      .layout-sidebar-right {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-end;
+        padding-right: 20px;
+        height: 100vh;
+        gap: 15px;
+      }
+      .layout-sidebar-right .video-box {
+        width: 320px;
+        height: 180px;
+        margin: 0;
+      }
+      .layout-sidebar-left {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        padding-left: 20px;
+        height: 100vh;
+        gap: 15px;
+      }
+      .layout-sidebar-left .video-box {
+        width: 320px;
+        height: 180px;
+        margin: 0;
+      }
+      .layout-bottom {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-end;
+        padding-bottom: 20px;
+        height: 100vh;
+        gap: 20px;
+      }
+      .layout-bottom .video-box {
+        width: 280px;
+        height: 157px;
+        margin: 0;
+      }
+      .layout-top {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 20px;
+        height: 100vh;
+        gap: 20px;
+      }
+      .layout-top .video-box {
+        width: 280px;
+        height: 157px;
+        margin: 0;
+      }
+      .layout-split {
+        display: grid;
+        grid-template-columns: 320px 1fr 320px;
+        grid-auto-rows: min-content;
+        align-content: center;
+        row-gap: 30px;
+        padding: 20px 40px;
+        height: 100vh;
+      }
+      .layout-split .video-box {
+        width: 100%;
+        height: 180px;
+        margin: 0;
+      }
+      .layout-split .video-box:nth-child(odd) {
+        grid-column: 1;
+        justify-self: start;
+      }
+      .layout-split .video-box:nth-child(even) {
+        grid-column: 3;
+        justify-self: end;
+      }
+      .layout-center-stage {
+        display: grid;
+        grid-template-columns: 300px 1fr 300px;
+        grid-auto-rows: min-content;
+        gap: 15px;
+        padding: 20px;
+        height: 100vh;
+        align-content: center;
+      }
+      .layout-center-stage .video-box {
+        width: 100%;
+        height: 169px;
+        margin: 0;
+      }
+      .layout-center-stage .video-box:nth-child(1) {
+        grid-column: 2;
+        grid-row: 1 / span 10;
+        width: 100%;
+        height: auto;
+        max-height: 90vh;
+        aspect-ratio: 16/9;
+        align-self: center;
+        z-index: 10;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+      }
+      .layout-center-stage .video-box:nth-child(even) {
+        grid-column: 1;
+      }
+      .layout-center-stage .video-box:nth-child(odd):not(:first-child) {
+        grid-column: 3;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="video-container" class="layout-grid" data-count="0"></div>
+
+    <div id="local-panel">
+      <h4>Własny Układ</h4>
+      <div class="local-btn-container">
+        <button
+          onclick="setLocalLayout('layout-grid')"
+          style="background: #6f42c1; width: 100%"
+        >
+          🔳 Siatka
+        </button>
+        <button onclick="setLocalLayout('layout-top')">⬆️ Góra</button>
+        <button onclick="setLocalLayout('layout-bottom')">⬇️ Dół</button>
+        <button onclick="setLocalLayout('layout-sidebar-left')">⬅️ Lewo</button>
+        <button onclick="setLocalLayout('layout-sidebar-right')">
+          ➡️ Prawo
+        </button>
+        <button onclick="setLocalLayout('layout-split')" style="width: 40%">
+          ↔️ Split
+        </button>
+        <button
+          onclick="setLocalLayout('layout-center-stage')"
+          style="width: 40%"
+        >
+          ⭐️ Center
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const myID = urlParams.get("room") || "test-room";
+      const useStunOnly = urlParams.get("stunonly");
+      const useULL = urlParams.get("ull");
+      const isMulti = urlParams.get("multi");
+      const isLocal = urlParams.get("local") === "1";
+      const hideTargetName = urlParams.get("hide")
+        ? urlParams.get("hide").toLowerCase().trim()
+        : null;
+
+      const selectedConfig = useStunOnly
+        ? [{ urls: "stun:stun.l.google.com:19302" }]
+        : [
+            { urls: "stun:stun.l.google.com:19302" },
+            {
+              urls: "turn:openrelay.metered.ca:80?transport=udp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:80?transport=tcp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:443?transport=udp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+            {
+              urls: "turn:openrelay.metered.ca:443?transport=tcp",
+              username: "openrelayproject",
+              credential: "openrelayproject",
+            },
+          ];
+
+      const peer = new Peer(isMulti ? undefined : myID, {
+        config: { iceServers: selectedConfig },
+      });
+      const container = document.getElementById("video-container");
+
+      // --- KLUCZOWE: Baza Stanów (Trzyma dane o Zoom/Crop i lustrze dla każdego ID) ---
+      const guests = {};
+      const heartbeats = {};
+      let directorConn = null;
+      const statsCache = {};
+      let hidePanelTimeout;
+
+      if (isLocal) {
+        const localPanel = document.getElementById("local-panel");
+        localPanel.style.display = "block";
+        container.className = "layout-grid";
+        const showPanel = () => {
+          localPanel.classList.add("visible");
+          clearTimeout(hidePanelTimeout);
+          hidePanelTimeout = setTimeout(() => {
+            localPanel.classList.remove("visible");
+          }, 5000);
+        };
+        window.addEventListener("mousemove", showPanel);
+        window.addEventListener("mousedown", showPanel);
+      }
+
+      function setLocalLayout(mode) {
+        container.className = mode;
+        document.querySelectorAll(".video-box").forEach((box) => {
+          box.style.top = "";
+          box.style.left = "";
+          box.style.width = "";
+          box.style.height = "";
+        });
+      }
+
+      peer.on("open", (id) => {
+        if (isMulti) connectToDirector(myID);
+      });
+
+      function connectToDirector(targetId) {
+        directorConn = peer.connect(targetId);
+        directorConn.on("open", () => {
+          directorConn.send({ type: "register-obs" });
+        });
+        directorConn.on("data", (data) => handleData(data));
+      }
+
+      peer.on("call", (call) => {
+        call.answer();
+        if (!guests[call.peer])
+          guests[call.peer] = {
+            name: "Łączenie...",
+            muted: false,
+            mirrored: false,
+            transform: { z: 1, x: 0, y: 0 },
+            conn: null,
+          };
+        guests[call.peer].call = call;
+        if (useULL) {
+          setTimeout(() => {
+            const pc = call.peerConnection;
+            if (pc && pc.getReceivers) {
+              pc.getReceivers().forEach((receiver) => {
+                if (
+                  receiver.track &&
+                  receiver.track.kind === "video" &&
+                  "playoutDelayHint" in receiver
+                ) {
+                  receiver.playoutDelayHint = 0;
+                }
+              });
+            }
+          }, 500);
+        }
+        call.on("stream", (stream) => addVideo(stream, call.peer));
+        call.on("close", () => removeGuest(call.peer));
+        call.on("error", () => removeGuest(call.peer));
+        call.peerConnection.oniceconnectionstatechange = () => {
+          const s = call.peerConnection.iceConnectionState;
+          if (s === "disconnected" || s === "failed" || s === "closed")
+            removeGuest(call.peer);
+        };
+      });
+
+      peer.on("connection", (conn) => {
+        conn.on("data", (data) => {
+          if (data.type === "director-hello") {
+            directorConn = conn;
+            sendGuestListToDirector();
+          }
+          handleData(data, conn);
+        });
+        conn.on("close", () => removeGuest(conn.peer));
+        conn.on("error", () => removeGuest(conn.peer));
+      });
+
+      // --- MATEMATYKA CROP/ZOOM/LUSTRA ---
+      function applyVideoStyle(id) {
+        const guest = guests[id];
+        const box = document.getElementById(`box-${id}`);
+        if (box && guest) {
+          const video = box.querySelector("video") || box.querySelector("img");
+          if (video) {
+            const z = guest.transform ? guest.transform.z : 1;
+            const x = guest.transform ? guest.transform.x : 0;
+            const y = guest.transform ? guest.transform.y : 0;
+
+            // Jeśli włączone jest lustro, musimy obrócić oś X (żeby -1) i odwrócić ruch przesunięcia na boki (żeby suwak w lewo zawsze szedł w lewo)
+            const scaleX = guest.mirrored ? -z : z;
+            const translateX = guest.mirrored ? -x : x;
+
+            video.style.transform = `scale(${scaleX}, ${z}) translate(${translateX}%, ${y}%)`;
+          }
+        }
+      }
+
+      function handleData(data, conn) {
+        if (data.type === "layout" && !isLocal) {
+          const classesToRemove = [];
+          container.classList.forEach((c) => {
+            if (c.startsWith("layout-")) classesToRemove.push(c);
+          });
+          classesToRemove.forEach((c) => container.classList.remove(c));
+          container.classList.add(data.mode);
+          if (data.mode !== "layout-free") {
+            document.querySelectorAll(".video-box").forEach((box) => {
+              box.style.top = "";
+              box.style.left = "";
+              box.style.width = "";
+              box.style.height = "";
+            });
+          }
+        }
+        if (data.type === "transform-update" && !isLocal) {
+          const box = document.getElementById(`box-${data.targetId}`);
+          if (box) {
+            box.style.left = data.x + "%";
+            box.style.top = data.y + "%";
+            box.style.width = data.w + "%";
+            box.style.height = data.h + "%";
+          }
+        }
+        if (data.type === "reorder-guests" && !isLocal) {
+          data.order.forEach((id) => {
+            const box = document.getElementById(`box-${id}`);
+            if (box) container.appendChild(box);
+          });
+        }
+
+        if (data.type === "toggle-labels") {
+          if (data.show) container.classList.add("show-labels");
+          else container.classList.remove("show-labels");
+        }
+        if (data.type === "toggle-icons") {
+          if (data.show) container.classList.add("show-icons");
+          else container.classList.remove("show-icons");
+        }
+        if (data.type === "toggle-borders") {
+          if (data.show) container.classList.remove("hide-borders");
+          else container.classList.add("hide-borders");
+        }
+
+        if (data.type === "add-fake-guest")
+          addFakeVideo(data.id, data.name, data.img);
+        if (data.type === "refresh-cam") {
+          if (data.targetId === "all")
+            Object.keys(guests).forEach((id) => performRefresh(id));
+          else performRefresh(data.targetId);
+        }
+
+        // --- ODBIÓR LUSTRA (Director -> OBS) ---
+        if (data.type === "toggle-mirror") {
+          if (guests[data.targetId]) {
+            guests[data.targetId].mirrored = !guests[data.targetId].mirrored; // Przełącz stan
+            applyVideoStyle(data.targetId); // Aplikuj nowy CSS
+            sendGuestListToDirector(); // Potwierdź
+          }
+        }
+
+        // --- ODBIÓR CROP/ZOOM (Guest -> Director -> OBS) ---
+        if (data.type === "guest-cam-transform") {
+          if (guests[data.targetId]) {
+            guests[data.targetId].transform = data.transform; // Zapisz nowy stan
+            applyVideoStyle(data.targetId); // Aplikuj
+          }
+        }
+
+        if (data.type === "game-deal") {
+          document.querySelectorAll(".game-card").forEach((el) => el.remove());
+          for (const [id, word] of Object.entries(data.cards)) {
+            setGameCard(id, word);
+          }
+        }
+        if (data.type === "game-update-card") {
+          setGameCard(data.targetId, data.word);
+        }
+        if (data.type === "game-clear") {
+          document.querySelectorAll(".game-card").forEach((el) => el.remove());
+        }
+        if (data.type === "remote-mute") {
+          if (guests[data.targetId] && guests[data.targetId].conn) {
+            guests[data.targetId].conn.send({
+              type: "mute-cmd",
+              state: data.state,
+            });
+          }
+        }
+
+        if (data.type === "identify" && conn) {
+          if (!guests[conn.peer])
+            guests[conn.peer] = {
+              name: "Gość",
+              muted: false,
+              mirrored: false,
+              transform: { z: 1, x: 0, y: 0 },
+            };
+          guests[conn.peer].name = data.name || "Gość";
+          guests[conn.peer].conn = conn;
+          updateLabel(conn.peer, data.name);
+          const box = document.getElementById(`box-${conn.peer}`);
+          if (box) {
+            const card = box.querySelector(".game-card");
+            if (
+              card &&
+              hideTargetName &&
+              data.name.toLowerCase().trim() === hideTargetName
+            ) {
+              card.classList.add("self-hidden");
+            }
+          }
+          sendGuestListToDirector();
+        }
+        if (data.type === "mic-status" && conn) {
+          if (guests[conn.peer]) {
+            guests[conn.peer].muted = data.muted;
+            toggleMuteIcon(conn.peer, data.muted);
+            sendGuestListToDirector();
+          }
+        }
+        if (data.type === "heartbeat" && conn)
+          heartbeats[conn.peer] = Date.now();
+        if (data.type === "leave" && conn) removeGuest(conn.peer);
+      }
+
+      function setGameCard(id, word) {
+        const box = document.getElementById(`box-${id}`);
+        if (!box) return;
+        let oldCard = box.querySelector(".game-card");
+        if (oldCard) oldCard.remove();
+        const card = document.createElement("div");
+        card.className = "game-card";
+        card.innerText = word;
+        if (hideTargetName && guests[id] && guests[id].name) {
+          if (guests[id].name.toLowerCase().trim() === hideTargetName) {
+            card.classList.add("self-hidden");
+          }
+        }
+        box.appendChild(card);
+      }
+      function updateGuestCount() {
+        const count = container.querySelectorAll(".video-box").length;
+        container.setAttribute("data-count", count);
+      }
+
+      setInterval(async () => {
+        const now = Date.now();
+        const statsReport = {};
+        for (const peerId in guests) {
+          if (peerId.startsWith("fake-")) continue;
+          if (heartbeats[peerId] && now - heartbeats[peerId] > 7000) {
+            removeGuest(peerId);
+            continue;
+          }
+          const guest = guests[peerId];
+          if (guest.call && guest.call.peerConnection) {
+            try {
+              const stats = await guest.call.peerConnection.getStats();
+              let videoStats = null;
+              stats.forEach((report) => {
+                if (report.type === "inbound-rtp" && report.kind === "video")
+                  videoStats = report;
+              });
+              if (videoStats) {
+                const bytes = videoStats.bytesReceived;
+                const prevBytes = statsCache[peerId]?.bytes || 0;
+                const bitrate = ((bytes - prevBytes) * 8) / 1000;
+                const jitterBufferDelay = videoStats.jitterBufferDelay || 0;
+                const jitterBufferEmitted =
+                  videoStats.jitterBufferEmittedCount || 1;
+                const prevDelayTotal = statsCache[peerId]?.delayTotal || 0;
+                const prevEmittedTotal = statsCache[peerId]?.emittedTotal || 0;
+                const deltaDelay = jitterBufferDelay - prevDelayTotal;
+                const deltaEmitted = jitterBufferEmitted - prevEmittedTotal;
+                let currentLatency = 0;
+                if (deltaEmitted > 0)
+                  currentLatency = deltaDelay / deltaEmitted;
+                const box = document.getElementById(`box-${peerId}`);
+                if (box) {
+                  const video = box.querySelector("video");
+                  if (video && !video.paused) {
+                    if (currentLatency > 0.2) {
+                      if (video.playbackRate !== 1.05)
+                        video.playbackRate = 1.05;
+                    } else if (currentLatency < 0.15) {
+                      if (video.playbackRate !== 1.0) video.playbackRate = 1.0;
+                    }
+                    if (currentLatency > 2.0) performRefresh(peerId);
+                  }
+                }
+                statsCache[peerId] = {
+                  bytes: bytes,
+                  delayTotal: jitterBufferDelay,
+                  emittedTotal: jitterBufferEmitted,
+                };
+                statsReport[peerId] = {
+                  bitrate: Math.round(bitrate),
+                  packetLoss: videoStats.packetsLost || 0,
+                  resolution:
+                    videoStats.frameWidth && videoStats.frameHeight
+                      ? `${videoStats.frameWidth}x${videoStats.frameHeight}`
+                      : "N/A",
+                };
+              }
+            } catch (e) {}
+          }
+        }
+        if (
+          directorConn &&
+          directorConn.open &&
+          Object.keys(statsReport).length > 0
+        ) {
+          directorConn.send({ type: "stats-update", stats: statsReport });
+        }
+      }, 1000);
+
+      function addFakeVideo(id, name, imgSrc) {
+        if (document.getElementById(`box-${id}`)) return;
+        guests[id] = {
+          name: name,
+          muted: false,
+          mirrored: false,
+          transform: { z: 1, x: 0, y: 0 },
+          conn: null,
+        };
+        const box = document.createElement("div");
+        box.className = "video-box";
+        box.id = `box-${id}`;
+        box.style.order = 999;
+        const img = document.createElement("img");
+        img.src = imgSrc;
+        img.className = "fake-cam";
+        const label = document.createElement("div");
+        label.className = "label";
+        label.id = `label-${id}`;
+        label.innerText = name;
+        const muteIcon = document.createElement("div");
+        muteIcon.className = "mute-icon";
+        muteIcon.innerText = "🔇";
+        muteIcon.id = `mute-${id}`;
+        box.appendChild(img);
+        box.appendChild(label);
+        box.appendChild(muteIcon);
+        container.appendChild(box);
+        updateGuestCount();
+        sendGuestListToDirector();
+      }
+
+      function addVideo(stream, id) {
+        if (document.getElementById(`box-${id}`)) return;
+        heartbeats[id] = Date.now();
+        statsCache[id] = { bytes: 0, delayTotal: 0, emittedTotal: 0 };
+
+        // Inicjalizacja gościa jeśli nie ma
+        if (!guests[id])
+          guests[id] = {
+            name: "Gość",
+            muted: false,
+            mirrored: false,
+            transform: { z: 1, x: 0, y: 0 },
+          };
+        if (!guests[id].transform) guests[id].transform = { z: 1, x: 0, y: 0 };
+
+        const box = document.createElement("div");
+        box.className = "video-box";
+        box.id = `box-${id}`;
+        box.style.order = 999;
+        const video = document.createElement("video");
+        video.srcObject = stream;
+        video.muted = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        const audio = document.createElement("audio");
+        audio.srcObject = stream;
+        audio.muted = false;
+        audio.autoplay = true;
+        audio.id = `audio-${id}`;
+        const label = document.createElement("div");
+        label.className = "label";
+        label.id = `label-${id}`;
+        const muteIcon = document.createElement("div");
+        muteIcon.className = "mute-icon";
+        muteIcon.innerText = "🔇";
+        muteIcon.id = `mute-${id}`;
+        box.appendChild(video);
+        box.appendChild(label);
+        box.appendChild(muteIcon);
+        box.appendChild(audio);
+        container.appendChild(box);
+
+        updateGuestCount();
+        applyVideoStyle(id); // Aplikuj lustro/zoom przy starcie
+
+        video.play().catch((e) => console.error(e));
+        audio.play().catch((e) => console.warn(e));
+      }
+
+      function performRefresh(id) {
+        const box = document.getElementById(`box-${id}`);
+        if (!box) return;
+        const video = box.querySelector("video");
+        const audio = box.querySelector("audio");
+        if (video && video.srcObject) {
+          const stream = video.srcObject;
+          video.srcObject = null;
+          if (audio) audio.srcObject = null;
+          setTimeout(() => {
+            video.srcObject = stream;
+            if (audio) audio.srcObject = stream;
+            video.play().catch((e) => console.log(e));
+            if (audio) audio.play().catch((e) => console.log(e));
+          }, 100);
+        }
+      }
+      function removeGuest(id) {
+        if (document.getElementById(`box-${id}`)) {
+          document.getElementById(`box-${id}`).remove();
+          delete guests[id];
+          delete heartbeats[id];
+          delete statsCache[id];
+          updateGuestCount();
+          sendGuestListToDirector();
+        }
+      }
+      function updateLabel(id, name) {
+        const label = document.getElementById(`label-${id}`);
+        if (label) {
+          if (name && name.trim() !== "") {
+            label.innerText = name;
+            label.style.display = "block";
+          } else {
+            label.style.display = "none";
+          }
+        }
+      }
+      function toggleMuteIcon(id, isMuted) {
+        const icon = document.getElementById(`mute-${id}`);
+        if (icon) icon.style.display = isMuted ? "block" : "none";
+      }
+      function sendGuestListToDirector() {
+        if (directorConn && directorConn.open) {
+          const safeList = Object.keys(guests).map((id) => ({
+            id: id,
+            name: guests[id].name,
+            muted: guests[id].muted,
+            mirrored: guests[id].mirrored,
+          }));
+          directorConn.send({ type: "guest-list", list: safeList });
+        }
+      }
+    </script>
+  </body>
+</html>
