@@ -25,6 +25,7 @@
         transition: all 0.5s ease;
         position: relative;
       }
+
       .video-box {
         position: relative;
         overflow: hidden;
@@ -32,9 +33,17 @@
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
         background: #000;
         transition: all 0.5s ease;
+
+        /* KLUCZ: Domyślnie ramka to 16:9 */
+        aspect-ratio: 16 / 9;
       }
 
-      /* DOMYŚLNE WIDEO (16:9) */
+      /* KLUCZ: Jeśli gość wyśle sygnał, że ma 4:3, ramka staje się "węższa/kwadratowa" */
+      .video-box[data-ratio="4:3"] {
+        aspect-ratio: 4 / 3;
+      }
+
+      /* Obraz wideo ZAWSZE wypełnia ramkę (cover), bo ramka ma już dobre proporcje */
       video,
       img.fake-cam {
         width: 100%;
@@ -42,19 +51,6 @@
         object-fit: cover;
         display: block;
         transition: transform 0.2s ease;
-      }
-      video.mirror-effect,
-      img.mirror-effect {
-        transform: scaleX(-1);
-      }
-
-      /* NOWOŚĆ: BEZPIECZNE 4:3 (Tylko poza trybem Free) */
-      #video-container:not(.layout-free) .video-box[data-ratio="4:3"] video,
-      #video-container:not(.layout-free)
-        .video-box[data-ratio="4:3"]
-        img.fake-cam {
-        object-fit: contain; /* Zapobiega obcinaniu głowy */
-        background: #000; /* Czarne pasy po bokach */
       }
 
       .mute-icon {
@@ -179,7 +175,7 @@
         border-color: #00d2ff;
       }
 
-      /* UKŁADY */
+      /* UKŁADY - CAŁKOWICIE PRZEPISANE NA WYSOKOŚĆ (DZIĘKI TEMU 4:3 JEST AUTOMATYCZNE) */
       .layout-free {
         position: relative;
         width: 100%;
@@ -193,7 +189,7 @@
           top 0.1s,
           left 0.1s;
         width: 320px;
-        height: 180px;
+        height: auto;
         box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
       }
 
@@ -207,37 +203,31 @@
         height: 100vh;
       }
       .layout-grid .video-box {
-        width: 45%;
+        width: auto;
         height: 45%;
-      }
+      } /* Wzorcujemy się na wysokości, szerokość dobierze się z aspect ratio! */
       .layout-grid[data-count="1"] .video-box {
-        width: 85%;
         height: 85%;
       }
       .layout-grid[data-count="2"] .video-box {
-        width: 48%;
         height: 60%;
       }
       .layout-grid[data-count="3"] .video-box,
       .layout-grid[data-count="4"] .video-box {
-        width: 45%;
         height: 45%;
       }
       .layout-grid[data-count="5"] .video-box,
       .layout-grid[data-count="6"] .video-box {
-        width: 32%;
-        height: 45%;
+        height: 32%;
       }
       .layout-grid[data-count="7"] .video-box,
       .layout-grid[data-count="8"] .video-box,
       .layout-grid[data-count="9"] .video-box {
-        width: 32%;
         height: 30%;
       }
       .layout-grid[data-count="10"] .video-box,
       .layout-grid[data-count="11"] .video-box,
       .layout-grid[data-count="12"] .video-box {
-        width: 23%;
         height: 23%;
       }
 
@@ -252,9 +242,10 @@
       }
       .layout-sidebar-right .video-box {
         width: 320px;
-        height: 180px;
+        height: auto;
         margin: 0;
       }
+
       .layout-sidebar-left {
         display: flex;
         flex-direction: column;
@@ -266,9 +257,10 @@
       }
       .layout-sidebar-left .video-box {
         width: 320px;
-        height: 180px;
+        height: auto;
         margin: 0;
       }
+
       .layout-bottom {
         display: flex;
         flex-direction: row;
@@ -279,10 +271,11 @@
         gap: 20px;
       }
       .layout-bottom .video-box {
-        width: 280px;
         height: 157px;
+        width: auto;
         margin: 0;
       }
+
       .layout-top {
         display: flex;
         flex-direction: row;
@@ -293,10 +286,11 @@
         gap: 20px;
       }
       .layout-top .video-box {
-        width: 280px;
         height: 157px;
+        width: auto;
         margin: 0;
       }
+
       .layout-split {
         display: grid;
         grid-template-columns: 320px 1fr 320px;
@@ -307,8 +301,8 @@
         height: 100vh;
       }
       .layout-split .video-box {
-        width: 100%;
-        height: 180px;
+        width: 320px;
+        height: auto;
         margin: 0;
       }
       .layout-split .video-box:nth-child(odd) {
@@ -319,6 +313,7 @@
         grid-column: 3;
         justify-self: end;
       }
+
       .layout-center-stage {
         display: grid;
         grid-template-columns: 300px 1fr 300px;
@@ -329,18 +324,19 @@
         align-content: center;
       }
       .layout-center-stage .video-box {
-        width: 100%;
-        height: 169px;
+        width: 300px;
+        height: auto;
         margin: 0;
       }
+      /* Król na środku dopasowuje się do wysokości ekranu (90vh) */
       .layout-center-stage .video-box:nth-child(1) {
         grid-column: 2;
         grid-row: 1 / span 10;
-        width: 100%;
-        height: auto;
-        max-height: 90vh;
-        aspect-ratio: 16/9;
+        height: 90vh;
+        width: auto;
+        max-width: 100%;
         align-self: center;
+        justify-self: center;
         z-index: 10;
         box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
       }
@@ -430,7 +426,6 @@
       let hidePanelTimeout;
 
       if (isLocal) {
-        console.log("🛠 Tryb lokalny OBS.");
         const localPanel = document.getElementById("local-panel");
         localPanel.style.display = "block";
         container.className = "layout-grid";
@@ -456,7 +451,6 @@
       }
 
       peer.on("open", (id) => {
-        console.log("OBS gotowy. ID: " + id);
         if (isMulti) connectToDirector(myID);
       });
 
@@ -475,8 +469,8 @@
             name: "Łączenie...",
             muted: false,
             mirrored: false,
-            ratio: "16:9",
             transform: { z: 1, x: 0, y: 0 },
+            ratio: "16:9",
             conn: null,
           };
         guests[call.peer].call = call;
@@ -531,6 +525,7 @@
             const translateX = guest.mirrored ? -x : x;
             video.style.transform = `scale(${scaleX}, ${z}) translate(${translateX}%, ${y}%)`;
           }
+          box.setAttribute("data-ratio", guest.ratio); // Wymuś 4:3 w CSS jeśli trzeba
         }
       }
 
@@ -630,14 +625,12 @@
               ratio: "16:9",
             };
           guests[conn.peer].name = data.name || "Gość";
-          guests[conn.peer].ratio = data.ratio || "16:9"; // NOWOŚĆ: Zapisujemy format 4:3!
+          guests[conn.peer].ratio = data.ratio || "16:9";
           guests[conn.peer].conn = conn;
-
           updateLabel(conn.peer, data.name);
 
           const box = document.getElementById(`box-${conn.peer}`);
           if (box) {
-            box.setAttribute("data-ratio", guests[conn.peer].ratio); // Aplikujemy format do CSS
             const card = box.querySelector(".game-card");
             if (
               card &&
@@ -648,6 +641,7 @@
             }
           }
           sendGuestListToDirector();
+          applyVideoStyle(conn.peer);
         }
         if (data.type === "mic-status" && conn) {
           if (guests[conn.peer]) {
@@ -766,7 +760,6 @@
         box.className = "video-box";
         box.id = `box-${id}`;
         box.style.order = 999;
-        box.setAttribute("data-ratio", "16:9"); // Domyślnie
         const img = document.createElement("img");
         img.src = imgSrc;
         img.className = "fake-cam";
@@ -791,7 +784,6 @@
         if (document.getElementById(`box-${id}`)) return;
         heartbeats[id] = Date.now();
         statsCache[id] = { bytes: 0, delayTotal: 0, emittedTotal: 0 };
-
         if (!guests[id])
           guests[id] = {
             name: "Gość",
@@ -805,8 +797,6 @@
         box.className = "video-box";
         box.id = `box-${id}`;
         box.style.order = 999;
-        box.setAttribute("data-ratio", guests[id].ratio); // Atrybut CSS
-
         const video = document.createElement("video");
         video.srcObject = stream;
         video.muted = true;
@@ -829,10 +819,8 @@
         box.appendChild(muteIcon);
         box.appendChild(audio);
         container.appendChild(box);
-
         updateGuestCount();
         applyVideoStyle(id);
-
         video.play().catch((e) => console.error(e));
         audio.play().catch((e) => console.warn(e));
       }
