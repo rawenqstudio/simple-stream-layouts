@@ -25,7 +25,6 @@
         transition: all 0.5s ease;
         position: relative;
       }
-
       .video-box {
         position: relative;
         overflow: hidden;
@@ -33,17 +32,13 @@
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
         background: #000;
         transition: all 0.5s ease;
-
-        /* KLUCZ: Domyślnie ramka to 16:9 */
         aspect-ratio: 16 / 9;
       }
 
-      /* KLUCZ: Jeśli gość wyśle sygnał, że ma 4:3, ramka staje się "węższa/kwadratowa" */
       .video-box[data-ratio="4:3"] {
         aspect-ratio: 4 / 3;
       }
 
-      /* Obraz wideo ZAWSZE wypełnia ramkę (cover), bo ramka ma już dobre proporcje */
       video,
       img.fake-cam {
         width: 100%;
@@ -125,7 +120,6 @@
         }
       }
 
-      /* LOKALNY PANEL */
       #local-panel {
         position: absolute;
         bottom: 40px;
@@ -175,7 +169,6 @@
         border-color: #00d2ff;
       }
 
-      /* UKŁADY - CAŁKOWICIE PRZEPISANE NA WYSOKOŚĆ (DZIĘKI TEMU 4:3 JEST AUTOMATYCZNE) */
       .layout-free {
         position: relative;
         width: 100%;
@@ -205,7 +198,7 @@
       .layout-grid .video-box {
         width: auto;
         height: 45%;
-      } /* Wzorcujemy się na wysokości, szerokość dobierze się z aspect ratio! */
+      }
       .layout-grid[data-count="1"] .video-box {
         height: 85%;
       }
@@ -245,7 +238,6 @@
         height: auto;
         margin: 0;
       }
-
       .layout-sidebar-left {
         display: flex;
         flex-direction: column;
@@ -260,7 +252,6 @@
         height: auto;
         margin: 0;
       }
-
       .layout-bottom {
         display: flex;
         flex-direction: row;
@@ -275,7 +266,6 @@
         width: auto;
         margin: 0;
       }
-
       .layout-top {
         display: flex;
         flex-direction: row;
@@ -290,7 +280,6 @@
         width: auto;
         margin: 0;
       }
-
       .layout-split {
         display: grid;
         grid-template-columns: 320px 1fr 320px;
@@ -313,7 +302,6 @@
         grid-column: 3;
         justify-self: end;
       }
-
       .layout-center-stage {
         display: grid;
         grid-template-columns: 300px 1fr 300px;
@@ -328,7 +316,6 @@
         height: auto;
         margin: 0;
       }
-      /* Król na środku dopasowuje się do wysokości ekranu (90vh) */
       .layout-center-stage .video-box:nth-child(1) {
         grid-column: 2;
         grid-row: 1 / span 10;
@@ -464,6 +451,7 @@
 
       peer.on("call", (call) => {
         call.answer();
+        // INICJALIZACJA STANU W OBS
         if (!guests[call.peer])
           guests[call.peer] = {
             name: "Łączenie...",
@@ -512,6 +500,7 @@
         conn.on("error", () => removeGuest(conn.peer));
       });
 
+      // --- ZRYKOWANA I NAPRAWIONA FUNKCJA STYLIZACJI (PTZ + LUSTRO + 4:3) ---
       function applyVideoStyle(id) {
         const guest = guests[id];
         const box = document.getElementById(`box-${id}`);
@@ -521,11 +510,13 @@
             const z = guest.transform ? guest.transform.z : 1;
             const x = guest.transform ? guest.transform.x : 0;
             const y = guest.transform ? guest.transform.y : 0;
+
             const scaleX = guest.mirrored ? -z : z;
             const translateX = guest.mirrored ? -x : x;
+
             video.style.transform = `scale(${scaleX}, ${z}) translate(${translateX}%, ${y}%)`;
           }
-          box.setAttribute("data-ratio", guest.ratio); // Wymuś 4:3 w CSS jeśli trzeba
+          box.setAttribute("data-ratio", guest.ratio || "16:9");
         }
       }
 
@@ -573,6 +564,7 @@
           if (data.show) container.classList.remove("hide-borders");
           else container.classList.add("hide-borders");
         }
+
         if (data.type === "add-fake-guest")
           addFakeVideo(data.id, data.name, data.img);
         if (data.type === "refresh-cam") {
@@ -580,6 +572,8 @@
             Object.keys(guests).forEach((id) => performRefresh(id));
           else performRefresh(data.targetId);
         }
+
+        // --- ODBIÓR LUSTRA ---
         if (data.type === "toggle-mirror") {
           if (guests[data.targetId]) {
             guests[data.targetId].mirrored = !guests[data.targetId].mirrored;
@@ -587,13 +581,19 @@
             sendGuestListToDirector();
           }
         }
+
+        // --- ODBIÓR KADROWANIA (PTZ) ---
         if (data.type === "guest-cam-transform") {
+          // Jeśli komenda przychodzi z Reżysera (w trybie Multi, targetId jest ustawione)
+          // lub bezpośrednio od gościa (w trybie Standard, targetId może nie być, więc bierzemy conn.peer)
           const peerId = data.targetId || (conn ? conn.peer : null);
           if (peerId && guests[peerId]) {
             guests[peerId].transform = data.transform;
-            applyVideoStyle(peerId);
+            applyVideoStyle(peerId); // Aktualizujemy obrazek!
           }
         }
+
+        // GRA
         if (data.type === "game-deal") {
           document.querySelectorAll(".game-card").forEach((el) => el.remove());
           for (const [id, word] of Object.entries(data.cards)) {
@@ -641,7 +641,7 @@
             }
           }
           sendGuestListToDirector();
-          applyVideoStyle(conn.peer);
+          applyVideoStyle(conn.peer); // Aplikuj startowy zoom i lustro
         }
         if (data.type === "mic-status" && conn) {
           if (guests[conn.peer]) {
@@ -819,8 +819,10 @@
         box.appendChild(muteIcon);
         box.appendChild(audio);
         container.appendChild(box);
+
         updateGuestCount();
         applyVideoStyle(id);
+
         video.play().catch((e) => console.error(e));
         audio.play().catch((e) => console.warn(e));
       }
