@@ -11,7 +11,6 @@
         color: white;
         text-align: center;
         padding: 20px;
-        margin: 0;
       }
       .container {
         max-width: 800px;
@@ -25,12 +24,6 @@
         color: white;
         transition: 0.2s;
       }
-      button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        filter: grayscale(100%);
-      }
-
       .btn-layout {
         background: #007bff;
         width: 45%;
@@ -352,7 +345,6 @@
         width: 90%;
         margin-top: 20px;
       }
-
       .resize-handle {
         width: 15px;
         height: 15px;
@@ -366,7 +358,6 @@
       .resize-handle:hover {
         background: linear-gradient(135deg, transparent 50%, yellow 50%);
       }
-
       .btn-lock-on {
         background: #dc3545;
       }
@@ -386,7 +377,6 @@
       .stage-box.locked .resize-handle {
         display: none;
       }
-
       .guide-line {
         position: absolute;
         background-color: #ff0000;
@@ -515,13 +505,6 @@
 
         <h2 style="margin-top: 30px">⚙️ Narzędzia:</h2>
         <button
-          class="btn-tool btn-toggle-on"
-          id="btn-borders"
-          onclick="toggleBorders()"
-        >
-          🔳 Ramki: WIDOCZNE
-        </button>
-        <button
           class="btn-tool btn-toggle-off"
           id="btn-labels"
           onclick="toggleLabels()"
@@ -552,6 +535,7 @@
 
         <!-- SEKCJA GIER -->
         <div id="game-section" class="game-section">
+          <!-- ... -->
           <div id="game-menu">
             <h3>Wybierz Grę:</h3>
             <div class="game-menu-grid">
@@ -623,7 +607,6 @@
       const CAM_HEIGHT = 180;
       const CAM_WIDTH_PCT = (CAM_WIDTH / OBS_WIDTH) * 100;
       const CAM_HEIGHT_PCT = (CAM_HEIGHT / OBS_HEIGHT) * 100;
-
       function pxToW(px) {
         return (px / OBS_WIDTH) * 100;
       }
@@ -750,12 +733,10 @@
       const guestConnections = [];
       const multiGuestsState = {};
       let guestOrder = [];
-
       let labelsVisible = false;
       let iconsVisible = false;
-      let bordersVisible = true;
-
       const currentWords = {};
+
       let isLayoutLocked = false;
 
       function toggleGamePanel() {
@@ -886,6 +867,7 @@
           name: randomName,
           muted: false,
           mirrored: false,
+          ratio: "16:9",
           conn: null,
         };
         if (!guestOrder.includes(fakeId)) guestOrder.push(fakeId);
@@ -893,7 +875,6 @@
         renderGameControls();
         renderFreeStage();
       }
-
       function connectToOBS() {
         const targetId = document.getElementById("target-id").value;
         conn = peer.connect(targetId);
@@ -907,7 +888,6 @@
         conn.on("data", (data) => handleData(data));
         conn.on("error", (err) => alert("Błąd: " + err));
       }
-
       function handleIncomingConnection(connection) {
         connection.on("open", () =>
           console.log("Połączenie:", connection.peer),
@@ -918,7 +898,6 @@
             updateStatusMsg();
             connection.send({ type: "toggle-labels", show: labelsVisible });
             connection.send({ type: "toggle-icons", show: iconsVisible });
-            connection.send({ type: "toggle-borders", show: bordersVisible });
             connection.send({ type: "layout", mode: "layout-grid" });
             if (guestOrder.length > 0)
               connection.send({ type: "reorder-guests", order: guestOrder });
@@ -946,7 +925,6 @@
           updateStatusMsg();
         });
       }
-
       function updateStatusMsg() {
         document.getElementById("status-msg").innerText =
           `✅ OBS: ${obsClients.length} | Gości: ${guestConnections.length}`;
@@ -970,9 +948,11 @@
           if (data.type === "identify" && sourceConn) {
             if (!guestConnections.includes(sourceConn))
               guestConnections.push(sourceConn);
+            // ZAPISUJEMY RATIO W BAZIE
             multiGuestsState[sourceConn.peer] = {
               id: sourceConn.peer,
               name: data.name || "Gość",
+              ratio: data.ratio || "16:9",
               muted: false,
               mirrored: false,
               conn: sourceConn,
@@ -998,22 +978,8 @@
               });
             }
           }
-          if (data.type === "guest-cam-transform" && sourceConn) {
-            if (multiGuestsState[sourceConn.peer]) {
-              multiGuestsState[sourceConn.peer].transform = data.transform;
-              obsClients.forEach((c) => {
-                if (c.open)
-                  c.send({
-                    type: "guest-cam-transform",
-                    targetId: sourceConn.peer,
-                    transform: data.transform,
-                  });
-              });
-            }
-          }
         }
       }
-
       function refreshMultiModeUI() {
         const sortedList = [];
         guestOrder.forEach((id) => {
@@ -1064,170 +1030,21 @@
           btn.innerText = "📡 Wymuś połączenie z nowym OBS";
         }, 1000);
       }
-      function toggleGuestMic(id, currentMutedState) {
-        if (isMulti) {
-          const guest = multiGuestsState[id];
-          if (id.startsWith("fake-")) {
-            guest.muted = !currentMutedState;
-            refreshMultiModeUI();
-            broadcastCommand({
-              type: "remote-mute",
-              targetId: id,
-              state: guest.muted,
-            });
-            return;
-          }
-          if (guest && guest.conn && guest.conn.open)
-            guest.conn.send({ type: "mute-cmd", state: !currentMutedState });
-        } else {
-          broadcastCommand({
-            type: "remote-mute",
-            targetId: id,
-            state: !currentMutedState,
-          });
-        }
-      }
-      function refreshCam(id) {
-        broadcastCommand({ type: "refresh-cam", targetId: id });
-      }
-      function toggleMirror(id) {
-        if (isMulti && multiGuestsState[id]) {
-          multiGuestsState[id].mirrored = !multiGuestsState[id].mirrored;
-          refreshMultiModeUI();
-        }
-        broadcastCommand({ type: "toggle-mirror", targetId: id });
-      }
-      function toggleLabels() {
-        labelsVisible = !labelsVisible;
-        broadcastCommand({ type: "toggle-labels", show: labelsVisible });
-        updateToolBtn("btn-labels", labelsVisible, "🔤 Podpisy");
-      }
-      function toggleIcons() {
-        iconsVisible = !iconsVisible;
-        broadcastCommand({ type: "toggle-icons", show: iconsVisible });
-        updateToolBtn("btn-icons", iconsVisible, "🔇 Ikony Mute");
-      }
-      function toggleBorders() {
-        bordersVisible = !bordersVisible;
-        broadcastCommand({ type: "toggle-borders", show: bordersVisible });
-        updateToolBtn("btn-borders", bordersVisible, "🔳 Ramki");
-      }
-      function updateToolBtn(id, state, text) {
-        const btn = document.getElementById(id);
-        btn.innerText = state ? `${text}: WIDOCZNE` : `${text}: UKRYTE`;
-        btn.className = state
-          ? "btn-tool btn-toggle-on"
-          : "btn-tool btn-toggle-off";
-      }
-      function renderGuestList(list) {
-        const container = document.getElementById("guest-list");
-        container.innerHTML = "";
-        if (list.length === 0) {
-          container.innerHTML =
-            '<p style="text-align:center; color:#777;">Brak gości online.</p>';
-          return;
-        }
-        list.forEach((guest, index) => {
-          const item = document.createElement("div");
-          item.className = "guest-item";
-          const micClass = guest.muted ? "mic-off" : "mic-on";
-          const micIcon = guest.muted ? "🔇" : "🎤";
-          const statusText = guest.muted ? "(Wyciszony)" : "";
-          const mirrorClass = guest.mirrored ? "mirror-on" : "mirror-off";
-          const upVisibility = index === 0 ? "visibility:hidden" : "";
-          const downVisibility =
-            index === list.length - 1 ? "visibility:hidden" : "";
-          item.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span> <span id="stats-${guest.id}" class="guest-stats">${guest.id.startsWith("fake-") ? "SZTUCZNY GOŚĆ" : "Czekam na dane..."}</span> </div> <div class="guest-actions"> <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button> </div> `;
-          container.appendChild(item);
-        });
-      }
-      function updateStats(stats) {
-        for (const [id, data] of Object.entries(stats)) {
-          const el = document.getElementById(`stats-${id}`);
-          if (el) {
-            let colorClass = "stat-good";
-            if (data.bitrate < 1000 || data.packetLoss > 5)
-              colorClass = "stat-mid";
-            if (data.bitrate < 300 || data.packetLoss > 15)
-              colorClass = "stat-bad";
-            el.innerHTML = `Bitrate: <span class="${colorClass}">${data.bitrate} kbps</span> | Loss: <span class="${colorClass}">${data.packetLoss}</span> | Res: ${data.resolution}`;
-          }
-        }
-      }
-
-      function toggleLayoutLock() {
-        isLayoutLocked = !isLayoutLocked;
-        const btn = document.getElementById("btn-lock-layout");
-        if (isLayoutLocked) {
-          btn.innerText = "🔒 Układ: ZABLOKOWANY";
-          btn.className = "btn-tool btn-lock-on";
-        } else {
-          btn.innerText = "🔓 Układ: ODBLOKOWANY";
-          btn.className = "btn-tool btn-lock-off";
-        }
-
-        const layoutButtons = document.querySelectorAll(
-          ".btn-layout:not(.btn-free-mode)",
-        );
-        layoutButtons.forEach((b) => {
-          b.disabled = isLayoutLocked;
-          b.style.opacity = isLayoutLocked ? "0.5" : "1";
-          b.style.cursor = isLayoutLocked ? "not-allowed" : "pointer";
-        });
-        renderFreeStage();
-      }
-
-      function toggleFreeMode() {
-        const container = document.getElementById("free-mode-container");
-        if (container.style.display === "block") {
-          container.style.display = "none";
-          sendLayout("layout-grid");
-        } else {
-          container.style.display = "block";
-          broadcastCommand({ type: "layout", mode: "layout-free" });
-          setTimeout(syncFreeStageToOBS, 100);
-          renderFreeStage();
-        }
-      }
-
-      function syncFreeStageToOBS() {
-        const stage = document.getElementById("free-mode-stage");
-        const boxes = stage.querySelectorAll(".stage-box");
-        boxes.forEach((box) => {
-          let x = parseFloat(box.style.left);
-          let y = parseFloat(box.style.top);
-          let w = parseFloat(box.style.width);
-          let h = parseFloat(box.style.height);
-          if (!isNaN(x) && !isNaN(y)) {
-            broadcastCommand({
-              type: "transform-update",
-              targetId: box.dataset.id,
-              x: x,
-              y: y,
-              w: w,
-              h: h,
-            });
-          }
-        });
-      }
-
       function sendLayout(layoutName) {
         const container = document.getElementById("free-mode-container");
         const isFreeModeOpen = container.style.display === "block";
-
+        if (isFreeModeOpen && isLayoutLocked) {
+          alert(
+            "Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon.",
+          );
+          return;
+        }
         if (isFreeModeOpen) {
-          if (isLayoutLocked) {
-            alert(
-              "Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon.",
-            );
-            return;
-          }
           applyPresetToFreeMode(layoutName);
         } else {
           broadcastCommand({ type: "layout", mode: layoutName });
         }
       }
-
       function applyPresetToFreeMode(layoutName) {
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
         const count = guestIds.length;
@@ -1253,12 +1070,10 @@
           else if (count <= 6) cellH_PCT = 45;
           else if (count <= 9) cellH_PCT = 30;
           else cellH_PCT = 23;
-
           const gridBlockW = cellW_PCT * cols + GAP_PCT * (cols - 1);
           const gridBlockH = cellH_PCT * rows + pxToH(15) * (rows - 1);
           const startX = (100 - gridBlockW) / 2;
           const startY = (100 - gridBlockH) / 2;
-
           guestIds.forEach((id, i) => {
             const col = i % cols;
             const row = Math.floor(i / cols);
@@ -1403,6 +1218,147 @@
           }
         }
       }
+      function toggleGuestMic(id, currentMutedState) {
+        if (isMulti) {
+          const guest = multiGuestsState[id];
+          if (id.startsWith("fake-")) {
+            guest.muted = !currentMutedState;
+            refreshMultiModeUI();
+            broadcastCommand({
+              type: "remote-mute",
+              targetId: id,
+              state: guest.muted,
+            });
+            return;
+          }
+          if (guest && guest.conn && guest.conn.open)
+            guest.conn.send({ type: "mute-cmd", state: !currentMutedState });
+        } else {
+          broadcastCommand({
+            type: "remote-mute",
+            targetId: id,
+            state: !currentMutedState,
+          });
+        }
+      }
+      function refreshCam(id) {
+        broadcastCommand({ type: "refresh-cam", targetId: id });
+      }
+      function toggleMirror(id) {
+        if (isMulti && multiGuestsState[id]) {
+          multiGuestsState[id].mirrored = !multiGuestsState[id].mirrored;
+          refreshMultiModeUI();
+        }
+        broadcastCommand({ type: "toggle-mirror", targetId: id });
+      }
+      function toggleLabels() {
+        labelsVisible = !labelsVisible;
+        broadcastCommand({ type: "toggle-labels", show: labelsVisible });
+        updateToolBtn("btn-labels", labelsVisible, "🔤 Podpisy");
+      }
+      function toggleIcons() {
+        iconsVisible = !iconsVisible;
+        broadcastCommand({ type: "toggle-icons", show: iconsVisible });
+        updateToolBtn("btn-icons", iconsVisible, "🔇 Ikony Mute");
+      }
+      function updateToolBtn(id, state, text) {
+        const btn = document.getElementById(id);
+        btn.innerText = state ? `${text}: WIDOCZNE` : `${text}: UKRYTE`;
+        btn.className = state
+          ? "btn-tool btn-toggle-on"
+          : "btn-tool btn-toggle-off";
+      }
+      function renderGuestList(list) {
+        const container = document.getElementById("guest-list");
+        container.innerHTML = "";
+        if (list.length === 0) {
+          container.innerHTML =
+            '<p style="text-align:center; color:#777;">Brak gości online.</p>';
+          return;
+        }
+        list.forEach((guest, index) => {
+          const item = document.createElement("div");
+          item.className = "guest-item";
+          const micClass = guest.muted ? "mic-off" : "mic-on";
+          const micIcon = guest.muted ? "🔇" : "🎤";
+          const statusText = guest.muted ? "(Wyciszony)" : "";
+          const mirrorClass = guest.mirrored ? "mirror-on" : "mirror-off";
+          const upVisibility = index === 0 ? "visibility:hidden" : "";
+          const downVisibility =
+            index === list.length - 1 ? "visibility:hidden" : "";
+          item.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'up')" style="${upVisibility}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${guest.id}', 'down')" style="${downVisibility}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${guest.name} <small style="font-weight:normal; font-size:0.7em">${statusText}</small></span> <span id="stats-${guest.id}" class="guest-stats">${guest.id.startsWith("fake-") ? "SZTUCZNY GOŚĆ" : "Czekam na dane..."}</span> </div> <div class="guest-actions"> <button class="btn-icon ${mirrorClass}" onclick="toggleMirror('${guest.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${guest.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${micClass}" onclick="toggleGuestMic('${guest.id}', ${guest.muted})" title="Wycisz/Odcisz">${micIcon}</button> </div> `;
+          container.appendChild(item);
+        });
+      }
+      function updateStats(stats) {
+        for (const [id, data] of Object.entries(stats)) {
+          const el = document.getElementById(`stats-${id}`);
+          if (el) {
+            let colorClass = "stat-good";
+            if (data.bitrate < 1000 || data.packetLoss > 5)
+              colorClass = "stat-mid";
+            if (data.bitrate < 300 || data.packetLoss > 15)
+              colorClass = "stat-bad";
+            el.innerHTML = `Bitrate: <span class="${colorClass}">${data.bitrate} kbps</span> | Loss: <span class="${colorClass}">${data.packetLoss}</span> | Res: ${data.resolution}`;
+          }
+        }
+      }
+
+      function toggleLayoutLock() {
+        isLayoutLocked = !isLayoutLocked;
+        const btn = document.getElementById("btn-lock-layout");
+        if (isLayoutLocked) {
+          btn.innerText = "🔒 Układ: ZABLOKOWANY";
+          btn.className = "btn-tool btn-lock-on";
+        } else {
+          btn.innerText = "🔓 Układ: ODBLOKOWANY";
+          btn.className = "btn-tool btn-lock-off";
+        }
+
+        const layoutButtons = document.querySelectorAll(
+          ".btn-layout:not(.btn-free-mode)",
+        );
+        layoutButtons.forEach((b) => {
+          b.disabled = isLayoutLocked;
+          b.style.opacity = isLayoutLocked ? "0.5" : "1";
+          b.style.cursor = isLayoutLocked ? "not-allowed" : "pointer";
+        });
+        renderFreeStage();
+      }
+
+      function toggleFreeMode() {
+        const container = document.getElementById("free-mode-container");
+        if (container.style.display === "block") {
+          container.style.display = "none";
+          sendLayout("layout-grid");
+        } else {
+          container.style.display = "block";
+          broadcastCommand({ type: "layout", mode: "layout-free" });
+          setTimeout(syncFreeStageToOBS, 100);
+          renderFreeStage();
+        }
+      }
+
+      function syncFreeStageToOBS() {
+        const stage = document.getElementById("free-mode-stage");
+        const boxes = stage.querySelectorAll(".stage-box");
+        boxes.forEach((box) => {
+          let x = parseFloat(box.style.left);
+          let y = parseFloat(box.style.top);
+          let w = parseFloat(box.style.width);
+          let h = parseFloat(box.style.height);
+          if (!isNaN(x) && !isNaN(y)) {
+            broadcastCommand({
+              type: "transform-update",
+              targetId: box.dataset.id,
+              x: x,
+              y: y,
+              w: w,
+              h: h,
+            });
+          }
+        });
+      }
 
       function renderFreeStage() {
         const stage = document.getElementById("free-mode-stage");
@@ -1416,19 +1372,31 @@
 
         guestIds.forEach((id, index) => {
           let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
-          const name = multiGuestsState[id]
-            ? multiGuestsState[id].name
-            : "Gość";
+          const guestData = multiGuestsState[id];
+          const name = guestData ? guestData.name : "Gość";
+
+          // ODPOWIEDŹ NA PROPORCJE 4:3 LUB 16:9
+          const ratio = guestData && guestData.ratio ? guestData.ratio : "16:9";
+          let startW_PCT = CAM_WIDTH_PCT;
+          // Jeśli 4:3, ucinamy szerokość (320px * 0.75 = 240px -> przeliczamy na %)
+          // Wysokość zostaje bez zmian (180px)
+          let startH_PCT = CAM_HEIGHT_PCT;
+          if (ratio === "4:3") {
+            startW_PCT = pxToW(CAM_WIDTH * 0.75); // 240px szerokości przy 180px wysokości
+          }
 
           if (!box) {
             box = document.createElement("div");
             box.className = "stage-box";
             box.dataset.id = id;
             box.innerText = name;
-            box.style.width = CAM_WIDTH_PCT + "%";
-            box.style.height = CAM_HEIGHT_PCT + "%";
+
+            // Aplikujemy proporcje przy tworzeniu
+            box.style.width = startW_PCT + "%";
+            box.style.height = startH_PCT + "%";
             box.style.left = 2 + index * 2 + "%";
             box.style.top = 2 + index * 2 + "%";
+
             const handle = document.createElement("div");
             handle.className = "resize-handle";
             box.appendChild(handle);
@@ -1456,38 +1424,30 @@
         let startLeftPct, startTopPct;
         let startWidthPx, startHeightPx;
         let clickOffsetX, clickOffsetY;
-
         const handle = element.querySelector(".resize-handle");
 
         element.addEventListener("mousedown", (e) => {
           if (isLayoutLocked) return;
-
           const stage = document.getElementById("free-mode-stage");
-
           if (e.target === handle) {
             isResizing = true;
             e.stopPropagation();
           } else {
             isDragging = true;
           }
-
           startX = e.clientX;
           startY = e.clientY;
-
           startLeftPct = parseFloat(element.style.left) || 0;
           startTopPct = parseFloat(element.style.top) || 0;
           startWidthPx = element.offsetWidth;
           startHeightPx = element.offsetHeight;
-
           if (!element.style.left.includes("%")) {
             startLeftPct = (element.offsetLeft / stage.clientWidth) * 100;
             startTopPct = (element.offsetTop / stage.clientHeight) * 100;
           }
-
           const rect = element.getBoundingClientRect();
           clickOffsetX = e.clientX - rect.left;
           clickOffsetY = e.clientY - rect.top;
-
           element.style.zIndex = 1000;
         });
 
@@ -1499,11 +1459,9 @@
           if (isResizing) {
             const deltaX = e.clientX - startX;
             const deltaY = e.clientY - startY;
-
             const currentLeftPx =
               (parseFloat(element.style.left) / 100) * stageW;
             const currentTopPx = (parseFloat(element.style.top) / 100) * stageH;
-
             const maxAvailableWidth = stageW - currentLeftPx;
             const maxAvailableHeight = stageH - currentTopPx;
 
@@ -1511,7 +1469,6 @@
             newWidthPx = Math.max(50, Math.min(newWidthPx, maxAvailableWidth));
 
             let newHeightPx;
-
             if (e.shiftKey) {
               newHeightPx = startHeightPx + deltaY;
               newHeightPx = Math.max(
@@ -1519,19 +1476,23 @@
                 Math.min(newHeightPx, maxAvailableHeight),
               );
             } else {
-              newHeightPx = newWidthPx * (9 / 16);
+              // --- ZACHOWANIE PROPORCJI (16:9 lub 4:3) ---
+              const guestRatio = multiGuestsState[element.dataset.id]
+                ? multiGuestsState[element.dataset.id].ratio
+                : "16:9";
+              const multiplier = guestRatio === "4:3" ? 3 / 4 : 9 / 16;
+
+              newHeightPx = newWidthPx * multiplier;
               if (newHeightPx > maxAvailableHeight) {
                 newHeightPx = maxAvailableHeight;
-                newWidthPx = newHeightPx * (16 / 9);
+                newWidthPx = newHeightPx * (1 / multiplier);
               }
             }
 
             let newWidthPct = (newWidthPx / stageW) * 100;
             let newHeightPct = (newHeightPx / stageH) * 100;
-
             element.style.width = newWidthPct + "%";
             element.style.height = newHeightPct + "%";
-
             broadcastCommand({
               type: "transform-update",
               targetId: element.dataset.id,
@@ -1547,13 +1508,10 @@
             const stageRect = stage.getBoundingClientRect();
             let mouseX_Relative = e.clientX - stageRect.left;
             let mouseY_Relative = e.clientY - stageRect.top;
-
             let newX_Px = mouseX_Relative - clickOffsetX;
             let newY_Px = mouseY_Relative - clickOffsetY;
-
             let newX = (newX_Px / stageW) * 100;
             let newY = (newY_Px / stageH) * 100;
-
             const myW = parseFloat(element.style.width);
             const myH = parseFloat(element.style.height);
 
@@ -1567,13 +1525,11 @@
               const others = Array.from(
                 document.querySelectorAll(".stage-box"),
               ).filter((b) => b !== element);
-
               for (const other of others) {
                 const oX = parseFloat(other.style.left);
                 const oY = parseFloat(other.style.top);
                 const oW = parseFloat(other.style.width);
                 const oH = parseFloat(other.style.height);
-
                 if (Math.abs(newX - oX) < SNAP) {
                   newX = oX;
                   snappedX = true;
@@ -1590,7 +1546,6 @@
                   newX = oX + oW - myW;
                   snappedX = true;
                 }
-
                 if (Math.abs(newY - oY) < SNAP) {
                   newY = oY;
                   snappedY = true;
@@ -1609,7 +1564,6 @@
                 }
               }
             }
-
             if (snappedX) {
               guideX.style.display = "block";
               guideX.style.left = (newX * stageW) / 100 + "px";
@@ -1621,10 +1575,8 @@
 
             newX = Math.max(0, Math.min(newX, 100 - myW));
             newY = Math.max(0, Math.min(newY, 100 - myH));
-
             element.style.left = newX + "%";
             element.style.top = newY + "%";
-
             broadcastCommand({
               type: "transform-update",
               targetId: element.dataset.id,

@@ -628,6 +628,7 @@
               transform: { z: 1, x: 0, y: 0 },
             };
           guests[conn.peer].name = data.name || "Gość";
+          guests[conn.peer].ratio = data.ratio || "16:9";
           guests[conn.peer].conn = conn;
           updateLabel(conn.peer, data.name);
           const box = document.getElementById(`box-${conn.peer}`);
