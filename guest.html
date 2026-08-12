@@ -36,7 +36,6 @@
         margin-bottom: 20px;
         border: 2px solid #555;
       }
-      /* Usunięto transform: scaleX(-1) stąd, bo teraz steruje tym JS */
       video {
         width: 100%;
         height: 100%;
@@ -136,6 +135,7 @@
       #target-id {
         display: none;
       }
+
       #monitor-area {
         display: none;
         margin-top: 20px;
@@ -149,6 +149,7 @@
       .btn-monitor:hover {
         background: #e68900;
       }
+
       .footer-credits {
         position: fixed;
         bottom: 15px;
@@ -160,7 +161,7 @@
         pointer-events: none;
       }
 
-      /* --- STYL DLA KADROWANIA --- */
+      /* KADROWANIE */
       .crop-controls {
         background: #222;
         padding: 15px;
@@ -203,7 +204,7 @@
         <div id="mute-indicator">🔇 WYCISZONY</div>
       </div>
 
-      <!-- NOWOŚĆ: KADROWANIE -->
+      <!-- KADROWANIE -->
       <div class="crop-controls">
         <label style="margin-bottom: 10px; font-weight: bold; color: #fff"
           >🖼️ Kadrowanie obrazu (Zostanie wysłane do OBS):</label
@@ -260,14 +261,15 @@
       </div>
 
       <div class="settings-group">
-        <label class="checkbox-group"
-          ><input type="checkbox" id="start-muted" checked />
-          <span>Dołącz z wyciszonym mikrofonem</span></label
-        >
-        <label class="checkbox-group" title="Wymusza wysoki bitrate (6 Mbps)"
-          ><input type="checkbox" id="high-bitrate" checked />
-          <span>🔥 Unlock Bitrate</span></label
-        >
+        <label class="checkbox-group">
+          <input type="checkbox" id="start-muted" checked />
+          <span>Dołącz z wyciszonym mikrofonem</span>
+        </label>
+
+        <label class="checkbox-group" title="Wymusza wysoki bitrate (6 Mbps)">
+          <input type="checkbox" id="high-bitrate" checked />
+          <span>🔥 Unlock Bitrate</span>
+        </label>
       </div>
 
       <div class="settings-group">
@@ -304,7 +306,7 @@
           >
         </label>
         <button id="btn-open-monitor" class="btn-monitor">
-          📋 Skopiuj Link Podglądu (Ukryj moje hasło)
+          📋 Skopiuj Link Podglądu
         </button>
       </div>
 
@@ -321,6 +323,7 @@
         if (type === "error") p.className = "error";
         if (type === "success") p.className = "success";
         logs.prepend(p);
+        console.log(msg);
       }
 
       const urlParams = new URLSearchParams(window.location.search);
@@ -361,11 +364,12 @@
       let globalConn = null;
       let directorConn = null;
       const activeCallIds = [];
+
       const videoSelect = document.getElementById("videoSource");
       const audioSelect = document.getElementById("audioSource");
       const joinBtn = document.getElementById("join-btn");
 
-      // --- ZMIENNE KADROWANIA ---
+      // ZMIENNE KADROWANIA
       let currentTransform = { z: 1, x: 0, y: 0 };
 
       function updateTransform() {
@@ -373,11 +377,10 @@
         currentTransform.x = parseFloat(document.getElementById("cam-x").value);
         currentTransform.y = parseFloat(document.getElementById("cam-y").value);
 
-        // Aplikacja na lokalnym podglądzie (z nałożonym na sztywno efektem lustra u gościa)
+        // Aplikacja na lokalnym podglądzie (z nałożonym na sztywno efektem lustra u gościa -1)
         const vid = document.getElementById("localVideo");
         vid.style.transform = `scale(${-currentTransform.z}, ${currentTransform.z}) translate(${-currentTransform.x}%, ${currentTransform.y}%)`;
 
-        // Wysyłanie do OBS / Reżysera
         const payload = {
           type: "guest-cam-transform",
           transform: currentTransform,
@@ -395,7 +398,6 @@
         document.getElementById("cam-y").value = 0;
         updateTransform();
       }
-      // -------------------------
 
       window.onload = async function () {
         const roomID = urlParams.get("room");
@@ -407,7 +409,7 @@
           await requestPermissions();
           await getDevices();
           startPreview();
-          updateTransform(); // Uruchom podgląd CSS
+          updateTransform(); // Załaduj transform początkowy
         } else {
           log("BŁĄD: Brak ID pokoju w linku.", "error");
           joinBtn.disabled = true;
@@ -428,6 +430,7 @@
           joinBtn.innerText = "BRAK DOSTĘPU";
         }
       }
+
       async function getDevices() {
         const devices = await navigator.mediaDevices.enumerateDevices();
         videoSelect.innerHTML = "";
@@ -450,6 +453,7 @@
         joinBtn.innerText = "Ustawianie kamery...";
         if (localStream)
           localStream.getTracks().forEach((track) => track.stop());
+
         const constraints = {
           video: {
             deviceId: videoSelect.value
@@ -505,6 +509,7 @@
         joinBtn.innerText = "Łączenie...";
         videoSelect.disabled = true;
         audioSelect.disabled = true;
+
         generateMonitorLink(targetId, username);
 
         log(`Dzwonię do OBS...`);
@@ -522,7 +527,7 @@
             const isMuted = document.getElementById("start-muted").checked;
             directorConn.send({ type: "mic-status", muted: isMuted });
 
-            // WYSYŁAMY AKTUALNY KADR PRZY POŁĄCZENIU
+            // Wyślij kadr do Reżysera przy starcie
             directorConn.send({
               type: "guest-cam-transform",
               transform: currentTransform,
@@ -580,6 +585,7 @@
           params += "&local=1";
 
         const obsUrl = `${baseUrl}obs.html${params}`;
+
         btnMonitor.onclick = () => {
           navigator.clipboard
             .writeText(obsUrl)
@@ -601,15 +607,18 @@
       function callSingleOBS(obsId, username, highBitrate) {
         log(`Dzwonię do ekranu: ${obsId}`);
         activeCallIds.push(obsId);
+
         const call = peer.call(obsId, localStream);
         const conn = peer.connect(obsId);
+
         if (!isMulti) globalConn = conn;
 
         conn.on("open", () => {
           const isMuted = document.getElementById("start-muted").checked;
           conn.send({ type: "identify", name: username });
           conn.send({ type: "mic-status", muted: isMuted });
-          // WYSYŁAMY AKTUALNY KADR DO OBS W TRYBIE STANDARD
+
+          // WYŚLIJ KADR (PTZ) BEZPOŚREDNIO DO OBS-a PRZY POŁĄCZENIU
           conn.send({
             type: "guest-cam-transform",
             transform: currentTransform,
@@ -621,6 +630,7 @@
             document.getElementById("join-btn").style.background = "#dc3545";
           }
         });
+
         call.on("close", () => {
           const idx = activeCallIds.indexOf(obsId);
           if (idx > -1) activeCallIds.splice(idx, 1);
@@ -629,6 +639,7 @@
           const idx = activeCallIds.indexOf(obsId);
           if (idx > -1) activeCallIds.splice(idx, 1);
         });
+
         if (highBitrate) {
           setTimeout(() => {
             const pc = call.peerConnection;
@@ -646,6 +657,7 @@
             }
           }, 1000);
         }
+
         conn.on("data", (data) => handleRemoteCommand(data));
         setInterval(() => {
           if (conn.open) conn.send({ type: "heartbeat" });

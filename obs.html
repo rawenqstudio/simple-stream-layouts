@@ -18,14 +18,12 @@
         background: transparent;
         font-family: "Segoe UI", sans-serif;
       }
-
       #video-container {
         width: 100%;
         height: 100%;
         transition: all 0.5s ease;
         position: relative;
       }
-
       .video-box {
         position: relative;
         overflow: hidden;
@@ -35,14 +33,14 @@
         transition: all 0.5s ease;
       }
 
-      /* USUNIĘTO .mirror-effect z CSS, bo robimy to w JS, żeby można było używać Zooma */
+      /* USUNIĘTO sztywne .mirror-effect z video. Skalowanie jest dynamiczne */
       video,
       img.fake-cam {
         width: 100%;
         height: 100%;
         object-fit: cover;
         display: block;
-        transition: transform 0.2s ease; /* Płynne zoomowanie */
+        transition: transform 0.2s ease;
       }
 
       .mute-icon {
@@ -412,14 +410,17 @@
       });
       const container = document.getElementById("video-container");
 
-      // --- KLUCZOWE: Baza Stanów (Trzyma dane o Zoom/Crop i lustrze dla każdego ID) ---
       const guests = {};
       const heartbeats = {};
       let directorConn = null;
       const statsCache = {};
+
       let hidePanelTimeout;
 
       if (isLocal) {
+        console.log(
+          "🛠 Uruchomiono tryb lokalny. OBS zignoruje rozkazy układu od Reżysera.",
+        );
         const localPanel = document.getElementById("local-panel");
         localPanel.style.display = "block";
         container.className = "layout-grid";
@@ -445,6 +446,7 @@
       }
 
       peer.on("open", (id) => {
+        console.log("OBS gotowy. ID: " + id);
         if (isMulti) connectToDirector(myID);
       });
 
@@ -505,7 +507,7 @@
         conn.on("error", () => removeGuest(conn.peer));
       });
 
-      // --- MATEMATYKA CROP/ZOOM/LUSTRA ---
+      // --- UNIWERSALNA FUNKCJA STYLIZACJI (PTZ + LUSTRO) ---
       function applyVideoStyle(id) {
         const guest = guests[id];
         const box = document.getElementById(`box-${id}`);
@@ -516,7 +518,6 @@
             const x = guest.transform ? guest.transform.x : 0;
             const y = guest.transform ? guest.transform.y : 0;
 
-            // Jeśli włączone jest lustro, musimy obrócić oś X (żeby -1) i odwrócić ruch przesunięcia na boki (żeby suwak w lewo zawsze szedł w lewo)
             const scaleX = guest.mirrored ? -z : z;
             const translateX = guest.mirrored ? -x : x;
 
@@ -557,7 +558,6 @@
             if (box) container.appendChild(box);
           });
         }
-
         if (data.type === "toggle-labels") {
           if (data.show) container.classList.add("show-labels");
           else container.classList.remove("show-labels");
@@ -570,7 +570,6 @@
           if (data.show) container.classList.remove("hide-borders");
           else container.classList.add("hide-borders");
         }
-
         if (data.type === "add-fake-guest")
           addFakeVideo(data.id, data.name, data.img);
         if (data.type === "refresh-cam") {
@@ -579,20 +578,23 @@
           else performRefresh(data.targetId);
         }
 
-        // --- ODBIÓR LUSTRA (Director -> OBS) ---
+        // --- ODBIÓR LUSTRA ---
         if (data.type === "toggle-mirror") {
-          if (guests[data.targetId]) {
-            guests[data.targetId].mirrored = !guests[data.targetId].mirrored; // Przełącz stan
-            applyVideoStyle(data.targetId); // Aplikuj nowy CSS
+          const peerId = data.targetId;
+          if (guests[peerId]) {
+            guests[peerId].mirrored = !guests[peerId].mirrored; // Przełącz
+            applyVideoStyle(peerId); // Aplikuj
             sendGuestListToDirector(); // Potwierdź
           }
         }
 
-        // --- ODBIÓR CROP/ZOOM (Guest -> Director -> OBS) ---
+        // --- ODBIÓR CROP/ZOOM ---
         if (data.type === "guest-cam-transform") {
-          if (guests[data.targetId]) {
-            guests[data.targetId].transform = data.transform; // Zapisz nowy stan
-            applyVideoStyle(data.targetId); // Aplikuj
+          // Rozpoznanie nadawcy (W trybie Standard to conn.peer, w Multi reżyser podaje targetId)
+          const peerId = data.targetId || (conn ? conn.peer : null);
+          if (peerId && guests[peerId]) {
+            guests[peerId].transform = data.transform;
+            applyVideoStyle(peerId);
           }
         }
 
@@ -781,7 +783,6 @@
         heartbeats[id] = Date.now();
         statsCache[id] = { bytes: 0, delayTotal: 0, emittedTotal: 0 };
 
-        // Inicjalizacja gościa jeśli nie ma
         if (!guests[id])
           guests[id] = {
             name: "Gość",
@@ -819,7 +820,7 @@
         container.appendChild(box);
 
         updateGuestCount();
-        applyVideoStyle(id); // Aplikuj lustro/zoom przy starcie
+        applyVideoStyle(id);
 
         video.play().catch((e) => console.error(e));
         audio.play().catch((e) => console.warn(e));
