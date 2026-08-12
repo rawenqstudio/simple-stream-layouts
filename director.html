@@ -339,12 +339,18 @@
         line-height: 1.2;
         padding: 2px;
         box-sizing: border-box;
+        transition:
+          top 0.3s,
+          left 0.3s,
+          width 0.3s,
+          height 0.3s;
       }
       .stage-box:active {
         cursor: grabbing;
         border-color: yellow;
         z-index: 1000;
         background: rgba(0, 123, 255, 1);
+        transition: none;
       }
       .btn-free-mode {
         background: #28a745;
@@ -506,7 +512,7 @@
               Stół Montażowy (16:9)<br />
               <small
                 >Przesuwanie: Chwyć środek (ALT = brak snapu)<br />Skalowanie:
-                Róg (<b>SHIFT</b> = crop)</small
+                Róg (<b>SHIFT</b> = crop/swobodne)</small
               >
             </p>
           </div>
@@ -551,7 +557,6 @@
 
         <!-- SEKCJA GIER -->
         <div id="game-section" class="game-section">
-          <!-- ... -->
           <div id="game-menu">
             <h3>Wybierz Grę:</h3>
             <div class="game-menu-grid">
@@ -882,9 +887,9 @@
         multiGuestsState[fakeId] = {
           id: fakeId,
           name: randomName,
+          ratio: "16:9",
           muted: false,
           mirrored: false,
-          ratio: "16:9",
           conn: null,
         };
         if (!guestOrder.includes(fakeId)) guestOrder.push(fakeId);
@@ -905,6 +910,7 @@
         conn.on("data", (data) => handleData(data));
         conn.on("error", (err) => alert("Błąd: " + err));
       }
+
       function handleIncomingConnection(connection) {
         connection.on("open", () =>
           console.log("Połączenie:", connection.peer),
@@ -943,12 +949,12 @@
           updateStatusMsg();
         });
       }
+
       function updateStatusMsg() {
         document.getElementById("status-msg").innerText =
           `✅ OBS: ${obsClients.length} | Gości: ${guestConnections.length}`;
         document.getElementById("status-msg").style.color = "#00ff00";
       }
-
       function handleData(data, sourceConn) {
         if (data.type === "guest-list" && !isMulti) {
           data.list.forEach((g) => {
@@ -995,7 +1001,6 @@
               });
             }
           }
-          // --- PRZEKAZANIE PTZ DO OBS ---
           if (data.type === "guest-cam-transform" && sourceConn) {
             if (multiGuestsState[sourceConn.peer]) {
               multiGuestsState[sourceConn.peer].transform = data.transform;
@@ -1060,21 +1065,6 @@
         setTimeout(() => {
           btn.innerText = "📡 Wymuś połączenie z nowym OBS";
         }, 1000);
-      }
-      function sendLayout(layoutName) {
-        const container = document.getElementById("free-mode-container");
-        const isFreeModeOpen = container.style.display === "block";
-        if (isFreeModeOpen && isLayoutLocked) {
-          alert(
-            "Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon.",
-          );
-          return;
-        }
-        if (isFreeModeOpen) {
-          applyPresetToFreeMode(layoutName);
-        } else {
-          broadcastCommand({ type: "layout", mode: layoutName });
-        }
       }
       function toggleGuestMic(id, currentMutedState) {
         if (isMulti) {
@@ -1224,6 +1214,23 @@
         });
       }
 
+      function sendLayout(layoutName) {
+        const container = document.getElementById("free-mode-container");
+        const isFreeModeOpen = container.style.display === "block";
+        if (isFreeModeOpen && isLayoutLocked) {
+          alert(
+            "Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon.",
+          );
+          return;
+        }
+        if (isFreeModeOpen) {
+          applyPresetToFreeMode(layoutName);
+        } else {
+          broadcastCommand({ type: "layout", mode: layoutName });
+        }
+      }
+
+      // --- KLUCZOWA POPRAWKA MATEMATYKI DLA FORMATU 4:3 W FREE MODE ---
       function applyPresetToFreeMode(layoutName) {
         let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
         const count = guestIds.length;
@@ -1234,150 +1241,137 @@
         const PAD_Y_PCT = pxToH(20);
         const positions = {};
 
-        if (layoutName === "layout-grid") {
-          const cols = Math.ceil(Math.sqrt(count));
-          const rows = Math.ceil(count / cols);
-          let cellW_PCT;
-          if (count === 1) cellW_PCT = 85;
-          else if (count === 2) cellW_PCT = 48;
-          else if (count <= 4) cellW_PCT = 45;
-          else if (count <= 9) cellW_PCT = 32;
-          else cellW_PCT = 23;
-          let cellH_PCT;
-          if (count === 1) cellH_PCT = 85;
-          else if (count === 2) cellH_PCT = 60;
-          else if (count <= 6) cellH_PCT = 45;
-          else if (count <= 9) cellH_PCT = 30;
-          else cellH_PCT = 23;
-          const gridBlockW = cellW_PCT * cols + GAP_PCT * (cols - 1);
-          const gridBlockH = cellH_PCT * rows + pxToH(15) * (rows - 1);
-          const startX = (100 - gridBlockW) / 2;
-          const startY = (100 - gridBlockH) / 2;
-          guestIds.forEach((id, i) => {
+        guestIds.forEach((id, i) => {
+          let base_x, base_y, base_w, base_h;
+
+          if (layoutName === "layout-grid") {
+            const cols = Math.ceil(Math.sqrt(count));
+            const rows = Math.ceil(count / cols);
+            let cellW_PCT;
+            if (count === 1) cellW_PCT = 85;
+            else if (count === 2) cellW_PCT = 48;
+            else if (count <= 4) cellW_PCT = 45;
+            else if (count <= 9) cellW_PCT = 32;
+            else cellW_PCT = 23;
+            let cellH_PCT;
+            if (count === 1) cellH_PCT = 85;
+            else if (count === 2) cellH_PCT = 60;
+            else if (count <= 6) cellH_PCT = 45;
+            else if (count <= 9) cellH_PCT = 30;
+            else cellH_PCT = 23;
+            const gridBlockW = cellW_PCT * cols + GAP_PCT * (cols - 1);
+            const gridBlockH = cellH_PCT * rows + pxToH(15) * (rows - 1);
+            const startX = (100 - gridBlockW) / 2;
+            const startY = (100 - gridBlockH) / 2;
+
             const col = i % cols;
             const row = Math.floor(i / cols);
             const isLastRow = row === rows - 1;
             const itemsInRow = isLastRow ? count % cols || cols : cols;
             const rowW = cellW_PCT * itemsInRow + GAP_PCT * (itemsInRow - 1);
             const rowStartX = startX + (gridBlockW - rowW) / 2;
-            positions[id] = {
-              x: rowStartX + col * (cellW_PCT + GAP_PCT),
-              y: startY + row * (cellH_PCT + pxToH(15)),
-              w: cellW_PCT,
-              h: cellH_PCT,
-            };
-          });
-        } else if (layoutName === "layout-sidebar-right") {
-          const w = pxToW(320);
-          const h = pxToH(180);
-          const gap = pxToH(15);
-          const totalH = count * h + (count - 1) * gap;
-          const startY = Math.max(0, (100 - totalH) / 2);
-          guestIds.forEach((id, i) => {
-            positions[id] = {
-              x: 100 - w - pxToW(20),
-              y: startY + i * (h + gap),
-              w: w,
-              h: h,
-            };
-          });
-        } else if (layoutName === "layout-sidebar-left") {
-          const w = pxToW(320);
-          const h = pxToH(180);
-          const gap = pxToH(15);
-          const totalH = count * h + (count - 1) * gap;
-          const startY = Math.max(0, (100 - totalH) / 2);
-          guestIds.forEach((id, i) => {
-            positions[id] = {
-              x: pxToW(20),
-              y: startY + i * (h + gap),
-              w: w,
-              h: h,
-            };
-          });
-        } else if (layoutName === "layout-bottom") {
-          const w = pxToW(280);
-          const h = pxToH(157);
-          const gap = pxToW(20);
-          const totalW = count * w + (count - 1) * gap;
-          const startX = Math.max(0, (100 - totalW) / 2);
-          guestIds.forEach((id, i) => {
-            positions[id] = {
-              x: startX + i * (w + gap),
-              y: 100 - h - pxToH(20),
-              w: w,
-              h: h,
-            };
-          });
-        } else if (layoutName === "layout-top") {
-          const w = pxToW(280);
-          const h = pxToH(157);
-          const gap = pxToW(20);
-          const totalW = count * w + (count - 1) * gap;
-          const startX = Math.max(0, (100 - totalW) / 2);
-          guestIds.forEach((id, i) => {
-            positions[id] = {
-              x: startX + i * (w + gap),
-              y: pxToH(20),
-              w: w,
-              h: h,
-            };
-          });
-        } else if (layoutName === "layout-split") {
-          const w = pxToW(320);
-          const h = pxToH(180);
-          const rowGap = pxToH(30);
-          const rows = Math.ceil(count / 2);
-          const totalH = rows * h + (rows - 1) * rowGap;
-          const startY = Math.max(0, (100 - totalH) / 2);
-          const leftX = pxToW(40);
-          const rightX = 100 - pxToW(40) - w;
-          guestIds.forEach((id, i) => {
+
+            base_x = rowStartX + col * (cellW_PCT + GAP_PCT);
+            base_y = startY + row * (cellH_PCT + pxToH(15));
+            base_w = cellW_PCT;
+            base_h = cellH_PCT;
+          } else if (layoutName === "layout-sidebar-right") {
+            base_w = pxToW(320);
+            base_h = pxToH(180);
+            const gap = pxToH(15);
+            const totalH = count * base_h + (count - 1) * gap;
+            const startY = Math.max(0, (100 - totalH) / 2);
+            base_x = 100 - base_w - pxToW(20);
+            base_y = startY + i * (base_h + gap);
+          } else if (layoutName === "layout-sidebar-left") {
+            base_w = pxToW(320);
+            base_h = pxToH(180);
+            const gap = pxToH(15);
+            const totalH = count * base_h + (count - 1) * gap;
+            const startY = Math.max(0, (100 - totalH) / 2);
+            base_x = pxToW(20);
+            base_y = startY + i * (base_h + gap);
+          } else if (layoutName === "layout-bottom") {
+            base_w = pxToW(280);
+            base_h = pxToH(157);
+            const gap = pxToW(20);
+            const totalW = count * base_w + (count - 1) * gap;
+            const startX = Math.max(0, (100 - totalW) / 2);
+            base_x = startX + i * (base_w + gap);
+            base_y = 100 - base_h - pxToH(20);
+          } else if (layoutName === "layout-top") {
+            base_w = pxToW(280);
+            base_h = pxToH(157);
+            const gap = pxToW(20);
+            const totalW = count * base_w + (count - 1) * gap;
+            const startX = Math.max(0, (100 - totalW) / 2);
+            base_x = startX + i * (base_w + gap);
+            base_y = pxToH(20);
+          } else if (layoutName === "layout-split") {
+            base_w = pxToW(320);
+            base_h = pxToH(180);
+            const rowGap = pxToH(30);
+            const rows = Math.ceil(count / 2);
+            const totalH = rows * base_h + (rows - 1) * rowGap;
+            const startY = Math.max(0, (100 - totalH) / 2);
+            const leftX = pxToW(40);
+            const rightX = 100 - pxToW(40) - base_w;
             const isRight = i % 2 !== 0;
             const row = Math.floor(i / 2);
-            positions[id] = {
-              x: isRight ? rightX : leftX,
-              y: startY + row * (h + rowGap),
-              w: w,
-              h: h,
-            };
-          });
-        } else if (layoutName === "layout-center-stage") {
-          const sideW = pxToW(300);
-          const sideH = pxToH(169);
-          const gapY = pxToH(15);
-          const pad = pxToW(20);
-          const gapX = pxToW(15);
-          const middleW_Available = 100 - 2 * pad - 2 * sideW - 2 * gapX;
-          let mainH = middleW_Available * (9 / 16) * (OBS_WIDTH / OBS_HEIGHT);
-          if (mainH > 90) mainH = 90;
-          const mainW = mainH * (16 / 9) * (OBS_HEIGHT / OBS_WIDTH);
-          const centerX = (100 - mainW) / 2;
-          const centerY = (100 - mainH) / 2;
-          const leftColX = pad;
-          const rightColX = 100 - pad - sideW;
-          const sideCount = Math.max(0, count - 1);
-          const rowsPerSide = Math.ceil(sideCount / 2);
-          const totalSideH = rowsPerSide * sideH + (rowsPerSide - 1) * gapY;
-          const startSideY = (100 - totalSideH) / 2;
-          let sideIdx = 0;
-          guestIds.forEach((id, i) => {
+            base_x = isRight ? rightX : leftX;
+            base_y = startY + row * (base_h + rowGap);
+          } else if (layoutName === "layout-center-stage") {
+            const sideW = pxToW(300);
+            const sideH = pxToH(169);
+            const gapY = pxToH(15);
+            const pad = pxToW(20);
+            const gapX = pxToW(15);
+            const middleW_Available = 100 - 2 * pad - 2 * sideW - 2 * gapX;
+            let mainH = middleW_Available * (9 / 16) * (OBS_WIDTH / OBS_HEIGHT);
+            if (mainH > 90) mainH = 90;
+            const mainW = mainH * (16 / 9) * (OBS_HEIGHT / OBS_WIDTH);
+            const centerX = (100 - mainW) / 2;
+            const centerY = (100 - mainH) / 2;
+            const leftColX = pad;
+            const rightColX = 100 - pad - sideW;
+
+            const sideCount = Math.max(0, count - 1);
+            const rowsPerSide = Math.ceil(sideCount / 2);
+            const totalSideH = rowsPerSide * sideH + (rowsPerSide - 1) * gapY;
+            const startSideY = (100 - totalSideH) / 2;
+
             if (i === 0) {
-              positions[id] = { x: centerX, y: centerY, w: mainW, h: mainH };
+              base_x = centerX;
+              base_y = centerY;
+              base_w = mainW;
+              base_h = mainH;
             } else {
+              const sideIdx = i - 1;
               const row = Math.floor(sideIdx / 2);
               const isRight = sideIdx % 2 !== 0;
-              positions[id] = {
-                x: isRight ? rightColX : leftColX,
-                y: startSideY + row * (sideH + gapY),
-                w: sideW,
-                h: sideH,
-              };
-              sideIdx++;
+              base_x = isRight ? rightColX : leftColX;
+              base_y = startSideY + row * (sideH + gapY);
+              base_w = sideW;
+              base_h = sideH;
             }
-          });
-        }
+          }
 
+          // --- MAGIA: SKALOWANIE DO 4:3 BEZ UCIĘCIA ---
+          const is43 = multiGuestsState[id]?.ratio === "4:3";
+          let finalW = base_w;
+          let finalX = base_x;
+
+          if (is43) {
+            // Zwężamy szerokość tak, by zachować 4:3 względem podanej wysokości
+            finalW = base_h * (4 / 3) * (OBS_HEIGHT / OBS_WIDTH);
+            // Środkujemy element wewnątrz oryginalnej komórki 16:9
+            finalX = base_x + (base_w - finalW) / 2;
+          }
+
+          positions[id] = { x: finalX, y: base_y, w: finalW, h: base_h };
+        });
+
+        // APLIKACJA WYNIKÓW
         const stage = document.getElementById("free-mode-stage");
         for (const [id, pos] of Object.entries(positions)) {
           let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
@@ -1425,10 +1419,12 @@
             box.className = "stage-box";
             box.dataset.id = id;
             box.innerText = name;
+
             box.style.width = startW_PCT + "%";
             box.style.height = startH_PCT + "%";
             box.style.left = 2 + index * 2 + "%";
             box.style.top = 2 + index * 2 + "%";
+
             const handle = document.createElement("div");
             handle.className = "resize-handle";
             box.appendChild(handle);
@@ -1444,6 +1440,7 @@
               box.appendChild(handle);
             }
           }
+
           if (isLayoutLocked) box.classList.add("locked");
           else box.classList.remove("locked");
         });

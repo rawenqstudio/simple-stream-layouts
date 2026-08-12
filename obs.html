@@ -18,6 +18,7 @@
         background: transparent;
         font-family: "Segoe UI", sans-serif;
       }
+
       #video-container {
         width: 100%;
         height: 100%;
@@ -33,7 +34,7 @@
         transition: all 0.5s ease;
       }
 
-      /* Wideo musi być zablokowane na 100%, aby działał object-fit i transform-scale */
+      /* DOMYŚLNE WIDEO (16:9) */
       video,
       img.fake-cam {
         width: 100%;
@@ -41,6 +42,19 @@
         object-fit: cover;
         display: block;
         transition: transform 0.2s ease;
+      }
+      video.mirror-effect,
+      img.mirror-effect {
+        transform: scaleX(-1);
+      }
+
+      /* NOWOŚĆ: BEZPIECZNE 4:3 (Tylko poza trybem Free) */
+      #video-container:not(.layout-free) .video-box[data-ratio="4:3"] video,
+      #video-container:not(.layout-free)
+        .video-box[data-ratio="4:3"]
+        img.fake-cam {
+        object-fit: contain; /* Zapobiega obcinaniu głowy */
+        background: #000; /* Czarne pasy po bokach */
       }
 
       .mute-icon {
@@ -70,6 +84,7 @@
         z-index: 10;
         display: none;
       }
+
       #video-container:not(.show-labels) .label {
         display: none !important;
       }
@@ -114,6 +129,7 @@
         }
       }
 
+      /* LOKALNY PANEL */
       #local-panel {
         position: absolute;
         bottom: 40px;
@@ -163,6 +179,7 @@
         border-color: #00d2ff;
       }
 
+      /* UKŁADY */
       .layout-free {
         position: relative;
         width: 100%;
@@ -337,7 +354,6 @@
   </head>
   <body>
     <div id="video-container" class="layout-grid" data-count="0"></div>
-
     <div id="local-panel">
       <h4>Własny Układ</h4>
       <div class="local-btn-container">
@@ -414,7 +430,7 @@
       let hidePanelTimeout;
 
       if (isLocal) {
-        console.log("🛠 Tryb lokalny OBS. Ignorowanie układu Reżysera.");
+        console.log("🛠 Tryb lokalny OBS.");
         const localPanel = document.getElementById("local-panel");
         localPanel.style.display = "block";
         container.className = "layout-grid";
@@ -454,17 +470,16 @@
 
       peer.on("call", (call) => {
         call.answer();
-        // INICJALIZACJA GOŚCIA
         if (!guests[call.peer])
           guests[call.peer] = {
             name: "Łączenie...",
             muted: false,
             mirrored: false,
+            ratio: "16:9",
             transform: { z: 1, x: 0, y: 0 },
             conn: null,
           };
         guests[call.peer].call = call;
-
         if (useULL) {
           setTimeout(() => {
             const pc = call.peerConnection;
@@ -481,7 +496,6 @@
             }
           }, 500);
         }
-
         call.on("stream", (stream) => addVideo(stream, call.peer));
         call.on("close", () => removeGuest(call.peer));
         call.on("error", () => removeGuest(call.peer));
@@ -504,7 +518,6 @@
         conn.on("error", () => removeGuest(conn.peer));
       });
 
-      // --- POPRAWKA: Aplikacja Zoom (PTZ) i Lustra ---
       function applyVideoStyle(id) {
         const guest = guests[id];
         const box = document.getElementById(`box-${id}`);
@@ -565,7 +578,6 @@
           if (data.show) container.classList.remove("hide-borders");
           else container.classList.add("hide-borders");
         }
-
         if (data.type === "add-fake-guest")
           addFakeVideo(data.id, data.name, data.img);
         if (data.type === "refresh-cam") {
@@ -573,8 +585,6 @@
             Object.keys(guests).forEach((id) => performRefresh(id));
           else performRefresh(data.targetId);
         }
-
-        // ODBIÓR LUSTRA
         if (data.type === "toggle-mirror") {
           if (guests[data.targetId]) {
             guests[data.targetId].mirrored = !guests[data.targetId].mirrored;
@@ -582,8 +592,6 @@
             sendGuestListToDirector();
           }
         }
-
-        // ODBIÓR KADROWANIA (PTZ)
         if (data.type === "guest-cam-transform") {
           const peerId = data.targetId || (conn ? conn.peer : null);
           if (peerId && guests[peerId]) {
@@ -591,7 +599,6 @@
             applyVideoStyle(peerId);
           }
         }
-
         if (data.type === "game-deal") {
           document.querySelectorAll(".game-card").forEach((el) => el.remove());
           for (const [id, word] of Object.entries(data.cards)) {
@@ -620,12 +627,17 @@
               muted: false,
               mirrored: false,
               transform: { z: 1, x: 0, y: 0 },
+              ratio: "16:9",
             };
           guests[conn.peer].name = data.name || "Gość";
+          guests[conn.peer].ratio = data.ratio || "16:9"; // NOWOŚĆ: Zapisujemy format 4:3!
           guests[conn.peer].conn = conn;
+
           updateLabel(conn.peer, data.name);
+
           const box = document.getElementById(`box-${conn.peer}`);
           if (box) {
+            box.setAttribute("data-ratio", guests[conn.peer].ratio); // Aplikujemy format do CSS
             const card = box.querySelector(".game-card");
             if (
               card &&
@@ -636,7 +648,6 @@
             }
           }
           sendGuestListToDirector();
-          applyVideoStyle(conn.peer); // Aplikuj style dla pewności po identyfikacji
         }
         if (data.type === "mic-status" && conn) {
           if (guests[conn.peer]) {
@@ -748,12 +759,14 @@
           muted: false,
           mirrored: false,
           transform: { z: 1, x: 0, y: 0 },
+          ratio: "16:9",
           conn: null,
         };
         const box = document.createElement("div");
         box.className = "video-box";
         box.id = `box-${id}`;
         box.style.order = 999;
+        box.setAttribute("data-ratio", "16:9"); // Domyślnie
         const img = document.createElement("img");
         img.src = imgSrc;
         img.className = "fake-cam";
@@ -785,13 +798,15 @@
             muted: false,
             mirrored: false,
             transform: { z: 1, x: 0, y: 0 },
+            ratio: "16:9",
           };
-        if (!guests[id].transform) guests[id].transform = { z: 1, x: 0, y: 0 };
 
         const box = document.createElement("div");
         box.className = "video-box";
         box.id = `box-${id}`;
         box.style.order = 999;
+        box.setAttribute("data-ratio", guests[id].ratio); // Atrybut CSS
+
         const video = document.createElement("video");
         video.srcObject = stream;
         video.muted = true;
@@ -816,7 +831,7 @@
         container.appendChild(box);
 
         updateGuestCount();
-        applyVideoStyle(id); // Aplikuj style przy wejściu
+        applyVideoStyle(id);
 
         video.play().catch((e) => console.error(e));
         audio.play().catch((e) => console.warn(e));
@@ -871,6 +886,7 @@
             name: guests[id].name,
             muted: guests[id].muted,
             mirrored: guests[id].mirrored,
+            ratio: guests[id].ratio,
           }));
           directorConn.send({ type: "guest-list", list: safeList });
         }
