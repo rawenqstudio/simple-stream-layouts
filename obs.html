@@ -33,7 +33,7 @@
         transition: all 0.5s ease;
       }
 
-      /* USUNIĘTO sztywne .mirror-effect z video. Skalowanie jest dynamiczne */
+      /* Wideo musi być zablokowane na 100%, aby działał object-fit i transform-scale */
       video,
       img.fake-cam {
         width: 100%;
@@ -70,7 +70,6 @@
         z-index: 10;
         display: none;
       }
-
       #video-container:not(.show-labels) .label {
         display: none !important;
       }
@@ -115,7 +114,6 @@
         }
       }
 
-      /* LOKALNY PANEL */
       #local-panel {
         position: absolute;
         bottom: 40px;
@@ -165,7 +163,6 @@
         border-color: #00d2ff;
       }
 
-      /* UKŁADY */
       .layout-free {
         position: relative;
         width: 100%;
@@ -414,13 +411,10 @@
       const heartbeats = {};
       let directorConn = null;
       const statsCache = {};
-
       let hidePanelTimeout;
 
       if (isLocal) {
-        console.log(
-          "🛠 Uruchomiono tryb lokalny. OBS zignoruje rozkazy układu od Reżysera.",
-        );
+        console.log("🛠 Tryb lokalny OBS. Ignorowanie układu Reżysera.");
         const localPanel = document.getElementById("local-panel");
         localPanel.style.display = "block";
         container.className = "layout-grid";
@@ -460,6 +454,7 @@
 
       peer.on("call", (call) => {
         call.answer();
+        // INICJALIZACJA GOŚCIA
         if (!guests[call.peer])
           guests[call.peer] = {
             name: "Łączenie...",
@@ -469,6 +464,7 @@
             conn: null,
           };
         guests[call.peer].call = call;
+
         if (useULL) {
           setTimeout(() => {
             const pc = call.peerConnection;
@@ -485,6 +481,7 @@
             }
           }, 500);
         }
+
         call.on("stream", (stream) => addVideo(stream, call.peer));
         call.on("close", () => removeGuest(call.peer));
         call.on("error", () => removeGuest(call.peer));
@@ -507,7 +504,7 @@
         conn.on("error", () => removeGuest(conn.peer));
       });
 
-      // --- UNIWERSALNA FUNKCJA STYLIZACJI (PTZ + LUSTRO) ---
+      // --- POPRAWKA: Aplikacja Zoom (PTZ) i Lustra ---
       function applyVideoStyle(id) {
         const guest = guests[id];
         const box = document.getElementById(`box-${id}`);
@@ -517,10 +514,8 @@
             const z = guest.transform ? guest.transform.z : 1;
             const x = guest.transform ? guest.transform.x : 0;
             const y = guest.transform ? guest.transform.y : 0;
-
             const scaleX = guest.mirrored ? -z : z;
             const translateX = guest.mirrored ? -x : x;
-
             video.style.transform = `scale(${scaleX}, ${z}) translate(${translateX}%, ${y}%)`;
           }
         }
@@ -570,6 +565,7 @@
           if (data.show) container.classList.remove("hide-borders");
           else container.classList.add("hide-borders");
         }
+
         if (data.type === "add-fake-guest")
           addFakeVideo(data.id, data.name, data.img);
         if (data.type === "refresh-cam") {
@@ -578,19 +574,17 @@
           else performRefresh(data.targetId);
         }
 
-        // --- ODBIÓR LUSTRA ---
+        // ODBIÓR LUSTRA
         if (data.type === "toggle-mirror") {
-          const peerId = data.targetId;
-          if (guests[peerId]) {
-            guests[peerId].mirrored = !guests[peerId].mirrored; // Przełącz
-            applyVideoStyle(peerId); // Aplikuj
-            sendGuestListToDirector(); // Potwierdź
+          if (guests[data.targetId]) {
+            guests[data.targetId].mirrored = !guests[data.targetId].mirrored;
+            applyVideoStyle(data.targetId);
+            sendGuestListToDirector();
           }
         }
 
-        // --- ODBIÓR CROP/ZOOM ---
+        // ODBIÓR KADROWANIA (PTZ)
         if (data.type === "guest-cam-transform") {
-          // Rozpoznanie nadawcy (W trybie Standard to conn.peer, w Multi reżyser podaje targetId)
           const peerId = data.targetId || (conn ? conn.peer : null);
           if (peerId && guests[peerId]) {
             guests[peerId].transform = data.transform;
@@ -628,7 +622,6 @@
               transform: { z: 1, x: 0, y: 0 },
             };
           guests[conn.peer].name = data.name || "Gość";
-          guests[conn.peer].ratio = data.ratio || "16:9";
           guests[conn.peer].conn = conn;
           updateLabel(conn.peer, data.name);
           const box = document.getElementById(`box-${conn.peer}`);
@@ -643,6 +636,7 @@
             }
           }
           sendGuestListToDirector();
+          applyVideoStyle(conn.peer); // Aplikuj style dla pewności po identyfikacji
         }
         if (data.type === "mic-status" && conn) {
           if (guests[conn.peer]) {
@@ -777,6 +771,7 @@
         container.appendChild(box);
         updateGuestCount();
         sendGuestListToDirector();
+        applyVideoStyle(id);
       }
 
       function addVideo(stream, id) {
@@ -821,7 +816,7 @@
         container.appendChild(box);
 
         updateGuestCount();
-        applyVideoStyle(id);
+        applyVideoStyle(id); // Aplikuj style przy wejściu
 
         video.play().catch((e) => console.error(e));
         audio.play().catch((e) => console.warn(e));

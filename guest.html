@@ -25,7 +25,6 @@
         margin-top: 0;
         color: #00d2ff;
       }
-
       .video-wrapper {
         position: relative;
         width: 100%;
@@ -37,11 +36,12 @@
         border: 2px solid #555;
         transition: aspect-ratio 0.3s;
       }
+
+      /* Lustro zdjęte ze stałego CSS, obsługiwane przez JS (PTZ) */
       video {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transform: scaleX(-1);
       }
 
       #mute-indicator {
@@ -133,7 +133,6 @@
       .success {
         color: #00ff00;
       }
-
       #target-id {
         display: none;
       }
@@ -151,7 +150,6 @@
       .btn-monitor:hover {
         background: #e68900;
       }
-
       .footer-credits {
         position: fixed;
         bottom: 15px;
@@ -163,6 +161,7 @@
         pointer-events: none;
       }
 
+      /* KADROWANIE */
       .crop-controls {
         background: #222;
         padding: 15px;
@@ -250,7 +249,6 @@
         </button>
       </div>
 
-      <!-- NOWOŚĆ: WYBÓR FORMATU -->
       <div class="settings-group">
         <label>📐 Format Obrazu:</label>
         <select id="cameraRatio" onchange="startPreview()">
@@ -274,8 +272,10 @@
           <input type="checkbox" id="start-muted" checked />
           <span>Dołącz z wyciszonym mikrofonem</span>
         </label>
+
         <label class="checkbox-group" title="Wymusza wysoki bitrate (6 Mbps)">
-          <input type="checkbox" id="high-bitrate" />
+          <!-- POPRAWKA: Włączone domyślnie -->
+          <input type="checkbox" id="high-bitrate" checked />
           <span>🔥 Unlock Bitrate</span>
         </label>
       </div>
@@ -375,13 +375,17 @@
       const audioSelect = document.getElementById("audioSource");
       const joinBtn = document.getElementById("join-btn");
 
+      // --- PTZ KADROWANIE ---
       let currentTransform = { z: 1, x: 0, y: 0 };
       function updateTransform() {
         currentTransform.z = parseFloat(document.getElementById("cam-z").value);
         currentTransform.x = parseFloat(document.getElementById("cam-x").value);
         currentTransform.y = parseFloat(document.getElementById("cam-y").value);
+
+        // Lokalne odbicie lustrzane + zoom
         const vid = document.getElementById("localVideo");
         vid.style.transform = `scale(${-currentTransform.z}, ${currentTransform.z}) translate(${-currentTransform.x}%, ${currentTransform.y}%)`;
+
         const payload = {
           type: "guest-cam-transform",
           transform: currentTransform,
@@ -398,6 +402,7 @@
         document.getElementById("cam-y").value = 0;
         updateTransform();
       }
+      // -----------------------
 
       window.onload = async function () {
         const roomID = urlParams.get("room");
@@ -453,7 +458,6 @@
         if (localStream)
           localStream.getTracks().forEach((track) => track.stop());
 
-        // --- LOGIKA FORMATU ---
         const ratio = document.getElementById("cameraRatio").value;
         const idealW = ratio === "4:3" ? 1440 : 1920;
         document.querySelector(".video-wrapper").style.aspectRatio =
@@ -509,7 +513,7 @@
         const targetId = document.getElementById("target-id").value;
         const username = document.getElementById("username").value.trim();
         const highBitrate = document.getElementById("high-bitrate").checked;
-        const ratio = document.getElementById("cameraRatio").value; // NOWOŚĆ
+        const ratio = document.getElementById("cameraRatio").value;
 
         joinBtn.disabled = true;
         joinBtn.innerText = "Łączenie...";
@@ -529,8 +533,6 @@
           directorConn.on("open", () => {
             log("Połączono z Reżyserem. Pobieram listę ekranów...", "success");
             directorConn.send({ type: "get-obs-list" });
-
-            // WYSYŁAMY RATIO W PAKIECIE IDENTYFIKACYJNYM
             directorConn.send({
               type: "identify",
               name: username,
@@ -541,7 +543,7 @@
             directorConn.send({
               type: "guest-cam-transform",
               transform: currentTransform,
-            });
+            }); // Wyślij kadr na start
             setInterval(() => {
               if (directorConn.open) directorConn.send({ type: "heartbeat" });
             }, 2000);
@@ -619,12 +621,12 @@
 
         conn.on("open", () => {
           const isMuted = document.getElementById("start-muted").checked;
-          conn.send({ type: "identify", name: username, ratio: ratio }); // WYSYŁKA RATIO DO OBS
+          conn.send({ type: "identify", name: username, ratio: ratio });
           conn.send({ type: "mic-status", muted: isMuted });
           conn.send({
             type: "guest-cam-transform",
             transform: currentTransform,
-          });
+          }); // Wyślij kadr na start
 
           if (!isMulti) {
             log("Połączenie zestawione!", "success");
@@ -641,7 +643,6 @@
           const idx = activeCallIds.indexOf(obsId);
           if (idx > -1) activeCallIds.splice(idx, 1);
         });
-
         if (highBitrate) {
           setTimeout(() => {
             const pc = call.peerConnection;
