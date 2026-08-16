@@ -316,7 +316,7 @@
         background: #000;
         outline: 2px solid #00d2ff;
         position: relative;
-        margin-top: 10px;
+        margin-top: 20px;
         overflow: hidden;
         box-sizing: border-box;
         background-image:
@@ -374,10 +374,10 @@
         background: #c82333;
       }
       .btn-lock-off {
-        background: #007bff;
+        background: #28a745;
       }
       .btn-lock-off:hover {
-        background: #0056b3;
+        background: #218838;
       }
       .stage-box.locked {
         cursor: not-allowed !important;
@@ -481,41 +481,14 @@
         </button>
 
         <div id="free-mode-container">
-          <!-- ZMIENIONE MENU FREE MODE Z PRZYCISKAMI ZAPISU -->
-          <div
-            style="
-              display: flex;
-              justify-content: space-between;
-              gap: 5px;
-              margin-bottom: 10px;
-              padding: 0 15px;
-            "
+          <button
+            id="btn-lock-layout"
+            class="btn-tool btn-lock-off"
+            style="margin-bottom: 10px"
+            onclick="toggleLayoutLock()"
           >
-            <button
-              id="btn-lock-layout"
-              class="btn-tool btn-lock-off"
-              style="margin: 0; width: 48%"
-              onclick="toggleLayoutLock()"
-            >
-              🔓 ODBLOKOWANE
-            </button>
-            <button
-              class="btn-tool"
-              style="margin: 0; width: 24%; background: #28a745"
-              onclick="saveFreeLayout()"
-              title="Zapisz ten układ"
-            >
-              💾 Zapisz
-            </button>
-            <button
-              class="btn-tool"
-              style="margin: 0; width: 24%; background: #17a2b8"
-              onclick="loadFreeLayout()"
-              title="Wczytaj zapisany układ"
-            >
-              📂 Wczytaj
-            </button>
-          </div>
+            🔓 Układ: ODBLOKOWANY
+          </button>
 
           <div id="free-mode-stage">
             <div id="guide-x" class="guide-line guide-x"></div>
@@ -579,7 +552,6 @@
 
         <!-- SEKCJA GIER -->
         <div id="game-section" class="game-section">
-          <!-- ... -->
           <div id="game-menu">
             <h3>Wybierz Grę:</h3>
             <div class="game-menu-grid">
@@ -770,6 +742,7 @@
               credential: "openrelayproject",
             },
           ];
+
       const peer = new Peer(isMulti ? roomID : undefined, {
         config: { iceServers: selectedConfig },
       });
@@ -784,7 +757,6 @@
       const currentWords = {};
       let isLayoutLocked = false;
 
-      // ... [FUNKCJE GRY, OBSŁUGA POŁĄCZEŃ BEZ ZMIAN] ...
       function toggleGamePanel() {
         const panel = document.getElementById("game-section");
         if (panel.style.display === "block") {
@@ -807,9 +779,9 @@
       function dealCards() {
         const category = document.getElementById("game-category").value;
         const words = [...gameData[category]];
-        let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+        let guestIds = guestOrder;
         if (guestIds.length === 0) {
-          alert("Brak gości do rozdania kart!");
+          alert("Brak gości!");
           return;
         }
         guestIds.forEach((id) => {
@@ -852,7 +824,7 @@
       function renderGameControls() {
         const container = document.getElementById("game-players-list");
         container.innerHTML = "";
-        let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+        let guestIds = guestOrder;
         if (guestIds.length === 0) {
           container.innerHTML =
             "<p style='color:#aaa; font-style:italic;'>Brak aktywnych gości.</p>";
@@ -977,7 +949,10 @@
           `✅ OBS: ${obsClients.length} | Gości: ${guestConnections.length}`;
         document.getElementById("status-msg").style.color = "#00ff00";
       }
+
+      // --- GŁÓWNY HANDLER DANYCH ---
       function handleData(data, sourceConn) {
+        // Obsługa trybu Standardowego
         if (data.type === "guest-list" && !isMulti) {
           data.list.forEach((g) => {
             multiGuestsState[g.id] = g;
@@ -990,6 +965,8 @@
           renderFreeStage();
         }
         if (data.type === "stats-update") updateStats(data.stats);
+
+        // Obsługa trybu Multi
         if (isMulti) {
           if (data.type === "identify" && sourceConn) {
             if (!guestConnections.includes(sourceConn))
@@ -1023,15 +1000,28 @@
               });
             }
           }
+          if (data.type === "guest-cam-transform" && sourceConn) {
+            if (multiGuestsState[sourceConn.peer]) {
+              multiGuestsState[sourceConn.peer].transform = data.transform;
+              obsClients.forEach((c) => {
+                if (c.open)
+                  c.send({
+                    type: "guest-cam-transform",
+                    targetId: sourceConn.peer,
+                    transform: data.transform,
+                  });
+              });
+            }
+          }
         }
       }
+
       function refreshMultiModeUI() {
         const sortedList = [];
         guestOrder.forEach((id) => {
           if (multiGuestsState[id]) sortedList.push(multiGuestsState[id]);
         });
         renderGuestList(sortedList);
-        renderFreeStage();
       }
       function moveGuest(id, direction) {
         const index = guestOrder.indexOf(id);
@@ -1075,21 +1065,6 @@
           btn.innerText = "📡 Wymuś połączenie z nowym OBS";
         }, 1000);
       }
-      function sendLayout(layoutName) {
-        const container = document.getElementById("free-mode-container");
-        const isFreeModeOpen = container.style.display === "block";
-        if (isFreeModeOpen && isLayoutLocked) {
-          alert(
-            "Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon.",
-          );
-          return;
-        }
-        if (isFreeModeOpen) {
-          applyPresetToFreeMode(layoutName);
-        } else {
-          broadcastCommand({ type: "layout", mode: layoutName });
-        }
-      }
       function toggleGuestMic(id, currentMutedState) {
         if (isMulti) {
           const guest = multiGuestsState[id];
@@ -1117,7 +1092,7 @@
         broadcastCommand({ type: "refresh-cam", targetId: id });
       }
       function toggleMirror(id) {
-        if (isMulti && multiGuestsState[id]) {
+        if (multiGuestsState[id]) {
           multiGuestsState[id].mirrored = !multiGuestsState[id].mirrored;
           refreshMultiModeUI();
         }
@@ -1181,86 +1156,6 @@
         }
       }
 
-      // --- FREE MODE: SAVE & LOAD ---
-
-      function saveFreeLayout() {
-        const stage = document.getElementById("free-mode-stage");
-        const layoutToSave = [];
-
-        // Zapisujemy na podstawie GUEST ORDER (Slot 0, Slot 1, itd.)
-        // Zamiast konkretnych ID, zapiszemy ich pozycje wg kolejności
-        guestOrder.forEach((id, index) => {
-          const box = stage.querySelector(`.stage-box[data-id="${id}"]`);
-          if (box) {
-            layoutToSave.push({
-              slot: index,
-              x: parseFloat(box.style.left),
-              y: parseFloat(box.style.top),
-              w: parseFloat(box.style.width),
-              h: parseFloat(box.style.height),
-            });
-          }
-        });
-
-        // Zapis do localStorage przeglądarki
-        localStorage.setItem("customFreeLayout", JSON.stringify(layoutToSave));
-
-        // Wizualne potwierdzenie
-        const btn = document.getElementById("btn-save-layout");
-        const originalText = btn.innerText;
-        btn.innerText = "✅ Zapisano";
-        setTimeout(() => {
-          btn.innerText = originalText;
-        }, 2000);
-      }
-
-      function loadFreeLayout() {
-        const savedData = localStorage.getItem("customFreeLayout");
-        if (!savedData) {
-          alert("Brak zapisanego układu w pamięci.");
-          return;
-        }
-
-        const layoutToLoad = JSON.parse(savedData);
-        const stage = document.getElementById("free-mode-stage");
-
-        // Aplikujemy wczytane dane do AKTUALNYCH gości (wg Slotów)
-        layoutToLoad.forEach((savedPos) => {
-          const targetId = guestOrder[savedPos.slot]; // Odszukaj kto teraz zajmuje ten slot
-          if (targetId) {
-            const box = stage.querySelector(
-              `.stage-box[data-id="${targetId}"]`,
-            );
-            if (box) {
-              box.style.left = savedPos.x + "%";
-              box.style.top = savedPos.y + "%";
-              box.style.width = savedPos.w + "%";
-              box.style.height = savedPos.h + "%";
-
-              // Wyślij do OBS
-              broadcastCommand({
-                type: "transform-update",
-                targetId: targetId,
-                x: savedPos.x,
-                y: savedPos.y,
-                w: savedPos.w,
-                h: savedPos.h,
-              });
-            }
-          }
-        });
-
-        // Wizualne potwierdzenie
-        const btn = document.getElementById("btn-load-layout");
-        const originalText = btn.innerText;
-        btn.innerText = "✅ Wczytano";
-        setTimeout(() => {
-          btn.innerText = originalText;
-        }, 2000);
-      }
-
-      // --- FREE MODE RENDERER & LOGIC ---
-
       function toggleLayoutLock() {
         isLayoutLocked = !isLayoutLocked;
         const btn = document.getElementById("btn-lock-layout");
@@ -1271,7 +1166,6 @@
           btn.innerText = "🔓 Układ: ODBLOKOWANY";
           btn.className = "btn-tool btn-lock-off";
         }
-
         const layoutButtons = document.querySelectorAll(
           ".btn-layout:not(.btn-free-mode)",
         );
@@ -1317,8 +1211,24 @@
         });
       }
 
+      function sendLayout(layoutName) {
+        const container = document.getElementById("free-mode-container");
+        const isFreeModeOpen = container.style.display === "block";
+        if (isFreeModeOpen && isLayoutLocked) {
+          alert(
+            "Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon.",
+          );
+          return;
+        }
+        if (isFreeModeOpen) {
+          applyPresetToFreeMode(layoutName);
+        } else {
+          broadcastCommand({ type: "layout", mode: layoutName });
+        }
+      }
+
       function applyPresetToFreeMode(layoutName) {
-        let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+        let guestIds = guestOrder; // UŻYWAMY ZAWSZE GUEST ORDER DLA SPÓJNOŚCI
         const count = guestIds.length;
         if (count === 0) return;
 
@@ -1327,218 +1237,243 @@
         const PAD_Y_PX = 20;
         const positions = {};
 
-        if (layoutName === "layout-grid") {
-          const cols = Math.ceil(Math.sqrt(count));
-          const rows = Math.ceil(count / cols);
-          let cellH_PCT;
-          if (count === 1) cellH_PCT = 85;
-          else if (count === 2) cellH_PCT = 60;
-          else if (count <= 6) cellH_PCT = 45;
-          else if (count <= 9) cellH_PCT = 30;
-          else cellH_PCT = 23;
-          const cellH_Px = (cellH_PCT / 100) * OBS_HEIGHT;
-          let i = 0;
-          const startY =
-            (OBS_HEIGHT - (cellH_Px * rows + GAP_PX * (rows - 1))) / 2;
+        guestIds.forEach((id, i) => {
+          let base_x, base_y, base_w, base_h;
+          if (layoutName === "layout-grid") {
+            const cols = Math.ceil(Math.sqrt(count));
+            const rows = Math.ceil(count / cols);
+            let cellH_PCT;
+            if (count === 1) cellH_PCT = 85;
+            else if (count === 2) cellH_PCT = 60;
+            else if (count <= 6) cellH_PCT = 45;
+            else if (count <= 9) cellH_PCT = 30;
+            else cellH_PCT = 23;
+            const cellH_Px = (cellH_PCT / 100) * OBS_HEIGHT;
+            const startY =
+              (OBS_HEIGHT - (cellH_Px * rows + GAP_PX * (rows - 1))) / 2;
 
-          for (let r = 0; r < rows; r++) {
+            // Szukamy odpowiedniego rzędu i kolumny dla 'i'
+            const row = Math.floor(i / cols);
+            const col = i % cols;
             const itemsInRow =
-              r === rows - 1 && count % cols !== 0 ? count % cols : cols;
+              row === rows - 1 && count % cols !== 0 ? count % cols : cols;
+
             let rowW_Px = 0;
-            const rowBoxes = [];
             for (let c = 0; c < itemsInRow; c++) {
-              const id = guestIds[i + c];
+              const targetId = guestIds[row * cols + c];
+              const ratio = multiGuestsState[targetId]
+                ? multiGuestsState[targetId].ratio
+                : "16:9";
+              rowW_Px += cellH_Px * (ratio === "4:3" ? 4 / 3 : 16 / 9);
+            }
+            rowW_Px += GAP_PX * (itemsInRow - 1);
+
+            let startX = (OBS_WIDTH - rowW_Px) / 2;
+            // Przesuwamy startX do naszej kolumny
+            for (let c = 0; c < col; c++) {
+              const targetId = guestIds[row * cols + c];
+              const ratio = multiGuestsState[targetId]
+                ? multiGuestsState[targetId].ratio
+                : "16:9";
+              startX += cellH_Px * (ratio === "4:3" ? 4 / 3 : 16 / 9) + GAP_PX;
+            }
+
+            base_x = startX;
+            base_y = startY + row * (cellH_Px + GAP_PX);
+            const myRatio = multiGuestsState[id]
+              ? multiGuestsState[id].ratio
+              : "16:9";
+            base_w = cellH_Px * (myRatio === "4:3" ? 4 / 3 : 16 / 9);
+            base_h = cellH_Px;
+          } else if (layoutName === "layout-sidebar-right") {
+            const wPx = 320;
+            let totalH_Px = 0;
+            guestIds.forEach((gId) => {
+              const ratio = multiGuestsState[gId]
+                ? multiGuestsState[gId].ratio
+                : "16:9";
+              totalH_Px += wPx * (ratio === "4:3" ? 3 / 4 : 9 / 16);
+            });
+            totalH_Px += GAP_PX * (count - 1);
+            let currentY = Math.max(0, (OBS_HEIGHT - totalH_Px) / 2);
+            for (let j = 0; j < i; j++) {
+              const ratio = multiGuestsState[guestIds[j]]
+                ? multiGuestsState[guestIds[j]].ratio
+                : "16:9";
+              currentY += wPx * (ratio === "4:3" ? 3 / 4 : 9 / 16) + GAP_PX;
+            }
+
+            base_w = wPx;
+            base_h =
+              wPx *
+              (multiGuestsState[id]
+                ? multiGuestsState[id].ratio === "4:3"
+                  ? 3 / 4
+                  : 9 / 16
+                : 9 / 16);
+            base_x = OBS_WIDTH - wPx - PAD_X_PX;
+            base_y = currentY;
+          } else if (layoutName === "layout-sidebar-left") {
+            const wPx = 320;
+            let totalH_Px = 0;
+            guestIds.forEach((gId) => {
+              const ratio = multiGuestsState[gId]
+                ? multiGuestsState[gId].ratio
+                : "16:9";
+              totalH_Px += wPx * (ratio === "4:3" ? 3 / 4 : 9 / 16);
+            });
+            totalH_Px += GAP_PX * (count - 1);
+            let currentY = Math.max(0, (OBS_HEIGHT - totalH_Px) / 2);
+            for (let j = 0; j < i; j++) {
+              const ratio = multiGuestsState[guestIds[j]]
+                ? multiGuestsState[guestIds[j]].ratio
+                : "16:9";
+              currentY += wPx * (ratio === "4:3" ? 3 / 4 : 9 / 16) + GAP_PX;
+            }
+
+            base_w = wPx;
+            base_h =
+              wPx *
+              (multiGuestsState[id]
+                ? multiGuestsState[id].ratio === "4:3"
+                  ? 3 / 4
+                  : 9 / 16
+                : 9 / 16);
+            base_x = PAD_X_PX;
+            base_y = currentY;
+          } else if (layoutName === "layout-bottom") {
+            const hPx = 157;
+            const gapPx = 20;
+            let totalW_Px = 0;
+            guestIds.forEach((gId) => {
+              const ratio = multiGuestsState[gId]
+                ? multiGuestsState[gId].ratio
+                : "16:9";
+              totalW_Px += hPx * (ratio === "4:3" ? 4 / 3 : 16 / 9);
+            });
+            totalW_Px += gapPx * (count - 1);
+            let currentX = Math.max(0, (OBS_WIDTH - totalW_Px) / 2);
+            for (let j = 0; j < i; j++) {
+              const ratio = multiGuestsState[guestIds[j]]
+                ? multiGuestsState[guestIds[j]].ratio
+                : "16:9";
+              currentX += hPx * (ratio === "4:3" ? 4 / 3 : 16 / 9) + gapPx;
+            }
+
+            base_h = hPx;
+            base_w =
+              hPx *
+              (multiGuestsState[id]
+                ? multiGuestsState[id].ratio === "4:3"
+                  ? 4 / 3
+                  : 16 / 9
+                : 16 / 9);
+            base_y = OBS_HEIGHT - hPx - PAD_Y_PX;
+            base_x = currentX;
+          } else if (layoutName === "layout-top") {
+            const hPx = 157;
+            const gapPx = 20;
+            let totalW_Px = 0;
+            guestIds.forEach((gId) => {
+              const ratio = multiGuestsState[gId]
+                ? multiGuestsState[id].ratio
+                : "16:9";
+              totalW_Px += hPx * (ratio === "4:3" ? 4 / 3 : 16 / 9);
+            });
+            totalW_Px += gapPx * (count - 1);
+            let currentX = Math.max(0, (OBS_WIDTH - totalW_Px) / 2);
+            for (let j = 0; j < i; j++) {
+              const ratio = multiGuestsState[guestIds[j]]
+                ? multiGuestsState[guestIds[j]].ratio
+                : "16:9";
+              currentX += hPx * (ratio === "4:3" ? 4 / 3 : 16 / 9) + gapPx;
+            }
+
+            base_h = hPx;
+            base_w =
+              hPx *
+              (multiGuestsState[id]
+                ? multiGuestsState[id].ratio === "4:3"
+                  ? 4 / 3
+                  : 16 / 9
+                : 16 / 9);
+            base_y = PAD_Y_PX;
+            base_x = currentX;
+          } else if (layoutName === "layout-split") {
+            const wPx = 320;
+            const rowGapPx = 30;
+            const leftX = 40;
+            const rightX = OBS_WIDTH - 40 - wPx;
+            const isRight = i % 2 !== 0;
+            const row = Math.floor(i / 2);
+            // Ustalamy sztywną wysokość w split na 180 (dla 16:9)
+            const stdH = 180;
+            const rows = Math.ceil(count / 2);
+            const totalH = rows * stdH + (rows - 1) * rowGapPx;
+            const startY = Math.max(0, (OBS_HEIGHT - totalH) / 2);
+
+            const ratio = multiGuestsState[id]
+              ? multiGuestsState[id].ratio
+              : "16:9";
+            base_w = wPx;
+            base_h = wPx * (ratio === "4:3" ? 3 / 4 : 9 / 16);
+
+            // Środkowanie w slocie 180px
+            const offset = (stdH - base_h) / 2;
+            base_x = isRight ? rightX : leftX;
+            base_y = startY + row * (stdH + rowGapPx) + offset;
+          } else if (layoutName === "layout-center-stage") {
+            const sideWPx = 300;
+            const gapYPx = 15;
+            const gapXPx = 15;
+            const padPx = 20;
+            const middleW_Available =
+              OBS_WIDTH - 2 * padPx - 2 * sideWPx - 2 * gapXPx;
+
+            if (i === 0) {
+              const mainRatio = multiGuestsState[id]
+                ? multiGuestsState[id].ratio
+                : "16:9";
+              const mainMultiplier = mainRatio === "4:3" ? 3 / 4 : 9 / 16;
+              let mainHPx = middleW_Available * mainMultiplier;
+              let middleW_Used = middleW_Available;
+              if (mainHPx > OBS_HEIGHT * 0.9) {
+                mainHPx = OBS_HEIGHT * 0.9;
+                middleW_Used = mainHPx * (mainRatio === "4:3" ? 4 / 3 : 16 / 9);
+              }
+              base_x = (OBS_WIDTH - middleW_Used) / 2;
+              base_y = (OBS_HEIGHT - mainHPx) / 2;
+              base_w = middleW_Used;
+              base_h = mainHPx;
+            } else {
+              const sideIdx = i - 1;
+              const row = Math.floor(sideIdx / 2);
+              const isRight = sideIdx % 2 !== 0;
+              const stdSideH = 169;
+              const sideCount = Math.max(0, count - 1);
+              const rowsPerSide = Math.ceil(sideCount / 2);
+              const totalSideH =
+                rowsPerSide * stdSideH + (rowsPerSide - 1) * gapYPx;
+              const startSideY = (OBS_HEIGHT - totalSideH) / 2;
+
               const ratio = multiGuestsState[id]
                 ? multiGuestsState[id].ratio
                 : "16:9";
-              const wPx = cellH_Px * (ratio === "4:3" ? 4 / 3 : 16 / 9);
-              rowW_Px += wPx;
-              rowBoxes.push({ id, wPx });
-            }
-            rowW_Px += GAP_PX * (itemsInRow - 1);
-            let startX = (OBS_WIDTH - rowW_Px) / 2;
-            for (let c = 0; c < itemsInRow; c++) {
-              const box = rowBoxes[c];
-              positions[box.id] = {
-                x: pxToW(startX),
-                y: pxToH(startY + r * (cellH_Px + GAP_PX)),
-                w: pxToW(box.wPx),
-                h: cellH_PCT,
-              };
-              startX += box.wPx + GAP_PX;
-              i++;
+              base_w = sideWPx;
+              base_h = sideWPx * (ratio === "4:3" ? 3 / 4 : 9 / 16);
+              const offset = (stdSideH - base_h) / 2;
+              base_x = isRight ? OBS_WIDTH - padPx - sideWPx : padPx;
+              base_y = startSideY + row * (stdSideH + gapYPx) + offset;
             }
           }
-        } else if (layoutName === "layout-sidebar-right") {
-          const wPx = 320;
-          let totalH_Px = 0;
-          const colBoxes = [];
-          guestIds.forEach((id) => {
-            const ratio = multiGuestsState[id]
-              ? multiGuestsState[id].ratio
-              : "16:9";
-            const hPx = wPx * (ratio === "4:3" ? 3 / 4 : 9 / 16);
-            totalH_Px += hPx;
-            colBoxes.push({ id, hPx });
-          });
-          totalH_Px += GAP_PX * (count - 1);
-          let startY = Math.max(0, (OBS_HEIGHT - totalH_Px) / 2);
-          colBoxes.forEach((box) => {
-            positions[box.id] = {
-              x: pxToW(OBS_WIDTH - wPx - PAD_X_PX),
-              y: pxToH(startY),
-              w: pxToW(wPx),
-              h: pxToH(box.hPx),
-            };
-            startY += box.hPx + GAP_PX;
-          });
-        } else if (layoutName === "layout-sidebar-left") {
-          const wPx = 320;
-          let totalH_Px = 0;
-          const colBoxes = [];
-          guestIds.forEach((id) => {
-            const ratio = multiGuestsState[id]
-              ? multiGuestsState[id].ratio
-              : "16:9";
-            const hPx = wPx * (ratio === "4:3" ? 3 / 4 : 9 / 16);
-            totalH_Px += hPx;
-            colBoxes.push({ id, hPx });
-          });
-          totalH_Px += GAP_PX * (count - 1);
-          let startY = Math.max(0, (OBS_HEIGHT - totalH_Px) / 2);
-          colBoxes.forEach((box) => {
-            positions[box.id] = {
-              x: pxToW(PAD_X_PX),
-              y: pxToH(startY),
-              w: pxToW(wPx),
-              h: pxToH(box.hPx),
-            };
-            startY += box.hPx + GAP_PX;
-          });
-        } else if (layoutName === "layout-bottom") {
-          const hPx = 157;
-          const gapPx = 20;
-          let totalW_Px = 0;
-          const rowBoxes = [];
-          guestIds.forEach((id) => {
-            const ratio = multiGuestsState[id]
-              ? multiGuestsState[id].ratio
-              : "16:9";
-            const wPx = hPx * (ratio === "4:3" ? 4 / 3 : 16 / 9);
-            totalW_Px += wPx;
-            rowBoxes.push({ id, wPx });
-          });
-          totalW_Px += gapPx * (count - 1);
-          let startX = Math.max(0, (OBS_WIDTH - totalW_Px) / 2);
-          rowBoxes.forEach((box) => {
-            positions[box.id] = {
-              x: pxToW(startX),
-              y: pxToH(OBS_HEIGHT - hPx - PAD_Y_PX),
-              w: pxToW(box.wPx),
-              h: pxToH(hPx),
-            };
-            startX += box.wPx + gapPx;
-          });
-        } else if (layoutName === "layout-top") {
-          const hPx = 157;
-          const gapPx = 20;
-          let totalW_Px = 0;
-          const rowBoxes = [];
-          guestIds.forEach((id) => {
-            const ratio = multiGuestsState[id]
-              ? multiGuestsState[id].ratio
-              : "16:9";
-            const wPx = hPx * (ratio === "4:3" ? 4 / 3 : 16 / 9);
-            totalW_Px += wPx;
-            rowBoxes.push({ id, wPx });
-          });
-          totalW_Px += gapPx * (count - 1);
-          let startX = Math.max(0, (OBS_WIDTH - totalW_Px) / 2);
-          rowBoxes.forEach((box) => {
-            positions[box.id] = {
-              x: pxToW(startX),
-              y: pxToH(PAD_Y_PX),
-              w: pxToW(box.wPx),
-              h: pxToH(hPx),
-            };
-            startX += box.wPx + gapPx;
-          });
-        } else if (layoutName === "layout-split") {
-          const wPx = 320;
-          const rowGapPx = 30;
-          const leftX = 40;
-          const rightX = OBS_WIDTH - 40 - wPx;
-          const stdH = 180;
-          const rows = Math.ceil(count / 2);
-          const totalH = rows * stdH + (rows - 1) * rowGapPx;
-          const startY = Math.max(0, (OBS_HEIGHT - totalH) / 2);
-          guestIds.forEach((id, i) => {
-            const isRight = i % 2 !== 0;
-            const row = Math.floor(i / 2);
-            const ratio = multiGuestsState[id]
-              ? multiGuestsState[id].ratio
-              : "16:9";
-            const hPx = wPx * (ratio === "4:3" ? 3 / 4 : 9 / 16);
-            const offset = (stdH - hPx) / 2;
-            positions[id] = {
-              x: pxToW(isRight ? rightX : leftX),
-              y: pxToH(startY + row * (stdH + rowGapPx) + offset),
-              w: pxToW(wPx),
-              h: pxToH(hPx),
-            };
-          });
-        } else if (layoutName === "layout-center-stage") {
-          const sideWPx = 300;
-          const gapYPx = 15;
-          const gapXPx = 15;
-          const padPx = 20;
-          const middleW_Available =
-            OBS_WIDTH - 2 * padPx - 2 * sideWPx - 2 * gapXPx;
-          const mainId = guestIds[0];
-          const mainRatio = multiGuestsState[mainId]
-            ? multiGuestsState[mainId].ratio
-            : "16:9";
-          const mainMultiplier = mainRatio === "4:3" ? 3 / 4 : 9 / 16;
-          let mainHPx = middleW_Available * mainMultiplier;
-          const maxMainH = OBS_HEIGHT * 0.9;
-          let middleW_Used = middleW_Available;
-          if (mainHPx > maxMainH) {
-            mainHPx = maxMainH;
-            const revMultiplier = mainRatio === "4:3" ? 4 / 3 : 16 / 9;
-            middleW_Used = mainHPx * revMultiplier;
-          }
-          positions[mainId] = {
-            x: pxToW((OBS_WIDTH - middleW_Used) / 2),
-            y: pxToH((OBS_HEIGHT - mainHPx) / 2),
-            w: pxToW(middleW_Used),
-            h: pxToH(mainHPx),
-          };
 
-          const stdSideH = 169;
-          const sideCount = Math.max(0, count - 1);
-          const rowsPerSide = Math.ceil(sideCount / 2);
-          const totalSideH =
-            rowsPerSide * stdSideH + (rowsPerSide - 1) * gapYPx;
-          const startSideY = (OBS_HEIGHT - totalSideH) / 2;
-          let sideIdx = 0;
-          for (let i = 1; i < count; i++) {
-            const id = guestIds[i];
-            const ratio = multiGuestsState[id]
-              ? multiGuestsState[id].ratio
-              : "16:9";
-            const hPx = sideWPx * (ratio === "4:3" ? 3 / 4 : 9 / 16);
-            const offset = (stdSideH - hPx) / 2;
-            const isRight = sideIdx % 2 !== 0;
-            const row = Math.floor(sideIdx / 2);
-            positions[id] = {
-              x: pxToW(isRight ? OBS_WIDTH - padPx - sideWPx : padPx),
-              y: pxToH(startSideY + row * (stdSideH + gapYPx) + offset),
-              w: pxToW(sideWPx),
-              h: pxToH(hPx),
-            };
-            sideIdx++;
-          }
-        }
+          positions[id] = {
+            x: pxToW(base_x),
+            y: pxToH(base_y),
+            w: pxToW(base_w),
+            h: pxToH(base_h),
+          };
+        });
 
         const stage = document.getElementById("free-mode-stage");
         for (const [id, pos] of Object.entries(positions)) {
@@ -1560,9 +1495,10 @@
         }
       }
 
+      // --- RENDER FREE STAGE DLA BEZPIECZEŃSTWA (SPAN) ---
       function renderFreeStage() {
         const stage = document.getElementById("free-mode-stage");
-        let guestIds = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+        let guestIds = guestOrder; // UŻYWAMY GUESTORDER ZAWSZE
 
         Array.from(stage.children).forEach((child) => {
           if (child.tagName === "P" || child.classList.contains("guide-line"))
@@ -1575,18 +1511,24 @@
           const guestData = multiGuestsState[id];
           const name = guestData ? guestData.name : "Gość";
 
-          const ratio = guestData && guestData.ratio ? guestData.ratio : "16:9";
-          let startW_PCT = CAM_WIDTH_PCT;
-          let startH_PCT = CAM_HEIGHT_PCT;
-          if (ratio === "4:3") {
-            startW_PCT = pxToW(CAM_HEIGHT * (4 / 3));
-          }
-
           if (!box) {
             box = document.createElement("div");
             box.className = "stage-box";
             box.dataset.id = id;
-            box.innerText = name;
+
+            // ZAMIANA NA SPAN (Żeby chronić handle)
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "guest-name-label";
+            nameSpan.innerText = name;
+            box.appendChild(nameSpan);
+
+            const ratio =
+              guestData && guestData.ratio ? guestData.ratio : "16:9";
+            let startW_PCT = CAM_WIDTH_PCT;
+            let startH_PCT = CAM_HEIGHT_PCT;
+            if (ratio === "4:3") {
+              startW_PCT = pxToW(CAM_HEIGHT * (4 / 3));
+            }
 
             box.style.width = startW_PCT + "%";
             box.style.height = startH_PCT + "%";
@@ -1599,14 +1541,8 @@
             setupInteractions(box);
             stage.appendChild(box);
           } else {
-            if (box.childNodes[0].nodeType === 3)
-              box.childNodes[0].nodeValue = name;
-            else box.innerText = name;
-            if (!box.querySelector(".resize-handle")) {
-              const handle = document.createElement("div");
-              handle.className = "resize-handle";
-              box.appendChild(handle);
-            }
+            const nameSpan = box.querySelector(".guest-name-label");
+            if (nameSpan) nameSpan.innerText = name;
           }
 
           if (isLayoutLocked) box.classList.add("locked");
