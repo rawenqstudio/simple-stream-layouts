@@ -333,42 +333,10 @@
       .layout-center-stage .video-box:nth-child(odd):not(:first-child) {
         grid-column: 3;
       }
-
-      /* --- NOWE STYLE: LOKALNY DRAG & DROP W OBS --- */
-      .layout-free .video-box {
-        cursor: grab;
-      }
-      .layout-free .video-box:active {
-        cursor: grabbing;
-        z-index: 1000;
-        border-color: yellow !important;
-      }
-
-      .guide-line {
-        position: absolute;
-        background-color: #ff0000;
-        z-index: 9999;
-        display: none;
-        pointer-events: none;
-      }
-      .guide-x {
-        width: 100%;
-        height: 1px;
-        left: 0;
-      }
-      .guide-y {
-        height: 100%;
-        width: 1px;
-        top: 0;
-      }
     </style>
   </head>
   <body>
-    <div id="video-container" class="layout-grid" data-count="0">
-      <!-- Linie pomocnicze (ukryte) -->
-      <div id="guide-x" class="guide-line guide-x"></div>
-      <div id="guide-y" class="guide-line guide-y"></div>
-    </div>
+    <div id="video-container" class="layout-grid" data-count="0"></div>
     <div id="local-panel">
       <h4>Własny Układ</h4>
       <div class="local-btn-container">
@@ -392,13 +360,6 @@
           style="width: 40%"
         >
           ⭐️ Center
-        </button>
-        <!-- NOWY PRZYCISK: SWOBODNE W OBS -->
-        <button
-          onclick="toggleLocalFreeMode()"
-          style="width: 90%; background: #28a745; margin-top: 10px"
-        >
-          🔓 Swobodne Ustawianie
         </button>
       </div>
     </div>
@@ -466,10 +427,7 @@
         window.addEventListener("mousedown", showPanel);
       }
 
-      let isLocalFreeMode = false;
-
       function setLocalLayout(mode) {
-        isLocalFreeMode = false;
         container.className = mode;
         document.querySelectorAll(".video-box").forEach((box) => {
           box.style.top = "";
@@ -478,152 +436,6 @@
           box.style.height = "";
         });
       }
-
-      function toggleLocalFreeMode() {
-        isLocalFreeMode = true;
-        container.className = "layout-free";
-
-        // Ustawiamy domyślne pozycje, żeby kamery nie wpadły w lewy górny róg
-        const boxes = document.querySelectorAll(".video-box");
-        boxes.forEach((box, index) => {
-          if (!box.style.left) {
-            // Rozrzucamy kaskadowo dla ułatwienia łapania
-            box.style.width = "320px";
-            box.style.height = "auto";
-            box.style.left = 2 + index * 5 + "%";
-            box.style.top = 2 + index * 5 + "%";
-          }
-        });
-        console.log("🛠️ Tryb swobodny w OBS włączony.");
-      }
-
-      // --- LOGIKA DRAG & DROP Z MAGNETYZMEM W OBS ---
-      let obsDraggedEl = null;
-      let obsStartX, obsStartY;
-      let obsStartLeftPct, obsStartTopPct;
-
-      document.addEventListener("mousedown", (e) => {
-        if (!isLocalFreeMode) return;
-
-        const box = e.target.closest(".video-box");
-        if (!box) return;
-
-        obsDraggedEl = box;
-        obsStartX = e.clientX;
-        obsStartY = e.clientY;
-
-        const stageW = window.innerWidth;
-        const stageH = window.innerHeight;
-
-        obsStartLeftPct = parseFloat(obsDraggedEl.style.left) || 0;
-        obsStartTopPct = parseFloat(obsDraggedEl.style.top) || 0;
-
-        if (!obsDraggedEl.style.left.includes("%")) {
-          obsStartLeftPct = (obsDraggedEl.offsetLeft / stageW) * 100;
-          obsStartTopPct = (obsDraggedEl.offsetTop / stageH) * 100;
-        }
-
-        obsDraggedEl.style.zIndex = 1000;
-      });
-
-      document.addEventListener("mousemove", (e) => {
-        if (!obsDraggedEl || !isLocalFreeMode) return;
-
-        const isAltPressed = e.altKey;
-        const stageW = window.innerWidth;
-        const stageH = window.innerHeight;
-
-        const deltaX = e.clientX - obsStartX;
-        const deltaY = e.clientY - obsStartY;
-
-        const deltaXPct = (deltaX / stageW) * 100;
-        const deltaYPct = (deltaY / stageH) * 100;
-
-        let newX = obsStartLeftPct + deltaXPct;
-        let newY = obsStartTopPct + deltaYPct;
-
-        const myW = (obsDraggedEl.offsetWidth / stageW) * 100;
-        const myH = (obsDraggedEl.offsetHeight / stageH) * 100;
-
-        const guideX = document.getElementById("guide-x");
-        const guideY = document.getElementById("guide-y");
-        let snappedX = false;
-        let snappedY = false;
-
-        // MAGNETYZM (SNAPPING)
-        if (!isAltPressed) {
-          const SNAP = 1.5; // Zasięg przyciągania w %
-          const others = Array.from(
-            document.querySelectorAll(".video-box"),
-          ).filter((b) => b !== obsDraggedEl);
-
-          for (const other of others) {
-            const oX = (other.offsetLeft / stageW) * 100;
-            const oY = (other.offsetTop / stageH) * 100;
-            const oW = (other.offsetWidth / stageW) * 100;
-            const oH = (other.offsetHeight / stageH) * 100;
-
-            if (Math.abs(newX - oX) < SNAP) {
-              newX = oX;
-              snappedX = true;
-            }
-            if (Math.abs(newX - (oX + oW)) < SNAP) {
-              newX = oX + oW;
-              snappedX = true;
-            }
-            if (Math.abs(newX + myW - oX) < SNAP) {
-              newX = oX - myW;
-              snappedX = true;
-            }
-            if (Math.abs(newX + myW - (oX + oW)) < SNAP) {
-              newX = oX + oW - myW;
-              snappedX = true;
-            }
-
-            if (Math.abs(newY - oY) < SNAP) {
-              newY = oY;
-              snappedY = true;
-            }
-            if (Math.abs(newY - (oY + oH)) < SNAP) {
-              newY = oY + oH;
-              snappedY = true;
-            }
-            if (Math.abs(newY + myH - oY) < SNAP) {
-              newY = oY - myH;
-              snappedY = true;
-            }
-            if (Math.abs(newY + myH - (oY + oH)) < SNAP) {
-              newY = oY + oH - myH;
-              snappedY = true;
-            }
-          }
-        }
-
-        if (snappedX) {
-          guideX.style.display = "block";
-          guideX.style.left = (newX * stageW) / 100 + "px";
-        } else guideX.style.display = "none";
-        if (snappedY) {
-          guideY.style.display = "block";
-          guideY.style.top = (newY * stageH) / 100 + "px";
-        } else guideY.style.display = "none";
-
-        // Blokada krawędzi ekranu
-        newX = Math.max(0, Math.min(newX, 100 - myW));
-        newY = Math.max(0, Math.min(newY, 100 - myH));
-
-        obsDraggedEl.style.left = newX + "%";
-        obsDraggedEl.style.top = newY + "%";
-      });
-
-      document.addEventListener("mouseup", () => {
-        if (obsDraggedEl) {
-          obsDraggedEl.style.zIndex = "";
-          obsDraggedEl = null;
-          document.getElementById("guide-x").style.display = "none";
-          document.getElementById("guide-y").style.display = "none";
-        }
-      });
 
       peer.on("open", (id) => {
         if (isMulti) connectToDirector(myID);
