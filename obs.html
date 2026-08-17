@@ -169,6 +169,15 @@
         border-color: #00d2ff;
       }
 
+      /* NOWOŚĆ: Klasa dla aktywnego przycisku układu */
+      #local-panel button.active-layout {
+        background: #007bff !important;
+        border-color: #00d2ff !important;
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.8);
+        transform: scale(1.05);
+        z-index: 2;
+      }
+
       .layout-free {
         position: relative;
         width: 100%;
@@ -372,30 +381,36 @@
     <div id="local-panel">
       <h4>Własny Układ</h4>
       <div class="local-btn-container">
+        <!-- ZMIANA: Dodano "this" oraz klasę active-layout -->
         <button
-          onclick="setLocalLayout('layout-grid')"
+          onclick="setLocalLayout('layout-grid', this)"
           style="background: #6f42c1; width: 100%"
+          class="active-layout"
         >
           🔳 Siatka
         </button>
-        <button onclick="setLocalLayout('layout-top')">⬆️ Góra</button>
-        <button onclick="setLocalLayout('layout-bottom')">⬇️ Dół</button>
-        <button onclick="setLocalLayout('layout-sidebar-left')">⬅️ Lewo</button>
-        <button onclick="setLocalLayout('layout-sidebar-right')">
+        <button onclick="setLocalLayout('layout-top', this)">⬆️ Góra</button>
+        <button onclick="setLocalLayout('layout-bottom', this)">⬇️ Dół</button>
+        <button onclick="setLocalLayout('layout-sidebar-left', this)">
+          ⬅️ Lewo
+        </button>
+        <button onclick="setLocalLayout('layout-sidebar-right', this)">
           ➡️ Prawo
         </button>
-        <button onclick="setLocalLayout('layout-split')" style="width: 40%">
+        <button
+          onclick="setLocalLayout('layout-split', this)"
+          style="width: 40%"
+        >
           ↔️ Split
         </button>
         <button
-          onclick="setLocalLayout('layout-center-stage')"
+          onclick="setLocalLayout('layout-center-stage', this)"
           style="width: 40%"
         >
           ⭐️ Center
         </button>
-        <!-- NOWY PRZYCISK: SWOBODNE W OBS -->
         <button
-          onclick="toggleLocalFreeMode()"
+          onclick="toggleLocalFreeMode(this)"
           style="width: 90%; background: #28a745; margin-top: 10px"
         >
           🔓 Swobodne Ustawianie
@@ -468,7 +483,18 @@
 
       let isLocalFreeMode = false;
 
-      function setLocalLayout(mode) {
+      // NOWOŚĆ: Funkcja do aktualizacji wyglądu przycisków
+      function updateLocalActiveButton(clickedBtn) {
+        if (!clickedBtn) return;
+        // Usuń klasę active-layout ze wszystkich przycisków w lokalnym panelu
+        document
+          .querySelectorAll("#local-panel button")
+          .forEach((btn) => btn.classList.remove("active-layout"));
+        // Nadaj klasę tylko klikniętemu
+        clickedBtn.classList.add("active-layout");
+      }
+
+      function setLocalLayout(mode, btnElement) {
         isLocalFreeMode = false;
         container.className = mode;
         document.querySelectorAll(".video-box").forEach((box) => {
@@ -477,23 +503,23 @@
           box.style.width = "";
           box.style.height = "";
         });
+        updateLocalActiveButton(btnElement); // Oznacz jako aktywny
       }
 
-      function toggleLocalFreeMode() {
+      function toggleLocalFreeMode(btnElement) {
         isLocalFreeMode = true;
         container.className = "layout-free";
 
-        // Ustawiamy domyślne pozycje, żeby kamery nie wpadły w lewy górny róg
         const boxes = document.querySelectorAll(".video-box");
         boxes.forEach((box, index) => {
           if (!box.style.left) {
-            // Rozrzucamy kaskadowo dla ułatwienia łapania
             box.style.width = "320px";
             box.style.height = "auto";
             box.style.left = 2 + index * 5 + "%";
             box.style.top = 2 + index * 5 + "%";
           }
         });
+        updateLocalActiveButton(btnElement); // Oznacz jako aktywny
         console.log("🛠️ Tryb swobodny w OBS włączony.");
       }
 
