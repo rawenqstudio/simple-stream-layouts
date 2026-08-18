@@ -829,22 +829,30 @@
           }
         }
 
-        if (data.type === "identify" && conn) {
-          if (!guests[conn.peer])
-            guests[conn.peer] = {
+        if (data.type === "identify") {
+          // W trybie Multi odbieramy targetId od Reżysera, w Standard bierzemy ID nadawcy
+          const peerId = data.targetId || (conn ? conn.peer : null);
+          if (!peerId) return;
+
+          if (!guests[peerId])
+            guests[peerId] = {
               name: "Gość",
               muted: false,
               mirrored: false,
               transform: { z: 1, x: 0, y: 0 },
               ratio: "16:9",
             };
-          guests[conn.peer].name = data.name || "Gość";
-          guests[conn.peer].ratio = data.ratio || "16:9";
-          guests[conn.peer].conn = conn;
-          updateLabel(conn.peer, data.name);
+          guests[peerId].name = data.name || "Gość";
+          guests[peerId].ratio = data.ratio || "16:9";
 
-          const box = document.getElementById(`box-${conn.peer}`);
+          // Przypisanie połączenia tylko w trybie Standard
+          if (!isMulti && conn) guests[peerId].conn = conn;
+
+          updateLabel(peerId, data.name);
+
+          const box = document.getElementById(`box-${peerId}`);
           if (box) {
+            box.setAttribute("data-ratio", guests[peerId].ratio); // Aplikuje CSS 4:3 / 16:9
             const card = box.querySelector(".game-card");
             if (
               card &&
@@ -854,8 +862,11 @@
               card.classList.add("self-hidden");
             }
           }
-          sendGuestListToDirector();
-          applyVideoStyle(conn.peer); // Aplikuj startowy zoom i lustro
+
+          // Tylko w trybie standardowym (P2P bezpośrednio do Gościa) odsyłamy listę
+          if (!isMulti) sendGuestListToDirector();
+
+          applyVideoStyle(peerId);
         }
         if (data.type === "mic-status" && conn) {
           if (guests[conn.peer]) {

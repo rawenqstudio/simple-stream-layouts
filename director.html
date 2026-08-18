@@ -964,18 +964,63 @@
         if (data.type === "stats-update") updateStats(data.stats);
         if (isMulti) {
           if (data.type === "identify" && sourceConn) {
+            const peerId = sourceConn.peer;
             if (!guestConnections.includes(sourceConn))
               guestConnections.push(sourceConn);
-            multiGuestsState[sourceConn.peer] = {
-              id: sourceConn.peer,
-              name: data.name || "Gość",
-              ratio: data.ratio || "16:9",
+
+            // Zachowaj aktualne ustawienia (żeby nie odmutowało gościa przy hot-swapie kamery)
+            const existing = multiGuestsState[peerId] || {
               muted: false,
               mirrored: false,
+            };
+
+            multiGuestsState[peerId] = {
+              id: peerId,
+              name: data.name || "Gość",
+              ratio: data.ratio || "16:9",
+              muted: existing.muted,
+              mirrored: existing.mirrored,
               conn: sourceConn,
             };
-            if (!guestOrder.includes(sourceConn.peer))
-              guestOrder.push(sourceConn.peer);
+
+            if (!guestOrder.includes(peerId)) guestOrder.push(peerId);
+
+            // 1. FORWARD DO WSZYSTKICH OBS-ÓW (Aby zmieniły atrybut data-ratio i imię)
+            obsClients.forEach((c) => {
+              if (c.open)
+                c.send({
+                  type: "identify",
+                  targetId: peerId,
+                  name: data.name,
+                  ratio: data.ratio,
+                });
+            });
+
+            // 2. KOREKTA FREE MODE (Jeśli jest otwarty, musimy zwęzić kafelek do 4:3)
+            const stage = document.getElementById("free-mode-stage");
+            const box = stage.querySelector(`.stage-box[data-id="${peerId}"]`);
+            if (box && stage.style.display === "block") {
+              const currentHPct =
+                parseFloat(box.style.height) || CAM_HEIGHT_PCT;
+              const multiplier = data.ratio === "4:3" ? 4 / 3 : 16 / 9;
+              const newWPct =
+                currentHPct * multiplier * (OBS_HEIGHT / OBS_WIDTH);
+              box.style.width = newWPct + "%";
+
+              // Wyślij nowe wymiary prosto do OBS
+              obsClients.forEach((c) => {
+                if (c.open)
+                  c.send({
+                    type: "transform-update",
+                    targetId: peerId,
+                    x: parseFloat(box.style.left),
+                    y: parseFloat(box.style.top),
+                    w: parseFloat(newWPct.toFixed(4)),
+                    h: parseFloat(currentHPct.toFixed(4)),
+                  });
+              });
+            }
+
             refreshMultiModeUI();
             renderGameControls();
             renderFreeStage();
