@@ -373,11 +373,11 @@
     </style>
   </head>
   <body>
-    <div id="video-container" class="layout-grid" data-count="0">
-      <!-- Linie pomocnicze (ukryte) -->
-      <div id="guide-x" class="guide-line guide-x"></div>
-      <div id="guide-y" class="guide-line guide-y"></div>
-    </div>
+    <!-- Linie pomocnicze wyrzucone na zewnątrz, żeby nie psuły CSS kamer! -->
+    <div id="guide-x" class="guide-line guide-x"></div>
+    <div id="guide-y" class="guide-line guide-y"></div>
+
+    <div id="video-container" class="layout-grid" data-count="0"></div>
     <div id="local-panel">
       <h4>Własny Układ</h4>
       <div class="local-btn-container">
