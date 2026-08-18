@@ -371,6 +371,7 @@
       let globalConn = null;
       let directorConn = null;
       const activeCallIds = [];
+      const activeCalls = []; // NOWOŚĆ: Tablica przechowująca aktywne strumienie wideo
       const videoSelect = document.getElementById("videoSource");
       const audioSelect = document.getElementById("audioSource");
       const joinBtn = document.getElementById("join-btn");
@@ -453,8 +454,16 @@
       }
 
       async function startPreview() {
-        joinBtn.disabled = true;
-        joinBtn.innerText = "Ustawianie kamery...";
+        // Jeśli mamy już aktywne połączenia wideo, to znaczy, że jesteśmy na żywo
+        const isLive = activeCalls.length > 0;
+
+        if (!isLive) {
+          joinBtn.disabled = true;
+          joinBtn.innerText = "Ustawianie kamery...";
+        } else {
+          log("🔄 Zmiana sprzętu w locie...", "info");
+        }
+
         if (localStream)
           localStream.getTracks().forEach((track) => track.stop());
 
@@ -477,16 +486,61 @@
               : undefined,
           },
         };
+
         try {
           localStream = await navigator.mediaDevices.getUserMedia(constraints);
           document.getElementById("localVideo").srcObject = localStream;
+
+          // Utrzymanie trybu Motion dla płynności
+          const videoTrack = localStream.getVideoTracks()[0];
+          if (videoTrack && "contentHint" in videoTrack)
+            videoTrack.contentHint = "motion";
+
           checkMuteState();
-          joinBtn.disabled = false;
-          joinBtn.innerText = "DOŁĄCZ DO STUDIA";
-          log("Kamera gotowa. Możesz dołączyć.", "success");
+
+          // --- NOWOŚĆ: PODMIANA W LOCIE ---
+          if (isLive) {
+            activeCalls.forEach((call) => {
+              if (call.peerConnection) {
+                const senders = call.peerConnection.getSenders();
+                const videoSender = senders.find(
+                  (s) => s.track && s.track.kind === "video",
+                );
+                const audioSender = senders.find(
+                  (s) => s.track && s.track.kind === "audio",
+                );
+
+                // Wstrzykujemy nowe wideo
+                if (videoSender && localStream.getVideoTracks().length > 0) {
+                  videoSender.replaceTrack(localStream.getVideoTracks()[0]);
+                }
+                // Wstrzykujemy nowe audio
+                if (audioSender && localStream.getAudioTracks().length > 0) {
+                  audioSender.replaceTrack(localStream.getAudioTracks()[0]);
+                }
+              }
+            });
+
+            // Powiadom OBS, by zmienił ramkę, jeśli zmieniono format 16:9/4:3
+            const username = document.getElementById("username").value.trim();
+            const msg = { type: "identify", name: username, ratio: ratio };
+            if (isMulti && directorConn && directorConn.open)
+              directorConn.send(msg);
+            else if (!isMulti && globalConn && globalConn.open)
+              globalConn.send(msg);
+
+            log(
+              "✅ Sprzęt podmieniony płynnie! OBS zaktualizowany.",
+              "success",
+            );
+          } else {
+            joinBtn.disabled = false;
+            joinBtn.innerText = "DOŁĄCZ DO STUDIA";
+            log("Kamera gotowa. Możesz dołączyć.", "success");
+          }
         } catch (err) {
-          log("Błąd podglądu: " + err.name, "error");
-          joinBtn.innerText = "BŁĄD KAMERY";
+          log("Błąd sprzętu: " + err.name, "error");
+          if (!isLive) joinBtn.innerText = "BŁĄD KAMERY";
         }
       }
 
@@ -615,8 +669,12 @@
       function callSingleOBS(obsId, username, highBitrate, ratio) {
         log(`Dzwonię do ekranu: ${obsId}`);
         activeCallIds.push(obsId);
+
         const call = peer.call(obsId, localStream);
+        activeCalls.push(call); // NOWOŚĆ: Zapisujemy połączenie wideo
+
         const conn = peer.connect(obsId);
+
         if (!isMulti) globalConn = conn;
 
         conn.on("open", () => {
@@ -626,7 +684,7 @@
           conn.send({
             type: "guest-cam-transform",
             transform: currentTransform,
-          }); // Wyślij kadr na start
+          });
 
           if (!isMulti) {
             log("Połączenie zestawione!", "success");
@@ -635,14 +693,21 @@
             document.getElementById("monitor-area").style.display = "block";
           }
         });
+
         call.on("close", () => {
           const idx = activeCallIds.indexOf(obsId);
           if (idx > -1) activeCallIds.splice(idx, 1);
+          const callIdx = activeCalls.indexOf(call);
+          if (callIdx > -1) activeCalls.splice(callIdx, 1); // Usuwanie z pamięci
         });
+
         call.on("error", () => {
           const idx = activeCallIds.indexOf(obsId);
           if (idx > -1) activeCallIds.splice(idx, 1);
+          const callIdx = activeCalls.indexOf(call);
+          if (callIdx > -1) activeCalls.splice(callIdx, 1); // Usuwanie z pamięci
         });
+
         if (highBitrate) {
           setTimeout(() => {
             const pc = call.peerConnection;
@@ -660,6 +725,7 @@
             }
           }, 1000);
         }
+
         conn.on("data", (data) => handleRemoteCommand(data));
         setInterval(() => {
           if (conn.open) conn.send({ type: "heartbeat" });
