@@ -571,9 +571,10 @@
 
         joinBtn.disabled = true;
         joinBtn.innerText = "Łączenie...";
-        videoSelect.disabled = true;
-        audioSelect.disabled = true;
-        document.getElementById("cameraRatio").disabled = true;
+
+        // USUNIĘTO BLOKADĘ (videoSelect.disabled = true itd.),
+        // dzięki czemu gość może dowolnie zmieniać sprzęt w trakcie połączenia!
+
         generateMonitorLink(targetId, username);
 
         log(`Dzwonię do OBS...`);
