@@ -403,6 +403,40 @@
         width: 1px;
         top: 0;
       }
+      /* --- STOPKA I DONATE --- */
+      .footer-credits {
+        position: fixed;
+        bottom: 15px;
+        right: 20px;
+        color: #666;
+        font-size: 0.85em;
+        font-family: monospace;
+        user-select: none;
+        pointer-events: none;
+        z-index: 1000;
+      }
+      .donate-btn {
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        background: #0079c1; /* Kolor PayPal */
+        color: white;
+        padding: 10px 20px;
+        border-radius: 30px;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 14px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        transition: 0.2s;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .donate-btn:hover {
+        background: #005ea6;
+        transform: scale(1.05);
+      }
     </style>
   </head>
   <body>
@@ -614,6 +648,17 @@
         </p>
       </div>
     </div>
+    <!-- PRZYCISK DONATE W LEWYM GÓRNYM ROGU -->
+    <a
+      href="https://www.paypal.com/paypalme/rawen90"
+      target="_blank"
+      class="donate-btn"
+    >
+      ☕ Wsparcie / Donate
+    </a>
+
+    <!-- STOPKA W PRAWYM DOLNYM ROGU -->
+    <div class="footer-credits">from xrawenq for Goodiez</div>
 
     <script>
       const OBS_WIDTH = 1920;
