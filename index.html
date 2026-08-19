@@ -2,7 +2,7 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <title>StreamLayouts - Generator Pokoi</title>
+    <title>Simple Stream Layouts</title>
     <style>
       body {
         font-family: "Segoe UI", sans-serif;
@@ -132,7 +132,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>🎥 Stream Layouts</h1>
+      <h1>🎥 Simple Stream Layouts</h1>
       <p class="subtitle">
         Błyskawiczne studio do streamingu. Jedno kliknięcie, zero konfiguracji.
       </p>
@@ -164,13 +164,7 @@
           <button class="action-btn copy-btn" onclick="copy('obs-link')">
             📋 Skopiuj Link
           </button>
-          <button
-            class="action-btn open-btn"
-            style="background: #555"
-            onclick="openLink('obs-link')"
-          >
-            ↗ Otwórz w Przeglądarce
-          </button>
+          <!-- Usunięto przycisk "Otwórz w przeglądarce" dla OBS -->
         </div>
 
         <div class="link-group" id="group-guest" style="order: 3">
@@ -232,7 +226,7 @@
         btn.style.background = "#28a745";
         setTimeout(() => {
           btn.innerText = originalText;
-          btn.style.background = ""; // powrót do CSS
+          btn.style.background = "";
         }, 1500);
       }
 
