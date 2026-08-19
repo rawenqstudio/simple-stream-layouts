@@ -2,21 +2,7 @@
 
 **Simple Stream Layouts** to przeglądarkowe narzędzie dla streamerów, mające na celu łatwo i szybko podzielić się swoimi kamerkami oraz równie szybko i wygodnie ustawić je na swoim streamie.
 
----
-
-## ✨ Główne Funkcje
-
-* 🚀 **Ultra Low Latency (ULL):** Tryb wyłączający wygładzanie ruchu (Jitter Buffer) w przeglądarce, pozwalający osiągnąć opóźnienia rzędu 50-100 ms (Glass-to-Glass). Dodatkowo wbudowany mechanizm **Auto-Catchup** automatycznie niweluje mikro-opóźnienia.
-* 👥 **Architektura Multi-Viewer:** Główny panel Reżysera działa jako serwer sygnałowy. Pozwala to na podłączenie wielu niezależnych odbiorników (np. główny OBS, podgląd dla grafika, podgląd dla tłumacza).
-* 🎛️ **Wirtualny Stół Montażowy (Free Mode):** Swobodne zarządzanie układem kamer w czasie rzeczywistym. 
-  * Przeciągaj i upuszczaj (Drag & Drop) kamery w przestrzeni 16:9.
-  * Zmieniaj rozmiar zachowując proporcje lub przycinaj (Crop) przy użyciu klawisza `SHIFT`.
-  * Magnetyzm (Snapping) do krawędzi innych okien ułatwia perfekcyjne ułożenie.
-* 📐 **Inteligentne Układy (Presets):** Gotowe ułożenia kamer: Pełna Siatka (Auto-Grid skalujący się od 1 do 12 gości), Paski boczne/górne, Split (rozdzielenie na boki) oraz profesjonalny układ **Center Stage** (jeden główny mówca na środku, reszta po bokach).
-* 🎮 **Zintegrowany Moduł Gier:** Wbudowana gra "Czółko" (Heads Up). Reżyser rozdaje hasła, które jako nakładki (overlays) przyklejają się w OBS bezpośrednio do kamer gości. System automatycznie ukrywa hasło przed zgadującym.
-* 🎥 **Zdalne PTZ (Pan-Tilt-Zoom):** Goście mogą wykadrować swój obraz (zbliżenie, przesunięcie lewo/prawo/góra/dół) na swoich urządzeniach, a matematyka CSS bezstratnie przeliczy i zaaplikuje ten kadr bezpośrednio w OBS.
-* 📊 **Monitorowanie Jakości (Health Stats):** Reżyser widzi w czasie rzeczywistym bitrate, packet loss i rozdzielczość każdego gościa.
-* 🎚️ **Zarządzanie Audio:** Rozdzielony sygnał A/V (omijający opóźnienia miksera OBS) oraz zdalne wyciszanie mikrofonów gości z panelu Reżysera.
+Główną zaletą mojego rozwiązania w porównaniu do wykorzystywanego przez większość streamerów dzielenia się pojedyńczymi linkami do obs ninja i wklejaniem każdego z nich z osobna do obsa jest to, że każdy z streamerów/użytkowników, który chce podzielić się swoją kamerką dołącza do jednego pokoju za pomocą tego samego linku, a po dołączeniu każdy z użytkowników ma możliwość niezależnego od innych ułożenia obrazów z kamer za pomocą 'interakcji' w obsie.
 
 ---
 
