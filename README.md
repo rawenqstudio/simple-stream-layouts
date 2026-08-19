@@ -46,6 +46,6 @@ Jeśli Twój współpracownik potrzebuje własnego układu kamer w OBS (ignoruj�
 
 Projekt stworzony przez: **from xrawenq for Goodiez**
 
-Jeśli to narzędzie ułatwiło Ci produkcję i zaoszczędziło czas (oraz pieniądze na komercyjnych rozwiązaniach), rozważ wsparcie twórcy! Dziękuję za każdą kawę! ❤️
+Jeśli to narzędzie ułatwiło Ci pracę i zaoszczędziło czas, rozważ wsparcie twórcy! Dziękuję za każdą kawę! ❤️
 
 [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg?logo=paypal&style=for-the-badge)](https://www.paypal.com/paypalme/rawen90)
