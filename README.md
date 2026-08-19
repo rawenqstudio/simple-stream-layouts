@@ -8,11 +8,9 @@ Główną zaletą mojego rozwiązania w porównaniu do wykorzystywanego przez wi
 
 ## 🚀 Jak zacząć? (Szybki Start)
 
-1. Wrzuć pliki na dowolny hosting obsługujący HTTPS (np. **GitHub Pages**).
-2. Otwórz `index.html` i kliknij **+ Utwórz Studio**.
-3. Otwórz **Panel Reżysera** (`director.html`) – *musi być otwarty przez cały czas trwania transmisji!*
-4. Skopiuj Link do OBS i wklej go jako **Źródło Przeglądarki w swoim OBS Studio**. Pamiętaj o odznaczeniu opcji "Kontroluj dźwięk przez OBS" dla zachowania zerowego opóźnienia.
-5. Wyślij linki Gościom. Gdy wejdą na stronę i wybiorą sprzęt, automatycznie pojawią się w OBS i w panelu Reżysera.
+1. Stwórz Pokój.
+2. W pierwszej kolejności otwórz **Panel Reżysera** (Panel ten musi być otwarty cały czas).
+3. Wyślij linki Gościom. Gdy wejdą na stronę i wybiorą sprzęt, automatycznie pojawią się w OBS i w panelu Reżysera.
 
 ### Niezależny podgląd dla ekipy (Tryb Lokalny)
 Jeśli Twój współpracownik potrzebuje własnego układu kamer w OBS (ignorującego polecenia Reżysera), wystarczy, że do swojego linku OBS doda parametr `&local=1`. Po kliknięciu prawym przyciskiem myszy na źródło w OBS i wybraniu "Interakcja", zyska dostęp do lokalnego menu sterowania.
