@@ -1,8 +1,6 @@
 # 🎥 Simple Stream Layouts
 
-**Simple Stream Layouts** to zaawansowane, przeglądarkowe studio do realizacji transmisji na żywo, oparte na architekturze Peer-to-Peer (WebRTC). Projekt stanowi lekką, ale potężną alternatywę dla komercyjnych rozwiązań (takich jak VDO.Ninja), z naciskiem na wygodę Reżysera, interakcję z gośćmi oraz ultra-niskie opóźnienia.
-
-Stworzone od podstaw z myślą o płynnej i profesjonalnej produkcji dla programów talk-show, podcastów i rozrywki na żywo.
+**Simple Stream Layouts** to przeglądarkowe narzędzie dla streamerów, mające na celu łatwo i szybko podzielić się swoimi kamerkami oraz równie łatwo i szybko ustawić je na swoim streamie.
 
 ---
 
@@ -19,17 +17,6 @@ Stworzone od podstaw z myślą o płynnej i profesjonalnej produkcji dla program
 * 🎥 **Zdalne PTZ (Pan-Tilt-Zoom):** Goście mogą wykadrować swój obraz (zbliżenie, przesunięcie lewo/prawo/góra/dół) na swoich urządzeniach, a matematyka CSS bezstratnie przeliczy i zaaplikuje ten kadr bezpośrednio w OBS.
 * 📊 **Monitorowanie Jakości (Health Stats):** Reżyser widzi w czasie rzeczywistym bitrate, packet loss i rozdzielczość każdego gościa.
 * 🎚️ **Zarządzanie Audio:** Rozdzielony sygnał A/V (omijający opóźnienia miksera OBS) oraz zdalne wyciszanie mikrofonów gości z panelu Reżysera.
-
----
-
-## 📂 Struktura Projektu
-
-Projekt opiera się na 4 lekkich plikach HTML (Single File Components) i nie wymaga instalacji żadnych dodatkowych baz danych czy serwerów (wykorzystuje chmurę PeerJS do zestawiania połączeń).
-
-1. `index.html` - Generator pokoi. Tworzy unikalne ID i generuje linki gotowe do wysłania współpracownikom i gościom.
-2. `director.html` - Serce systemu. Działa jako Hub dla połączeń. To stąd Reżyser steruje układami, wycisza gości i zarządza grami.
-3. `obs.html` - Odbiornik wideo (Renderer). Należy dodać go jako Źródło Przeglądarki (Browser Source) w OBS Studio (zalecana rozdzielczość: 1920x1080).
-4. `guest.html` - Interfejs Gościa. Pozwala na wybór sprzętu (Kamera/Mikrofon), ustawienie kadru (PTZ) oraz wejście na wizję.
 
 ---
 
@@ -57,7 +44,7 @@ Jeśli Twój współpracownik potrzebuje własnego układu kamer w OBS (ignoruj�
 
 ## ☕ Wsparcie i Twórcy
 
-Projekt stworzony przez: **from xrawenq for Goodiez i Goodiez**
+Projekt stworzony przez: **from xrawenq for Goodiez**
 
 Jeśli to narzędzie ułatwiło Ci produkcję i zaoszczędziło czas (oraz pieniądze na komercyjnych rozwiązaniach), rozważ wsparcie twórcy! Dziękuję za każdą kawę! ❤️
 
