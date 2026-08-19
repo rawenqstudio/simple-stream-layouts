@@ -1,6 +1,6 @@
 # 🎥 Simple Stream Layouts
 
-**Simple Stream Layouts** to przeglądarkowe narzędzie dla streamerów, mające na celu łatwo i szybko podzielić się swoimi kamerkami oraz równie łatwo i szybko ustawić je na swoim streamie.
+**Simple Stream Layouts** to przeglądarkowe narzędzie dla streamerów, mające na celu łatwo i szybko podzielić się swoimi kamerkami oraz równie szybko i wygodnie ustawić je na swoim streamie.
 
 ---
 
