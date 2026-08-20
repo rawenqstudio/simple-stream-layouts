@@ -564,7 +564,7 @@
           a = `?room=${e}`;
         (useStunOnly && (a += "&stunonly=1"),
           isMulti && (a += "&multi=1"),
-          t && (a += `&hide=${encodeURIComponent(t)}`),
+          t && (a += `&exclude=${encodeURIComponent(t)}`),
           document.getElementById("local-monitor").checked &&
             (a += "&local=1"));
         const r = `${o}obs.html${a}`;
