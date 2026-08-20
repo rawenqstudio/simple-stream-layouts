@@ -1,1 +1,1504 @@
-<!doctype html><html lang="pl"><head><meta charset="UTF-8"><title>REŻYSERKA</title><script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script><style>body{font-family:sans-serif;background:#333;color:#fff;text-align:center;padding:20px}.container{max-width:800px;margin:0 auto}button{cursor:pointer;border:none;border-radius:5px;color:#fff;transition:.2s}button:disabled{opacity:.5;cursor:not-allowed;filter:grayscale(100%)}.btn-layout{background:#007bff;width:45%;padding:12px;font-size:14px;margin:5px}.btn-layout:hover{background:#0056b3}.btn-tool{width:93%;padding:10px;margin:5px auto;display:block;font-weight:700}.btn-refresh-all{background:#ff9800}.btn-refresh-all:hover{background:#e68900}.btn-sync{background:#6610f2}.btn-sync:hover{background:#520dc2}.btn-toggle-off{background:#17a2b8}.btn-toggle-off:hover{background:#117a8b}.btn-toggle-on{background:#28a745}.btn-toggle-game{background:#e91e63;margin-top:30px}.btn-toggle-game:hover{background:#c2185b}.status{margin-top:10px;color:#aaa;font-weight:700}.controls{display:none;margin-top:30px;border-top:1px solid #555;padding-top:20px}input{display:none}#guest-list{margin-top:20px;text-align:left;background:#222;padding:20px;border-radius:10px}.guest-item{display:flex;justify-content:space-between;align-items:center;background:#444;padding:10px;margin-bottom:10px;border-radius:5px;flex-wrap:wrap}.guest-info{display:flex;flex-direction:column;flex-grow:1}.guest-name{font-size:1.2em;font-weight:700}.guest-stats{font-size:.75em;color:#aaa;margin-top:4px;font-family:monospace}.stat-good{color:#0f0}.stat-mid{color:#fc0}.stat-bad{color:#f44;font-weight:700}.guest-actions{display:flex;gap:5px}.btn-icon{width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;font-size:20px}.mic-on{background:#28a745}.mic-off{background:#dc3545}.btn-refresh{background:#ff9800}.btn-refresh:hover{background:#e68900}.btn-mirror{background:#6c757d}.btn-mirror:hover{background:#5a6268}.mirror-on{background:#007bff;border:2px solid #fff}.btn-move{background:#343a40;font-size:14px}.btn-move:hover{background:#495057}.game-section{background:#2a2a2a;padding:15px;border-radius:10px;margin-top:10px;border:1px solid #444;display:none}.game-menu-grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}.game-tile{width:45%;padding:20px;background:#444;border-radius:8px;cursor:pointer;transition:.2s;font-weight:700}.game-tile:hover{background:#555;transform:scale(1.05)}.game-tile-active{background:#e91e63}#game-heads-up{display:none}.game-select{width:100%;padding:10px;background:#444;color:#fff;border:none;border-radius:5px;font-size:16px;margin-bottom:10px}.btn-game-back{background:#666;width:100%;padding:8px;margin-bottom:15px}.btn-game-start{background:#e91e63;width:48%;display:inline-block;padding:12px;font-weight:700}.btn-game-clear{background:#555;width:48%;display:inline-block;padding:12px;font-weight:700}#game-players-list{margin-top:15px;text-align:left;width:100%}.game-player-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;background:#3a3a3a;padding:10px;border-radius:5px;border:1px solid #555}.game-player-name{width:90px;min-width:90px;font-weight:700;font-size:.9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}input.game-input{display:inline-block!important;background:#fff!important;border:2px solid #666!important;color:#000!important;padding:8px!important;flex-grow:1;min-width:50px;border-radius:4px;font-size:14px;height:auto}input.game-input:focus{border-color:#00d2ff!important;outline:0}.btn-mini{padding:8px 12px;font-size:13px;width:auto;font-weight:700;border-radius:4px;border:none;cursor:pointer;color:#fff;transition:.2s}.btn-reroll{background:#9c27b0}.btn-reroll:hover{background:#7b1fa2}.btn-send{background:#009688}.btn-send:hover{background:#00796b}#free-mode-container{display:none;margin-top:20px}#free-mode-stage{display:block;width:100%;aspect-ratio:16/9;background:#000;outline:2px solid #00d2ff;position:relative;margin-top:20px;overflow:hidden;box-sizing:border-box;background-image:linear-gradient(rgba(255,255,255,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.1) 1px,transparent 1px);background-size:10% 10%}.stage-box{position:absolute;background:rgba(0,123,255,.8);border:2px solid #fff;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:grab;user-select:none;overflow:hidden;text-align:center;line-height:1.2;padding:2px;box-sizing:border-box}.stage-box:active{cursor:grabbing;border-color:#ff0;z-index:1000;background:#007bff}.btn-free-mode{background:#28a745;width:90%;margin-top:20px}.resize-handle{width:15px;height:15px;background:linear-gradient(135deg,transparent 50%,#fff 50%);position:absolute;right:0;bottom:0;cursor:se-resize;z-index:10}.resize-handle:hover{background:linear-gradient(135deg,transparent 50%,#ff0 50%)}.btn-lock-on{background:#dc3545}.btn-lock-on:hover{background:#c82333}.btn-lock-off{background:#28a745}.btn-lock-off:hover{background:#218838}.stage-box.locked{cursor:not-allowed!important;opacity:.7}.stage-box.locked .resize-handle{display:none}.guide-line{position:absolute;background-color:red;z-index:999;display:none;pointer-events:none}.guide-x{width:100%;height:1px;left:0}.guide-y{height:100%;width:1px;top:0}.footer-credits{position:fixed;bottom:15px;right:20px;color:#666;font-size:.85em;font-family:monospace;user-select:none;pointer-events:none;z-index:1000}.donate-btn{position:fixed;bottom:15px;left:20px;z-index:1000;display:block;transition:transform .2s}.donate-btn img{height:45px;display:block}.donate-btn:hover{transform:scale(1.05)}</style></head><body><div class="container"><h1>Panel Reżysera</h1><div class="status" id="status-msg">Inicjalizacja...</div><input type="text" id="target-id"><div class="controls" id="control-panel"><h2>🎥 Układ kamer:</h2><div style="margin-bottom:15px;border-bottom:1px solid #555;padding-bottom:10px"><button class="btn-layout" onclick='sendLayout("layout-grid")' style="width:90%;background:#6f42c1">🔳 Pełna Siatka (Grid)</button></div><div style="display:flex;justify-content:center;flex-wrap:wrap;gap:5px"><button class="btn-layout" onclick='sendLayout("layout-top")'>⬆️ Góra</button> <button class="btn-layout" onclick='sendLayout("layout-bottom")'>⬇️ Dół</button> <button class="btn-layout" onclick='sendLayout("layout-sidebar-left")'>⬅️ Lewo</button> <button class="btn-layout" onclick='sendLayout("layout-sidebar-right")'>➡️ Prawo</button></div><div style="margin-top:10px"><button class="btn-layout" onclick='sendLayout("layout-split")' style="width:90%;background:#e83e8c">↔️ Obie Strony (Split)</button></div><div style="margin-top:5px"><button class="btn-layout" onclick='sendLayout("layout-center-stage")' style="width:90%;background:#6610f2">⭐️ Center Stage</button></div><button class="btn-layout btn-free-mode" onclick="toggleFreeMode()">🔓 Swobodne Ustawianie (Free Mode)</button><div id="free-mode-container"><button id="btn-lock-layout" class="btn-tool btn-lock-off" style="margin-bottom:10px" onclick="toggleLayoutLock()">🔓 Układ: ODBLOKOWANY</button><div id="free-mode-stage"><div id="guide-x" class="guide-line guide-x"></div><div id="guide-y" class="guide-line guide-y"></div><p style="color:#555;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;pointer-events:none">Stół Montażowy (16:9)<br><small>Przesuwanie: Chwyć środek (ALT = brak snapu)<br>Skalowanie: Róg (<b>SHIFT</b> = crop)</small></p></div></div><h2 style="margin-top:30px">⚙️ Narzędzia:</h2><button class="btn-tool btn-toggle-on" id="btn-borders" onclick="toggleBorders()">🔳 Ramki: WIDOCZNE</button> <button class="btn-tool btn-toggle-off" id="btn-labels" onclick="toggleLabels()">🔤 Podpisy: UKRYTE</button> <button class="btn-tool btn-toggle-off" id="btn-icons" onclick="toggleIcons()">🔇 Ikony Mute: UKRYTE</button> <button class="btn-tool btn-refresh-all" onclick='refreshCam("all")' style="margin-top:20px">🔄 Odśwież Bufory (Fix Lag)</button> <button class="btn-tool btn-sync" onclick="syncGuestsWithOBS()">📡 Wymuś połączenie z nowym OBS</button> <button class="btn-tool btn-toggle-game" onclick="toggleGamePanel()">🎮 Pokaż Panel Gier</button><div id="game-section" class="game-section"><div id="game-menu"><h3>Wybierz Grę:</h3><div class="game-menu-grid"><div class="game-tile game-tile-active" onclick='openGame("heads-up")'>🎲 Czółko<br><span style="font-size:.8em;font-weight:400">Hasła na czoło</span></div><div class="game-tile" style="opacity:.5;cursor:not-allowed">🚧 Kalambury<br><span style="font-size:.8em;font-weight:400">(Wkrótce)</span></div></div></div><div id="game-heads-up"><button class="btn-game-back" onclick="closeGame()">⬅ Wróć do menu</button><h3 style="margin-top:0">Gra: Czółko</h3><select id="game-category" class="game-select"><option value="Zwierzęta">🐶 Zwierzęta</option><option value="Filmy">🎬 Filmy</option><option value="Postacie">🦸 Postacie Fikcyjne</option><option value="Zawody">👷 Zawody</option><option value="Przedmioty">📦 Przedmioty</option></select><div style="display:flex;justify-content:space-between;margin-bottom:15px"><button class="btn-game-clear" onclick="clearGame()">🗑️ Wyczyść Wszystkich</button> <button class="btn-game-start" onclick="dealCards()">🎲 Rozdaj Wszystkim</button></div><hr style="border:0;border-top:1px solid #444;margin:15px 0"><p style="color:#aaa;font-size:.8em;margin-bottom:5px">Zarządzanie ręczne (Wpisz i kliknij Wyślij):</p><div id="game-players-list"></div></div></div><h2>🎤 Zarządzanie Gośćmi:</h2><div id="guest-list"><p style="text-align:center;color:#777">Oczekiwanie na gości...</p></div><p style="color:#555;font-size:.8em;margin-top:10px">Easter Egg: Ctrl + Shift + F</p></div></div><a href="https://www.paypal.com/paypalme/rawen90" target="_blank" class="donate-btn" title="Wsparcie / Donate"><img src="https://i.ibb.co/d48v0byS/donate-pp.png" alt="PayPal Donate"></a><div class="footer-credits">from xrawenq for Goodiez</div><script>const OBS_WIDTH=1920,OBS_HEIGHT=1080,CAM_WIDTH=320,CAM_HEIGHT=180,CAM_WIDTH_PCT=320/1920*100,CAM_HEIGHT_PCT=180/1080*100;function pxToW(e){return e/1920*100}function pxToH(e){return e/1080*100}const gameData={"Zwierzęta":["Słoń","Żyrafa","Chomik","Pingwin","Rekin","Wąż","Orzeł","Biedronka","Krowa","Kangur","Zebra","Lew","Świnka","Pies","Kot","Papuga","Krokodyl","Małpa","Niedźwiedź","Żaba"],Filmy:["Titanic","Shrek","Matrix","Harry Potter","Gwiezdne Wojny","Król Lew","Władca Pierścieni","Joker","Avengers","Batman","Spider-Man","Forrest Gump","Kraina Lodu","Minionki","Piraci z Karaibów"],Postacie:["Myszka Miki","Superman","Święty Mikołaj","Sherlock Holmes","Mario","Pikachu","Vader","Wiedźmin","Shrek","Barbie","SpongeBob","Hulk","Iron Man","Tarzan","Zorro"],Zawody:["Strażak","Policjant","Lekarz","Nauczyciel","Kucharz","Kierowca","Pilot","Astronauta","Hydraulik","Fryzjer","Aktor","Piosenkarz","Malarz","Rolnik","Programista"],Przedmioty:["Krzesło","Telefon","Samochód","Długopis","Butelka","Książka","Komputer","Zegarek","Lustro","Klucz","Młotek","Szczoteczka","Widelec","Okulary","Poduszka"]},urlParams=new URLSearchParams(window.location.search),useStunOnly=urlParams.get("stunonly"),isMulti=urlParams.get("multi"),roomID=urlParams.get("room"),selectedConfig=useStunOnly?[{urls:"stun:stun.l.google.com:19302"}]:[{urls:"stun:stun.l.google.com:19302"},{urls:"turn:openrelay.metered.ca:80?transport=udp",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:443?transport=tcp",username:"openrelayproject",credential:"openrelayproject"}],peer=new Peer(isMulti?roomID:void 0,{config:{iceServers:selectedConfig}});let conn=null;const obsClients=[],guestConnections=[],multiGuestsState={};let guestOrder=[],labelsVisible=!1,iconsVisible=!1,bordersVisible=!0;const currentWords={};let isLayoutLocked=!1;function toggleGamePanel(){const e=document.getElementById("game-section");"block"===e.style.display?e.style.display="none":(e.style.display="block",document.getElementById("game-menu").style.display="block",document.getElementById("game-heads-up").style.display="none")}function openGame(e){document.getElementById("game-menu").style.display="none",document.getElementById("game-heads-up").style.display="block",renderGameControls()}function closeGame(){document.getElementById("game-heads-up").style.display="none",document.getElementById("game-menu").style.display="block"}function dealCards(){const e=document.getElementById("game-category").value,t=[...gameData[e]];let o=isMulti?Object.keys(multiGuestsState):guestOrder;0!==o.length?(o.forEach(o=>{0===t.length&&t.push(...gameData[e]);const s=Math.floor(Math.random()*t.length),n=t[s];t.splice(s,1),currentWords[o]=n}),broadcastCommand({type:"game-deal",cards:currentWords}),renderGameControls()):alert("Brak gości do rozdania kart!")}function clearGame(){for(let e in currentWords)delete currentWords[e];broadcastCommand({type:"game-clear"}),renderGameControls()}function updateGuestWord(e){const t=document.getElementById(`word-input-${e}`),o=t.value;currentWords[e]=o,broadcastCommand({type:"game-update-card",targetId:e,word:o}),t.style.borderColor="#00ff00",setTimeout(()=>{t.style.borderColor="#666"},500)}function rerollGuest(e){const t=document.getElementById("game-category").value,o=gameData[t],s=o[Math.floor(Math.random()*o.length)],n=document.getElementById(`word-input-${e}`);n&&(n.value=s),updateGuestWord(e)}function renderGameControls(){const e=document.getElementById("game-players-list");e.innerHTML="";let t=isMulti?Object.keys(multiGuestsState):guestOrder;0!==t.length?t.forEach(t=>{const o=multiGuestsState[t]?multiGuestsState[t].name:"Gość",s=currentWords[t]||"",n=document.createElement("div");n.className="game-player-row",n.innerHTML=` <div class="game-player-name" title="${o}">${o}</div> <input type="text" id="word-input-${t}" class="game-input" value="${s}" placeholder="Wpisz hasło..."> <button class="btn-mini btn-reroll" onclick="rerollGuest('${t}')" title="Losuj z kategorii">🎲</button> <button class="btn-mini btn-send" onclick="updateGuestWord('${t}')" title="Wyślij ręcznie wpisane">Wyślij</button> `,e.appendChild(n)}):e.innerHTML="<p style='color:#aaa; font-style:italic;'>Brak aktywnych gości.</p>"}function addFakeGuest(){const e="fake-"+Math.floor(1e4*Math.random()),t=["Sztuczny Jan","Testowa Anna","Bot Marek","Demo Zosia"],o=t[Math.floor(Math.random()*t.length)];broadcastCommand({type:"add-fake-guest",id:e,name:o,img:`https://picsum.photos/seed/${e}/640/360`}),multiGuestsState[e]={id:e,name:o,muted:!1,mirrored:!1,ratio:"16:9",conn:null},guestOrder.includes(e)||guestOrder.push(e),refreshMultiModeUI(),renderGameControls(),renderFreeStage()}function connectToOBS(){const e=document.getElementById("target-id").value;conn=peer.connect(e),conn.on("open",()=>{document.getElementById("status-msg").innerText="✅ POŁĄCZONO Z OBS (Standard)",document.getElementById("status-msg").style.color="#00ff00",document.getElementById("control-panel").style.display="block",conn.send({type:"director-hello"})}),conn.on("data",e=>handleData(e)),conn.on("error",e=>alert("Błąd: "+e))}function handleIncomingConnection(e){e.on("open",()=>console.log("Połączenie:",e.peer)),e.on("data",t=>{if("register-obs"===t.type&&(obsClients.push(e),updateStatusMsg(),e.send({type:"toggle-labels",show:labelsVisible}),e.send({type:"toggle-icons",show:iconsVisible}),e.send({type:"toggle-borders",show:bordersVisible}),e.send({type:"layout",mode:"layout-grid"}),guestOrder.length>0&&e.send({type:"reorder-guests",order:guestOrder})),"get-obs-list"===t.type){guestConnections.includes(e)||guestConnections.push(e);const t=obsClients.map(e=>e.peer);e.send({type:"obs-list",targets:t})}handleData(t,e)}),e.on("close",()=>{let t=obsClients.indexOf(e);t>-1&&obsClients.splice(t,1),t=guestConnections.indexOf(e),t>-1&&guestConnections.splice(t,1),multiGuestsState[e.peer]&&(delete multiGuestsState[e.peer],guestOrder=guestOrder.filter(t=>t!==e.peer),refreshMultiModeUI(),renderGameControls(),renderFreeStage()),updateStatusMsg()})}function updateStatusMsg(){document.getElementById("status-msg").innerText=`✅ OBS: ${obsClients.length} | Gości: ${guestConnections.length}`,document.getElementById("status-msg").style.color="#00ff00"}function handleData(e,t){if("guest-list"===e.type&&!isMulti){e.list.forEach(e=>{multiGuestsState[e.id]=e,guestOrder.includes(e.id)||guestOrder.push(e.id)});const t=e.list.map(e=>e.id);guestOrder=guestOrder.filter(e=>t.includes(e)),refreshMultiModeUI(),renderGameControls(),renderFreeStage()}if("stats-update"===e.type&&updateStats(e.stats),isMulti){if("identify"===e.type&&t){const o=t.peer;guestConnections.includes(t)||guestConnections.push(t);const s=multiGuestsState[o]||{muted:!1,mirrored:!1};multiGuestsState[o]={id:o,name:e.name||"Gość",ratio:e.ratio||"16:9",muted:s.muted,mirrored:s.mirrored,conn:t},guestOrder.includes(o)||guestOrder.push(o),obsClients.forEach(t=>{t.open&&t.send({type:"identify",targetId:o,name:e.name,ratio:e.ratio})});const n=document.getElementById("free-mode-stage"),a=n.querySelector(`.stage-box[data-id="${o}"]`);if(a&&"block"===n.style.display){const t=parseFloat(a.style.height)||CAM_HEIGHT_PCT,s="4:3"===e.ratio?4/3:16/9,n=t*s*.5625;a.style.width=n+"%",obsClients.forEach(e=>{e.open&&e.send({type:"transform-update",targetId:o,x:parseFloat(a.style.left),y:parseFloat(a.style.top),w:parseFloat(n.toFixed(4)),h:parseFloat(t.toFixed(4))})})}refreshMultiModeUI(),renderGameControls(),renderFreeStage(),updateStatusMsg()}"mic-status"===e.type&&t&&multiGuestsState[t.peer]&&(multiGuestsState[t.peer].muted=e.muted,refreshMultiModeUI(),obsClients.forEach(o=>{o.open&&o.send({type:"mic-status",peer:t.peer,muted:e.muted})})),"guest-cam-transform"===e.type&&t&&multiGuestsState[t.peer]&&(multiGuestsState[t.peer].transform=e.transform,obsClients.forEach(o=>{o.open&&o.send({type:"guest-cam-transform",targetId:t.peer,transform:e.transform})}))}}function refreshMultiModeUI(){const e=[];guestOrder.forEach(t=>{multiGuestsState[t]&&e.push(multiGuestsState[t])}),renderGuestList(e),renderFreeStage()}function moveGuest(e,t){const o=guestOrder.indexOf(e);if(-1!==o){if("up"===t&&o>0)[guestOrder[o],guestOrder[o-1]]=[guestOrder[o-1],guestOrder[o]];else{if(!("down"===t&&o<guestOrder.length-1))return;[guestOrder[o],guestOrder[o+1]]=[guestOrder[o+1],guestOrder[o]]}refreshMultiModeUI(),renderGameControls(),renderFreeStage(),broadcastCommand({type:"reorder-guests",order:guestOrder})}}function broadcastCommand(e){isMulti?obsClients.forEach(t=>{t.open&&t.send(e)}):conn&&conn.open&&conn.send(e)}function syncGuestsWithOBS(){if(!isMulti)return void alert("Tylko Multi!");const e=document.querySelector(".btn-sync");e.innerText="⏳ Synchronizacja...",guestConnections.forEach(e=>{e.open&&e.send({type:"force-sync"})}),setTimeout(()=>{e.innerText="📡 Wymuś połączenie z nowym OBS"},1e3)}function toggleGuestMic(e,t){if(isMulti){const o=multiGuestsState[e];if(e.startsWith("fake-"))return o.muted=!t,refreshMultiModeUI(),void broadcastCommand({type:"remote-mute",targetId:e,state:o.muted});o&&o.conn&&o.conn.open&&o.conn.send({type:"mute-cmd",state:!t})}else broadcastCommand({type:"remote-mute",targetId:e,state:!t})}function refreshCam(e){broadcastCommand({type:"refresh-cam",targetId:e})}function toggleMirror(e){isMulti&&multiGuestsState[e]&&(multiGuestsState[e].mirrored=!multiGuestsState[e].mirrored,refreshMultiModeUI()),broadcastCommand({type:"toggle-mirror",targetId:e})}function toggleLabels(){labelsVisible=!labelsVisible,broadcastCommand({type:"toggle-labels",show:labelsVisible}),updateToolBtn("btn-labels",labelsVisible,"🔤 Podpisy")}function toggleIcons(){iconsVisible=!iconsVisible,broadcastCommand({type:"toggle-icons",show:iconsVisible}),updateToolBtn("btn-icons",iconsVisible,"🔇 Ikony Mute")}function toggleBorders(){bordersVisible=!bordersVisible,broadcastCommand({type:"toggle-borders",show:bordersVisible}),updateToolBtn("btn-borders",bordersVisible,"🔳 Ramki")}function updateToolBtn(e,t,o){const s=document.getElementById(e);s.innerText=t?`${o}: WIDOCZNE`:`${o}: UKRYTE`,s.className=t?"btn-tool btn-toggle-on":"btn-tool btn-toggle-off"}function renderGuestList(e){const t=document.getElementById("guest-list");t.innerHTML="",0!==e.length?e.forEach((o,s)=>{const n=document.createElement("div");n.className="guest-item";const a=o.muted?"mic-off":"mic-on",r=o.muted?"🔇":"🎤",l=o.muted?"(Wyciszony)":"",i=o.mirrored?"mirror-on":"mirror-off",d=0===s?"visibility:hidden":"",c=s===e.length-1?"visibility:hidden":"";n.innerHTML=` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${o.id}', 'up')" style="${d}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${o.id}', 'down')" style="${c}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${o.name} <small style="font-weight:normal; font-size:0.7em">${l}</small></span> <span id="stats-${o.id}" class="guest-stats">${o.id.startsWith("fake-")?"SZTUCZNY GOŚĆ":"Czekam na dane..."}</span> </div> <div class="guest-actions"> <button class="btn-icon ${i}" onclick="toggleMirror('${o.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${o.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${a}" onclick="toggleGuestMic('${o.id}', ${o.muted})" title="Wycisz/Odcisz">${r}</button> </div> `,t.appendChild(n)}):t.innerHTML='<p style="text-align:center; color:#777;">Brak gości online.</p>'}function updateStats(e){for(const[t,o]of Object.entries(e)){const e=document.getElementById(`stats-${t}`);if(e){let t="stat-good";(o.bitrate<1e3||o.packetLoss>5)&&(t="stat-mid"),(o.bitrate<300||o.packetLoss>15)&&(t="stat-bad"),e.innerHTML=`Bitrate: <span class="${t}">${o.bitrate} kbps</span> | Loss: <span class="${t}">${o.packetLoss}</span> | Res: ${o.resolution}`}}}function sendLayout(e){const t="block"===document.getElementById("free-mode-container").style.display;t&&isLayoutLocked?alert("Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon."):t?applyPresetToFreeMode(e):broadcastCommand({type:"layout",mode:e})}function toggleLayoutLock(){isLayoutLocked=!isLayoutLocked;const e=document.getElementById("btn-lock-layout");isLayoutLocked?(e.innerText="🔒 Układ: ZABLOKOWANY",e.className="btn-tool btn-lock-on"):(e.innerText="🔓 Układ: ODBLOKOWANY",e.className="btn-tool btn-lock-off");document.querySelectorAll(".btn-layout:not(.btn-free-mode)").forEach(e=>{e.disabled=isLayoutLocked,e.style.opacity=isLayoutLocked?"0.5":"1",e.style.cursor=isLayoutLocked?"not-allowed":"pointer"}),renderFreeStage()}function toggleFreeMode(){const e=document.getElementById("free-mode-container");"block"===e.style.display?(e.style.display="none",sendLayout("layout-grid")):(e.style.display="block",broadcastCommand({type:"layout",mode:"layout-free"}),setTimeout(syncFreeStageToOBS,100),renderFreeStage())}function syncFreeStageToOBS(){document.getElementById("free-mode-stage").querySelectorAll(".stage-box").forEach(e=>{let t=parseFloat(e.style.left),o=parseFloat(e.style.top),s=parseFloat(e.style.width),n=parseFloat(e.style.height);isNaN(t)||isNaN(o)||broadcastCommand({type:"transform-update",targetId:e.dataset.id,x:t,y:o,w:s,h:n})})}function applyPresetToFreeMode(e){let t=isMulti?Object.keys(multiGuestsState):guestOrder;const o=t.length;if(0===o)return;const s=pxToW(15),n=(pxToW(20),pxToH(20),{});if("layout-grid"===e){const e=Math.ceil(Math.sqrt(o)),a=Math.ceil(o/e);let r,l;r=1===o?85:2===o?48:o<=4?45:o<=9?32:23,l=1===o?85:2===o?60:o<=6?45:o<=9?30:23;const i=r*e+s*(e-1),d=l*a+pxToH(15)*(a-1),c=(100-i)/2,u=(100-d)/2;t.forEach((t,d)=>{const m=d%e,y=Math.floor(d/e),p=y===a-1&&o%e||e,g=c+(i-(r*p+s*(p-1)))/2;n[t]={x:g+m*(r+s),y:u+y*(l+pxToH(15)),w:r,h:l}})}else if("layout-sidebar-right"===e){const e=pxToW(320),s=pxToH(180),a=pxToH(15),r=o*s+(o-1)*a,l=Math.max(0,(100-r)/2);t.forEach((t,o)=>{n[t]={x:100-e-pxToW(20),y:l+o*(s+a),w:e,h:s}})}else if("layout-sidebar-left"===e){const e=pxToW(320),s=pxToH(180),a=pxToH(15),r=o*s+(o-1)*a,l=Math.max(0,(100-r)/2);t.forEach((t,o)=>{n[t]={x:pxToW(20),y:l+o*(s+a),w:e,h:s}})}else if("layout-bottom"===e){const e=pxToW(280),s=pxToH(157),a=pxToW(20),r=o*e+(o-1)*a,l=Math.max(0,(100-r)/2);t.forEach((t,o)=>{n[t]={x:l+o*(e+a),y:100-s-pxToH(20),w:e,h:s}})}else if("layout-top"===e){const e=pxToW(280),s=pxToH(157),a=pxToW(20),r=o*e+(o-1)*a,l=Math.max(0,(100-r)/2);t.forEach((t,o)=>{n[t]={x:l+o*(e+a),y:pxToH(20),w:e,h:s}})}else if("layout-split"===e){const e=pxToW(320),s=pxToH(180),a=pxToH(30),r=Math.ceil(o/2),l=r*s+(r-1)*a,i=Math.max(0,(100-l)/2),d=pxToW(40),c=100-pxToW(40)-e;t.forEach((t,o)=>{const r=o%2!=0,l=Math.floor(o/2);n[t]={x:r?c:d,y:i+l*(s+a),w:e,h:s}})}else if("layout-center-stage"===e){const e=pxToW(300),s=pxToH(169),a=pxToH(15),r=pxToW(20),l=pxToW(15);let i=(100-2*r-2*e-2*l)*(9/16)*(1920/1080);i>90&&(i=90);const d=i*(16/9)*.5625,c=(100-d)/2,u=(100-i)/2,m=r,y=100-r-e,p=Math.max(0,o-1),g=Math.ceil(p/2),f=(100-(g*s+(g-1)*a))/2;let h=0;t.forEach((t,o)=>{if(0===o)n[t]={x:c,y:u,w:d,h:i};else{const o=Math.floor(h/2),r=h%2!=0;n[t]={x:r?y:m,y:f+o*(s+a),w:e,h:s},h++}})}const a=document.getElementById("free-mode-stage");for(const[e,t]of Object.entries(n)){let o=a.querySelector(`.stage-box[data-id="${e}"]`);o&&(o.style.left=t.x+"%",o.style.top=t.y+"%",o.style.width=t.w+"%",o.style.height=t.h+"%",broadcastCommand({type:"transform-update",targetId:e,x:parseFloat(t.x.toFixed(4)),y:parseFloat(t.y.toFixed(4)),w:parseFloat(t.w.toFixed(4)),h:parseFloat(t.h.toFixed(4))}))}}function renderFreeStage(){const e=document.getElementById("free-mode-stage");let t=isMulti?Object.keys(multiGuestsState):guestOrder;Array.from(e.children).forEach(e=>{"P"===e.tagName||e.classList.contains("guide-line")||t.includes(e.dataset.id)||e.remove()}),t.forEach((t,o)=>{let s=e.querySelector(`.stage-box[data-id="${t}"]`);const n=multiGuestsState[t],a=n?n.name:"Gość",r=n&&n.ratio?n.ratio:"16:9";let l=CAM_WIDTH_PCT;if("4:3"===r&&(l=pxToW(240)),s){if(3===s.childNodes[0].nodeType?s.childNodes[0].nodeValue=a:s.innerText=a,!s.querySelector(".resize-handle")){const e=document.createElement("div");e.className="resize-handle",s.appendChild(e)}}else{s=document.createElement("div"),s.className="stage-box",s.dataset.id=t,s.innerText=a,s.style.width=l+"%",s.style.height="16.666666666666664%",s.style.left=2+2*o+"%",s.style.top=2+2*o+"%";const n=document.createElement("div");n.className="resize-handle",s.appendChild(n),setupInteractions(s),e.appendChild(s)}isLayoutLocked?s.classList.add("locked"):s.classList.remove("locked")})}function setupInteractions(e){let t,o,s,n,a,r,l,i,d=!1,c=!1;const u=e.querySelector(".resize-handle");e.addEventListener("mousedown",m=>{if(isLayoutLocked)return;const y=document.getElementById("free-mode-stage");m.target===u?(c=!0,m.stopPropagation()):d=!0,t=m.clientX,o=m.clientY,s=parseFloat(e.style.left)||0,n=parseFloat(e.style.top)||0,a=e.offsetWidth,r=e.offsetHeight,e.style.left.includes("%")||(s=e.offsetLeft/y.clientWidth*100,n=e.offsetTop/y.clientHeight*100);const p=e.getBoundingClientRect();l=m.clientX-p.left,i=m.clientY-p.top,e.style.zIndex=1e3}),document.addEventListener("mousemove",s=>{const n=document.getElementById("free-mode-stage"),u=n.clientWidth,m=n.clientHeight;if(c){const n=s.clientX-t,l=s.clientY-o,i=u-parseFloat(e.style.left)/100*u,d=m-parseFloat(e.style.top)/100*m;let c,y=a+n;if(y=Math.max(50,Math.min(y,i)),s.shiftKey)c=r+l,c=Math.max(50,Math.min(c,d));else{const t="4:3"===(multiGuestsState[e.dataset.id]?multiGuestsState[e.dataset.id].ratio:"16:9")?3/4:9/16;c=y*t,c>d&&(c=d,y=c*(1/t))}let p=y/u*100,g=c/m*100;e.style.width=p+"%",e.style.height=g+"%",broadcastCommand({type:"transform-update",targetId:e.dataset.id,x:parseFloat(e.style.left),y:parseFloat(e.style.top),w:parseFloat(p.toFixed(4)),h:parseFloat(g.toFixed(4))})}if(d){const t=s.altKey,o=n.getBoundingClientRect();let a=s.clientX-o.left,r=s.clientY-o.top,d=(a-l)/u*100,c=(r-i)/m*100;const y=parseFloat(e.style.width),p=parseFloat(e.style.height),g=document.getElementById("guide-x"),f=document.getElementById("guide-y");let h=!1,b=!1;if(!t){const t=1.5,o=Array.from(document.querySelectorAll(".stage-box")).filter(t=>t!==e);for(const e of o){const o=parseFloat(e.style.left),s=parseFloat(e.style.top),n=parseFloat(e.style.width),a=parseFloat(e.style.height);Math.abs(d-o)<t&&(d=o,h=!0),Math.abs(d-(o+n))<t&&(d=o+n,h=!0),Math.abs(d+y-o)<t&&(d=o-y,h=!0),Math.abs(d+y-(o+n))<t&&(d=o+n-y,h=!0),Math.abs(c-s)<t&&(c=s,b=!0),Math.abs(c-(s+a))<t&&(c=s+a,b=!0),Math.abs(c+p-s)<t&&(c=s-p,b=!0),Math.abs(c+p-(s+a))<t&&(c=s+a-p,b=!0)}}h?(g.style.display="block",g.style.left=d*u/100+"px"):g.style.display="none",b?(f.style.display="block",f.style.top=c*m/100+"px"):f.style.display="none",d=Math.max(0,Math.min(d,100-y)),c=Math.max(0,Math.min(c,100-p)),e.style.left=d+"%",e.style.top=c+"%",broadcastCommand({type:"transform-update",targetId:e.dataset.id,x:parseFloat(d.toFixed(4)),y:parseFloat(c.toFixed(4)),w:parseFloat(y.toFixed(4)),h:parseFloat(p.toFixed(4))})}}),document.addEventListener("mouseup",()=>{(d||c)&&(d=!1,c=!1,e.style.zIndex="",document.getElementById("guide-x").style.display="none",document.getElementById("guide-y").style.display="none")})}window.onload=function(){roomID?(document.getElementById("target-id").value=roomID,isMulti?(document.getElementById("status-msg").innerText="📡 Tryb Multi: SERWER AKTYWNY",document.getElementById("control-panel").style.display="block",peer.on("connection",handleIncomingConnection)):(document.getElementById("status-msg").innerText="Szukam OBS...",setTimeout(connectToOBS,1e3))):document.getElementById("status-msg").innerText="BŁĄD: Brak ID w linku."},document.addEventListener("keydown",e=>{e.ctrlKey&&e.shiftKey&&("F"===e.key||"f"===e.key)&&addFakeGuest()})</script></body></html>
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>REŻYSERKA</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        background: #333;
+        color: #fff;
+        text-align: center;
+        padding: 20px;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      button {
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        color: #fff;
+        transition: 0.2s;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        filter: grayscale(100%);
+      }
+      .btn-layout {
+        background: #007bff;
+        width: 45%;
+        padding: 12px;
+        font-size: 14px;
+        margin: 5px;
+      }
+      .btn-layout:hover {
+        background: #0056b3;
+      }
+      .btn-tool {
+        width: 93%;
+        padding: 10px;
+        margin: 5px auto;
+        display: block;
+        font-weight: 700;
+      }
+      .btn-refresh-all {
+        background: #ff9800;
+      }
+      .btn-refresh-all:hover {
+        background: #e68900;
+      }
+      .btn-sync {
+        background: #6610f2;
+      }
+      .btn-sync:hover {
+        background: #520dc2;
+      }
+      .btn-toggle-off {
+        background: #17a2b8;
+      }
+      .btn-toggle-off:hover {
+        background: #117a8b;
+      }
+      .btn-toggle-on {
+        background: #28a745;
+      }
+      .btn-toggle-game {
+        background: #e91e63;
+        margin-top: 30px;
+      }
+      .btn-toggle-game:hover {
+        background: #c2185b;
+      }
+      .status {
+        margin-top: 10px;
+        color: #aaa;
+        font-weight: 700;
+      }
+      .controls {
+        display: none;
+        margin-top: 30px;
+        border-top: 1px solid #555;
+        padding-top: 20px;
+      }
+      input {
+        display: none;
+      }
+      #guest-list {
+        margin-top: 20px;
+        text-align: left;
+        background: #222;
+        padding: 20px;
+        border-radius: 10px;
+      }
+      .guest-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #444;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        flex-wrap: wrap;
+      }
+      .guest-info {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+      .guest-name {
+        font-size: 1.2em;
+        font-weight: 700;
+      }
+      .guest-stats {
+        font-size: 0.75em;
+        color: #aaa;
+        margin-top: 4px;
+        font-family: monospace;
+      }
+      .stat-good {
+        color: #0f0;
+      }
+      .stat-mid {
+        color: #fc0;
+      }
+      .stat-bad {
+        color: #f44;
+        font-weight: 700;
+      }
+      .guest-actions {
+        display: flex;
+        gap: 5px;
+      }
+      .btn-icon {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+      }
+      .mic-on {
+        background: #28a745;
+      }
+      .mic-off {
+        background: #dc3545;
+      }
+      .btn-refresh {
+        background: #ff9800;
+      }
+      .btn-refresh:hover {
+        background: #e68900;
+      }
+      .btn-mirror {
+        background: #6c757d;
+      }
+      .btn-mirror:hover {
+        background: #5a6268;
+      }
+      .mirror-on {
+        background: #007bff;
+        border: 2px solid #fff;
+      }
+      .btn-move {
+        background: #343a40;
+        font-size: 14px;
+      }
+      .btn-move:hover {
+        background: #495057;
+      }
+      .game-section {
+        background: #2a2a2a;
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 10px;
+        border: 1px solid #444;
+        display: none;
+      }
+      .game-menu-grid {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .game-tile {
+        width: 45%;
+        padding: 20px;
+        background: #444;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.2s;
+        font-weight: 700;
+      }
+      .game-tile:hover {
+        background: #555;
+        transform: scale(1.05);
+      }
+      .game-tile-active {
+        background: #e91e63;
+      }
+      #game-heads-up {
+        display: none;
+      }
+      .game-select {
+        width: 100%;
+        padding: 10px;
+        background: #444;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        margin-bottom: 10px;
+      }
+      .btn-game-back {
+        background: #666;
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 15px;
+      }
+      .btn-game-start {
+        background: #e91e63;
+        width: 48%;
+        display: inline-block;
+        padding: 12px;
+        font-weight: 700;
+      }
+      .btn-game-clear {
+        background: #555;
+        width: 48%;
+        display: inline-block;
+        padding: 12px;
+        font-weight: 700;
+      }
+      #game-players-list {
+        margin-top: 15px;
+        text-align: left;
+        width: 100%;
+      }
+      .game-player-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        background: #3a3a3a;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #555;
+      }
+      .game-player-name {
+        width: 90px;
+        min-width: 90px;
+        font-weight: 700;
+        font-size: 0.9em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      input.game-input {
+        display: inline-block !important;
+        background: #fff !important;
+        border: 2px solid #666 !important;
+        color: #000 !important;
+        padding: 8px !important;
+        flex-grow: 1;
+        min-width: 50px;
+        border-radius: 4px;
+        font-size: 14px;
+        height: auto;
+      }
+      input.game-input:focus {
+        border-color: #00d2ff !important;
+        outline: 0;
+      }
+      .btn-mini {
+        padding: 8px 12px;
+        font-size: 13px;
+        width: auto;
+        font-weight: 700;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        color: #fff;
+        transition: 0.2s;
+      }
+      .btn-reroll {
+        background: #9c27b0;
+      }
+      .btn-reroll:hover {
+        background: #7b1fa2;
+      }
+      .btn-send {
+        background: #009688;
+      }
+      .btn-send:hover {
+        background: #00796b;
+      }
+      #free-mode-container {
+        display: none;
+        margin-top: 20px;
+      }
+      #free-mode-stage {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16/9;
+        background: #000;
+        outline: 2px solid #00d2ff;
+        position: relative;
+        margin-top: 20px;
+        overflow: hidden;
+        box-sizing: border-box;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+        background-size: 10% 10%;
+      }
+      .stage-box {
+        position: absolute;
+        background: rgba(0, 123, 255, 0.8);
+        border: 2px solid #fff;
+        color: #fff;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        user-select: none;
+        overflow: hidden;
+        text-align: center;
+        line-height: 1.2;
+        padding: 2px;
+        box-sizing: border-box;
+      }
+      .stage-box:active {
+        cursor: grabbing;
+        border-color: #ff0;
+        z-index: 1000;
+        background: #007bff;
+      }
+      .btn-free-mode {
+        background: #28a745;
+        width: 90%;
+        margin-top: 20px;
+      }
+      .resize-handle {
+        width: 15px;
+        height: 15px;
+        background: linear-gradient(135deg, transparent 50%, #fff 50%);
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        cursor: se-resize;
+        z-index: 10;
+      }
+      .resize-handle:hover {
+        background: linear-gradient(135deg, transparent 50%, #ff0 50%);
+      }
+      .btn-lock-on {
+        background: #dc3545;
+      }
+      .btn-lock-on:hover {
+        background: #c82333;
+      }
+      .btn-lock-off {
+        background: #28a745;
+      }
+      .btn-lock-off:hover {
+        background: #218838;
+      }
+      .stage-box.locked {
+        cursor: not-allowed !important;
+        opacity: 0.7;
+      }
+      .stage-box.locked .resize-handle {
+        display: none;
+      }
+      .guide-line {
+        position: absolute;
+        background-color: red;
+        z-index: 999;
+        display: none;
+        pointer-events: none;
+      }
+      .guide-x {
+        width: 100%;
+        height: 1px;
+        left: 0;
+      }
+      .guide-y {
+        height: 100%;
+        width: 1px;
+        top: 0;
+      }
+      .footer-credits {
+        position: fixed;
+        bottom: 15px;
+        right: 20px;
+        color: #666;
+        font-size: 0.85em;
+        font-family: monospace;
+        user-select: none;
+        pointer-events: none;
+        z-index: 1000;
+      }
+      .donate-btn {
+        position: fixed;
+        bottom: 15px;
+        left: 20px;
+        z-index: 1000;
+        display: block;
+        transition: transform 0.2s;
+      }
+      .donate-btn img {
+        height: 45px;
+        display: block;
+      }
+      .donate-btn:hover {
+        transform: scale(1.05);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Panel Reżysera</h1>
+      <div class="status" id="status-msg">Inicjalizacja...</div>
+      <input type="text" id="target-id" />
+      <div class="controls" id="control-panel">
+        <h2>🎥 Układ kamer:</h2>
+        <div
+          style="
+            margin-bottom: 15px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 10px;
+          "
+        >
+          <button
+            class="btn-layout"
+            onclick="sendLayout('layout-grid')"
+            style="width: 90%; background: #6f42c1"
+          >
+            🔳 Pełna Siatka (Grid)
+          </button>
+        </div>
+        <div
+          style="
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 5px;
+          "
+        >
+          <button class="btn-layout" onclick="sendLayout('layout-top')">
+            ⬆️ Góra
+          </button>
+          <button class="btn-layout" onclick="sendLayout('layout-bottom')">
+            ⬇️ Dół
+          </button>
+          <button
+            class="btn-layout"
+            onclick="sendLayout('layout-sidebar-left')"
+          >
+            ⬅️ Lewo
+          </button>
+          <button
+            class="btn-layout"
+            onclick="sendLayout('layout-sidebar-right')"
+          >
+            ➡️ Prawo
+          </button>
+        </div>
+        <div style="margin-top: 10px">
+          <button
+            class="btn-layout"
+            onclick="sendLayout('layout-split')"
+            style="width: 90%; background: #e83e8c"
+          >
+            ↔️ Obie Strony (Split)
+          </button>
+        </div>
+        <div style="margin-top: 5px">
+          <button
+            class="btn-layout"
+            onclick="sendLayout('layout-center-stage')"
+            style="width: 90%; background: #6610f2"
+          >
+            ⭐️ Center Stage
+          </button>
+        </div>
+        <button class="btn-layout btn-free-mode" onclick="toggleFreeMode()">
+          🔓 Swobodne Ustawianie (Free Mode)
+        </button>
+        <div id="free-mode-container">
+          <button
+            id="btn-lock-layout"
+            class="btn-tool btn-lock-off"
+            style="margin-bottom: 10px"
+            onclick="toggleLayoutLock()"
+          >
+            🔓 Układ: ODBLOKOWANY
+          </button>
+          <div id="free-mode-stage">
+            <div id="guide-x" class="guide-line guide-x"></div>
+            <div id="guide-y" class="guide-line guide-y"></div>
+            <p
+              style="
+                color: #555;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 100%;
+                pointer-events: none;
+              "
+            >
+              Stół Montażowy (16:9)<br /><small
+                >Przesuwanie: Chwyć środek (ALT = brak snapu)<br />Skalowanie:
+                Róg (<b>SHIFT</b> = crop)</small
+              >
+            </p>
+          </div>
+        </div>
+        <h2 style="margin-top: 30px">⚙️ Narzędzia:</h2>
+        <button
+          class="btn-tool btn-toggle-on"
+          id="btn-borders"
+          onclick="toggleBorders()"
+        >
+          🔳 Ramki: WIDOCZNE
+        </button>
+        <button
+          class="btn-tool btn-toggle-off"
+          id="btn-labels"
+          onclick="toggleLabels()"
+        >
+          🔤 Podpisy: UKRYTE
+        </button>
+        <button
+          class="btn-tool btn-toggle-off"
+          id="btn-icons"
+          onclick="toggleIcons()"
+        >
+          🔇 Ikony Mute: UKRYTE
+        </button>
+        <button
+          class="btn-tool btn-refresh-all"
+          onclick="refreshCam('all')"
+          style="margin-top: 20px"
+        >
+          🔄 Odśwież Bufory (Fix Lag)
+        </button>
+        <button class="btn-tool btn-sync" onclick="syncGuestsWithOBS()">
+          📡 Wymuś połączenie z nowym OBS
+        </button>
+        <button class="btn-tool btn-toggle-game" onclick="toggleGamePanel()">
+          🎮 Pokaż Panel Gier
+        </button>
+        <div id="game-section" class="game-section">
+          <div id="game-menu">
+            <h3>Wybierz Grę:</h3>
+            <div class="game-menu-grid">
+              <div
+                class="game-tile game-tile-active"
+                onclick="openGame('heads-up')"
+              >
+                🎲 Czółko<br /><span style="font-size: 0.8em; font-weight: 400"
+                  >Hasła na czoło</span
+                >
+              </div>
+              <div class="game-tile" style="opacity: 0.5; cursor: not-allowed">
+                🚧 Kalambury<br /><span
+                  style="font-size: 0.8em; font-weight: 400"
+                  >(Wkrótce)</span
+                >
+              </div>
+            </div>
+          </div>
+          <div id="game-heads-up">
+            <button class="btn-game-back" onclick="closeGame()">
+              ⬅ Wróć do menu
+            </button>
+            <h3 style="margin-top: 0">Gra: Czółko</h3>
+            <select id="game-category" class="game-select">
+              <option value="Zwierzęta">🐶 Zwierzęta</option>
+              <option value="Filmy">🎬 Filmy</option>
+              <option value="Postacie">🦸 Postacie Fikcyjne</option>
+              <option value="Zawody">👷 Zawody</option>
+              <option value="Przedmioty">📦 Przedmioty</option>
+            </select>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 15px;
+              "
+            >
+              <button class="btn-game-clear" onclick="clearGame()">
+                🗑️ Wyczyść Wszystkich
+              </button>
+              <button class="btn-game-start" onclick="dealCards()">
+                🎲 Rozdaj Wszystkim
+              </button>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0" />
+            <p style="color: #aaa; font-size: 0.8em; margin-bottom: 5px">
+              Zarządzanie ręczne (Wpisz i kliknij Wyślij):
+            </p>
+            <div id="game-players-list"></div>
+          </div>
+        </div>
+        <h2>🎤 Zarządzanie Gośćmi:</h2>
+        <div id="guest-list">
+          <p style="text-align: center; color: #777">Oczekiwanie na gości...</p>
+        </div>
+        <p style="color: #555; font-size: 0.8em; margin-top: 10px">
+          Easter Egg: Ctrl + Shift + F
+        </p>
+      </div>
+    </div>
+    <a
+      href="https://www.paypal.com/paypalme/rawen90"
+      target="_blank"
+      class="donate-btn"
+      title="Wsparcie / Donate"
+      ><img src="https://i.ibb.co/d48v0byS/donate-pp.png" alt="PayPal Donate"
+    /></a>
+    <div class="footer-credits">from xrawenq for Goodiez</div>
+    <script>
+      const OBS_WIDTH = 1920,
+        OBS_HEIGHT = 1080,
+        CAM_WIDTH = 320,
+        CAM_HEIGHT = 180,
+        CAM_WIDTH_PCT = (320 / 1920) * 100,
+        CAM_HEIGHT_PCT = (180 / 1080) * 100;
+      function pxToW(e) {
+        return (e / 1920) * 100;
+      }
+      function pxToH(e) {
+        return (e / 1080) * 100;
+      }
+      const gameData = {
+          Zwierzęta: [
+            "Słoń",
+            "Żyrafa",
+            "Chomik",
+            "Pingwin",
+            "Rekin",
+            "Wąż",
+            "Orzeł",
+            "Biedronka",
+            "Krowa",
+            "Kangur",
+            "Zebra",
+            "Lew",
+            "Świnka",
+            "Pies",
+            "Kot",
+            "Papuga",
+            "Krokodyl",
+            "Małpa",
+            "Niedźwiedź",
+            "Żaba",
+          ],
+          Filmy: [
+            "Titanic",
+            "Shrek",
+            "Matrix",
+            "Harry Potter",
+            "Gwiezdne Wojny",
+            "Król Lew",
+            "Władca Pierścieni",
+            "Joker",
+            "Avengers",
+            "Batman",
+            "Spider-Man",
+            "Forrest Gump",
+            "Kraina Lodu",
+            "Minionki",
+            "Piraci z Karaibów",
+          ],
+          Postacie: [
+            "Myszka Miki",
+            "Superman",
+            "Święty Mikołaj",
+            "Sherlock Holmes",
+            "Mario",
+            "Pikachu",
+            "Vader",
+            "Wiedźmin",
+            "Shrek",
+            "Barbie",
+            "SpongeBob",
+            "Hulk",
+            "Iron Man",
+            "Tarzan",
+            "Zorro",
+          ],
+          Zawody: [
+            "Strażak",
+            "Policjant",
+            "Lekarz",
+            "Nauczyciel",
+            "Kucharz",
+            "Kierowca",
+            "Pilot",
+            "Astronauta",
+            "Hydraulik",
+            "Fryzjer",
+            "Aktor",
+            "Piosenkarz",
+            "Malarz",
+            "Rolnik",
+            "Programista",
+          ],
+          Przedmioty: [
+            "Krzesło",
+            "Telefon",
+            "Samochód",
+            "Długopis",
+            "Butelka",
+            "Książka",
+            "Komputer",
+            "Zegarek",
+            "Lustro",
+            "Klucz",
+            "Młotek",
+            "Szczoteczka",
+            "Widelec",
+            "Okulary",
+            "Poduszka",
+          ],
+        },
+        urlParams = new URLSearchParams(window.location.search),
+        useStunOnly = urlParams.get("stunonly"),
+        isMulti = urlParams.get("multi"),
+        roomID = urlParams.get("room"),
+        selectedConfig = useStunOnly
+          ? [{ urls: "stun:stun.l.google.com:19302" }]
+          : [
+              { urls: "stun:stun.l.google.com:19302" },
+              {
+                urls: "turn:openrelay.metered.ca:80?transport=udp",
+                username: "openrelayproject",
+                credential: "openrelayproject",
+              },
+              {
+                urls: "turn:openrelay.metered.ca:443?transport=tcp",
+                username: "openrelayproject",
+                credential: "openrelayproject",
+              },
+            ],
+        peer = new Peer(isMulti ? roomID : void 0, {
+          config: { iceServers: selectedConfig },
+        });
+      let conn = null;
+      const obsClients = [],
+        guestConnections = [],
+        multiGuestsState = {};
+      let guestOrder = [],
+        labelsVisible = !1,
+        iconsVisible = !1,
+        bordersVisible = !0;
+      const currentWords = {};
+      let isLayoutLocked = !1;
+      function toggleGamePanel() {
+        const e = document.getElementById("game-section");
+        "block" === e.style.display
+          ? (e.style.display = "none")
+          : ((e.style.display = "block"),
+            (document.getElementById("game-menu").style.display = "block"),
+            (document.getElementById("game-heads-up").style.display = "none"));
+      }
+      function openGame(e) {
+        ((document.getElementById("game-menu").style.display = "none"),
+          (document.getElementById("game-heads-up").style.display = "block"),
+          renderGameControls());
+      }
+      function closeGame() {
+        ((document.getElementById("game-heads-up").style.display = "none"),
+          (document.getElementById("game-menu").style.display = "block"));
+      }
+      function dealCards() {
+        const e = document.getElementById("game-category").value,
+          t = [...gameData[e]];
+        let o = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+        0 !== o.length
+          ? (o.forEach((o) => {
+              0 === t.length && t.push(...gameData[e]);
+              const s = Math.floor(Math.random() * t.length),
+                n = t[s];
+              (t.splice(s, 1), (currentWords[o] = n));
+            }),
+            broadcastCommand({ type: "game-deal", cards: currentWords }),
+            renderGameControls())
+          : alert("Brak gości do rozdania kart!");
+      }
+      function clearGame() {
+        for (let e in currentWords) delete currentWords[e];
+        (broadcastCommand({ type: "game-clear" }), renderGameControls());
+      }
+      function updateGuestWord(e) {
+        const t = document.getElementById(`word-input-${e}`),
+          o = t.value;
+        ((currentWords[e] = o),
+          broadcastCommand({ type: "game-update-card", targetId: e, word: o }),
+          (t.style.borderColor = "#00ff00"),
+          setTimeout(() => {
+            t.style.borderColor = "#666";
+          }, 500));
+      }
+      function rerollGuest(e) {
+        const t = document.getElementById("game-category").value,
+          o = gameData[t],
+          s = o[Math.floor(Math.random() * o.length)],
+          n = document.getElementById(`word-input-${e}`);
+        (n && (n.value = s), updateGuestWord(e));
+      }
+      function renderGameControls() {
+        const e = document.getElementById("game-players-list");
+        e.innerHTML = "";
+        let t = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+        0 !== t.length
+          ? t.forEach((t) => {
+              const o = multiGuestsState[t] ? multiGuestsState[t].name : "Gość",
+                s = currentWords[t] || "",
+                n = document.createElement("div");
+              ((n.className = "game-player-row"),
+                (n.innerHTML = ` <div class="game-player-name" title="${o}">${o}</div> <input type="text" id="word-input-${t}" class="game-input" value="${s}" placeholder="Wpisz hasło..."> <button class="btn-mini btn-reroll" onclick="rerollGuest('${t}')" title="Losuj z kategorii">🎲</button> <button class="btn-mini btn-send" onclick="updateGuestWord('${t}')" title="Wyślij ręcznie wpisane">Wyślij</button> `),
+                e.appendChild(n));
+            })
+          : (e.innerHTML =
+              "<p style='color:#aaa; font-style:italic;'>Brak aktywnych gości.</p>");
+      }
+      function addFakeGuest() {
+        const e = "fake-" + Math.floor(1e4 * Math.random()),
+          t = ["Sztuczny Jan", "Testowa Anna", "Bot Marek", "Demo Zosia"],
+          o = t[Math.floor(Math.random() * t.length)];
+        (broadcastCommand({
+          type: "add-fake-guest",
+          id: e,
+          name: o,
+          img: `https://picsum.photos/seed/${e}/640/360`,
+        }),
+          (multiGuestsState[e] = {
+            id: e,
+            name: o,
+            muted: !1,
+            mirrored: !1,
+            ratio: "16:9",
+            conn: null,
+          }),
+          guestOrder.includes(e) || guestOrder.push(e),
+          refreshMultiModeUI(),
+          renderGameControls(),
+          renderFreeStage());
+      }
+      function connectToOBS() {
+        const e = document.getElementById("target-id").value;
+        ((conn = peer.connect(e)),
+          conn.on("open", () => {
+            ((document.getElementById("status-msg").innerText =
+              "✅ POŁĄCZONO Z OBS (Standard)"),
+              (document.getElementById("status-msg").style.color = "#00ff00"),
+              (document.getElementById("control-panel").style.display =
+                "block"),
+              conn.send({ type: "director-hello" }));
+          }),
+          conn.on("data", (e) => handleData(e)),
+          conn.on("error", (e) => alert("Błąd: " + e)));
+      }
+      function handleIncomingConnection(e) {
+        (e.on("open", () => console.log("Połączenie:", e.peer)),
+          e.on("data", (t) => {
+            if (
+              ("register-obs" === t.type &&
+                (obsClients.push(e),
+                updateStatusMsg(),
+                e.send({ type: "toggle-labels", show: labelsVisible }),
+                e.send({ type: "toggle-icons", show: iconsVisible }),
+                e.send({ type: "toggle-borders", show: bordersVisible }),
+                e.send({ type: "layout", mode: "layout-grid" }),
+                guestOrder.length > 0 &&
+                  e.send({ type: "reorder-guests", order: guestOrder })),
+              "get-obs-list" === t.type)
+            ) {
+              guestConnections.includes(e) || guestConnections.push(e);
+              const t = obsClients.map((e) => e.peer);
+              e.send({ type: "obs-list", targets: t });
+            }
+            handleData(t, e);
+          }),
+          e.on("close", () => {
+            let t = obsClients.indexOf(e);
+            (t > -1 && obsClients.splice(t, 1),
+              (t = guestConnections.indexOf(e)),
+              t > -1 && guestConnections.splice(t, 1),
+              multiGuestsState[e.peer] &&
+                (delete multiGuestsState[e.peer],
+                (guestOrder = guestOrder.filter((t) => t !== e.peer)),
+                refreshMultiModeUI(),
+                renderGameControls(),
+                renderFreeStage()),
+              updateStatusMsg());
+          }));
+      }
+      function updateStatusMsg() {
+        ((document.getElementById("status-msg").innerText =
+          `✅ OBS: ${obsClients.length} | Gości: ${guestConnections.length}`),
+          (document.getElementById("status-msg").style.color = "#00ff00"));
+      }
+      function handleData(e, t) {
+        if ("guest-list" === e.type && !isMulti) {
+          e.list.forEach((e) => {
+            ((multiGuestsState[e.id] = e),
+              guestOrder.includes(e.id) || guestOrder.push(e.id));
+          });
+          const t = e.list.map((e) => e.id);
+          ((guestOrder = guestOrder.filter((e) => t.includes(e))),
+            refreshMultiModeUI(),
+            renderGameControls(),
+            renderFreeStage());
+        }
+        if (("stats-update" === e.type && updateStats(e.stats), isMulti)) {
+          if ("identify" === e.type && t) {
+            const o = t.peer;
+            guestConnections.includes(t) || guestConnections.push(t);
+            const s = multiGuestsState[o] || { muted: !1, mirrored: !1 };
+            ((multiGuestsState[o] = {
+              id: o,
+              name: e.name || "Gość",
+              ratio: e.ratio || "16:9",
+              muted: s.muted,
+              mirrored: s.mirrored,
+              conn: t,
+            }),
+              guestOrder.includes(o) || guestOrder.push(o),
+              obsClients.forEach((t) => {
+                t.open &&
+                  t.send({
+                    type: "identify",
+                    targetId: o,
+                    name: e.name,
+                    ratio: e.ratio,
+                  });
+              }));
+            const n = document.getElementById("free-mode-stage"),
+              a = n.querySelector(`.stage-box[data-id="${o}"]`);
+            if (a && "block" === n.style.display) {
+              const t = parseFloat(a.style.height) || CAM_HEIGHT_PCT,
+                s = "4:3" === e.ratio ? 4 / 3 : 16 / 9,
+                n = t * s * 0.5625;
+              ((a.style.width = n + "%"),
+                obsClients.forEach((e) => {
+                  e.open &&
+                    e.send({
+                      type: "transform-update",
+                      targetId: o,
+                      x: parseFloat(a.style.left),
+                      y: parseFloat(a.style.top),
+                      w: parseFloat(n.toFixed(4)),
+                      h: parseFloat(t.toFixed(4)),
+                    });
+                }));
+            }
+            (refreshMultiModeUI(),
+              renderGameControls(),
+              renderFreeStage(),
+              updateStatusMsg());
+          }
+          ("mic-status" === e.type &&
+            t &&
+            multiGuestsState[t.peer] &&
+            ((multiGuestsState[t.peer].muted = e.muted),
+            refreshMultiModeUI(),
+            obsClients.forEach((o) => {
+              o.open &&
+                o.send({ type: "mic-status", peer: t.peer, muted: e.muted });
+            })),
+            "guest-cam-transform" === e.type &&
+              t &&
+              multiGuestsState[t.peer] &&
+              ((multiGuestsState[t.peer].transform = e.transform),
+              obsClients.forEach((o) => {
+                o.open &&
+                  o.send({
+                    type: "guest-cam-transform",
+                    targetId: t.peer,
+                    transform: e.transform,
+                  });
+              })));
+        }
+      }
+      function refreshMultiModeUI() {
+        const e = [];
+        (guestOrder.forEach((t) => {
+          multiGuestsState[t] && e.push(multiGuestsState[t]);
+        }),
+          renderGuestList(e),
+          renderFreeStage());
+      }
+      function moveGuest(e, t) {
+        const o = guestOrder.indexOf(e);
+        if (-1 !== o) {
+          if ("up" === t && o > 0)
+            [guestOrder[o], guestOrder[o - 1]] = [
+              guestOrder[o - 1],
+              guestOrder[o],
+            ];
+          else {
+            if (!("down" === t && o < guestOrder.length - 1)) return;
+            [guestOrder[o], guestOrder[o + 1]] = [
+              guestOrder[o + 1],
+              guestOrder[o],
+            ];
+          }
+          (refreshMultiModeUI(),
+            renderGameControls(),
+            renderFreeStage(),
+            broadcastCommand({ type: "reorder-guests", order: guestOrder }));
+        }
+      }
+      function broadcastCommand(e) {
+        isMulti
+          ? obsClients.forEach((t) => {
+              t.open && t.send(e);
+            })
+          : conn && conn.open && conn.send(e);
+      }
+      function syncGuestsWithOBS() {
+        if (!isMulti) return void alert("Tylko Multi!");
+        const e = document.querySelector(".btn-sync");
+        ((e.innerText = "⏳ Synchronizacja..."),
+          guestConnections.forEach((e) => {
+            e.open && e.send({ type: "force-sync" });
+          }),
+          setTimeout(() => {
+            e.innerText = "📡 Wymuś połączenie z nowym OBS";
+          }, 1e3));
+      }
+      function toggleGuestMic(e, t) {
+        if (isMulti) {
+          const o = multiGuestsState[e];
+          if (e.startsWith("fake-"))
+            return (
+              (o.muted = !t),
+              refreshMultiModeUI(),
+              void broadcastCommand({
+                type: "remote-mute",
+                targetId: e,
+                state: o.muted,
+              })
+            );
+          o &&
+            o.conn &&
+            o.conn.open &&
+            o.conn.send({ type: "mute-cmd", state: !t });
+        } else
+          broadcastCommand({ type: "remote-mute", targetId: e, state: !t });
+      }
+      function refreshCam(e) {
+        broadcastCommand({ type: "refresh-cam", targetId: e });
+      }
+      function toggleMirror(e) {
+        (isMulti &&
+          multiGuestsState[e] &&
+          ((multiGuestsState[e].mirrored = !multiGuestsState[e].mirrored),
+          refreshMultiModeUI()),
+          broadcastCommand({ type: "toggle-mirror", targetId: e }));
+      }
+      function toggleLabels() {
+        ((labelsVisible = !labelsVisible),
+          broadcastCommand({ type: "toggle-labels", show: labelsVisible }),
+          updateToolBtn("btn-labels", labelsVisible, "🔤 Podpisy"));
+      }
+      function toggleIcons() {
+        ((iconsVisible = !iconsVisible),
+          broadcastCommand({ type: "toggle-icons", show: iconsVisible }),
+          updateToolBtn("btn-icons", iconsVisible, "🔇 Ikony Mute"));
+      }
+      function toggleBorders() {
+        ((bordersVisible = !bordersVisible),
+          broadcastCommand({ type: "toggle-borders", show: bordersVisible }),
+          updateToolBtn("btn-borders", bordersVisible, "🔳 Ramki"));
+      }
+      function updateToolBtn(e, t, o) {
+        const s = document.getElementById(e);
+        ((s.innerText = t ? `${o}: WIDOCZNE` : `${o}: UKRYTE`),
+          (s.className = t
+            ? "btn-tool btn-toggle-on"
+            : "btn-tool btn-toggle-off"));
+      }
+      function renderGuestList(e) {
+        const t = document.getElementById("guest-list");
+        ((t.innerHTML = ""),
+          0 !== e.length
+            ? e.forEach((o, s) => {
+                const n = document.createElement("div");
+                n.className = "guest-item";
+                const a = o.muted ? "mic-off" : "mic-on",
+                  r = o.muted ? "🔇" : "🎤",
+                  l = o.muted ? "(Wyciszony)" : "",
+                  i = o.mirrored ? "mirror-on" : "mirror-off",
+                  d = 0 === s ? "visibility:hidden" : "",
+                  c = s === e.length - 1 ? "visibility:hidden" : "";
+                ((n.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${o.id}', 'up')" style="${d}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${o.id}', 'down')" style="${c}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${o.name} <small style="font-weight:normal; font-size:0.7em">${l}</small></span> <span id="stats-${o.id}" class="guest-stats">${o.id.startsWith("fake-") ? "SZTUCZNY GOŚĆ" : "Czekam na dane..."}</span> </div> <div class="guest-actions"> <button class="btn-icon ${i}" onclick="toggleMirror('${o.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${o.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${a}" onclick="toggleGuestMic('${o.id}', ${o.muted})" title="Wycisz/Odcisz">${r}</button> </div> `),
+                  t.appendChild(n));
+              })
+            : (t.innerHTML =
+                '<p style="text-align:center; color:#777;">Brak gości online.</p>'));
+      }
+      function updateStats(e) {
+        for (const [t, o] of Object.entries(e)) {
+          const e = document.getElementById(`stats-${t}`);
+          if (e) {
+            let t = "stat-good";
+            ((o.bitrate < 1e3 || o.packetLoss > 5) && (t = "stat-mid"),
+              (o.bitrate < 300 || o.packetLoss > 15) && (t = "stat-bad"),
+              (e.innerHTML = `Bitrate: <span class="${t}">${o.bitrate} kbps</span> | Loss: <span class="${t}">${o.packetLoss}</span> | Res: ${o.resolution}`));
+          }
+        }
+      }
+      function sendLayout(e) {
+        const t =
+          "block" ===
+          document.getElementById("free-mode-container").style.display;
+        t && isLayoutLocked
+          ? alert(
+              "Układ jest zablokowany! Odblokuj go, aby zastosować gotowy szablon.",
+            )
+          : t
+            ? applyPresetToFreeMode(e)
+            : broadcastCommand({ type: "layout", mode: e });
+      }
+      function toggleLayoutLock() {
+        isLayoutLocked = !isLayoutLocked;
+        const e = document.getElementById("btn-lock-layout");
+        isLayoutLocked
+          ? ((e.innerText = "🔒 Układ: ZABLOKOWANY"),
+            (e.className = "btn-tool btn-lock-on"))
+          : ((e.innerText = "🔓 Układ: ODBLOKOWANY"),
+            (e.className = "btn-tool btn-lock-off"));
+        (document
+          .querySelectorAll(".btn-layout:not(.btn-free-mode)")
+          .forEach((e) => {
+            ((e.disabled = isLayoutLocked),
+              (e.style.opacity = isLayoutLocked ? "0.5" : "1"),
+              (e.style.cursor = isLayoutLocked ? "not-allowed" : "pointer"));
+          }),
+          renderFreeStage());
+      }
+      function toggleFreeMode() {
+        const e = document.getElementById("free-mode-container");
+        "block" === e.style.display
+          ? ((e.style.display = "none"), sendLayout("layout-grid"))
+          : ((e.style.display = "block"),
+            broadcastCommand({ type: "layout", mode: "layout-free" }),
+            setTimeout(syncFreeStageToOBS, 100),
+            renderFreeStage());
+      }
+      function syncFreeStageToOBS() {
+        document
+          .getElementById("free-mode-stage")
+          .querySelectorAll(".stage-box")
+          .forEach((e) => {
+            let t = parseFloat(e.style.left),
+              o = parseFloat(e.style.top),
+              s = parseFloat(e.style.width),
+              n = parseFloat(e.style.height);
+            isNaN(t) ||
+              isNaN(o) ||
+              broadcastCommand({
+                type: "transform-update",
+                targetId: e.dataset.id,
+                x: t,
+                y: o,
+                w: s,
+                h: n,
+              });
+          });
+      }
+      function applyPresetToFreeMode(e) {
+        let t = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+        const o = t.length;
+        if (0 === o) return;
+        const s = pxToW(15),
+          n = (pxToW(20), pxToH(20), {});
+        if ("layout-grid" === e) {
+          const e = Math.ceil(Math.sqrt(o)),
+            a = Math.ceil(o / e);
+          let r, l;
+          ((r = 1 === o ? 85 : 2 === o ? 48 : o <= 4 ? 45 : o <= 9 ? 32 : 23),
+            (l = 1 === o ? 85 : 2 === o ? 60 : o <= 6 ? 45 : o <= 9 ? 30 : 23));
+          const i = r * e + s * (e - 1),
+            d = l * a + pxToH(15) * (a - 1),
+            c = (100 - i) / 2,
+            u = (100 - d) / 2;
+          t.forEach((t, d) => {
+            const m = d % e,
+              y = Math.floor(d / e),
+              p = (y === a - 1 && o % e) || e,
+              g = c + (i - (r * p + s * (p - 1))) / 2;
+            n[t] = {
+              x: g + m * (r + s),
+              y: u + y * (l + pxToH(15)),
+              w: r,
+              h: l,
+            };
+          });
+        } else if ("layout-sidebar-right" === e) {
+          const e = pxToW(320),
+            s = pxToH(180),
+            a = pxToH(15),
+            r = o * s + (o - 1) * a,
+            l = Math.max(0, (100 - r) / 2);
+          t.forEach((t, o) => {
+            n[t] = { x: 100 - e - pxToW(20), y: l + o * (s + a), w: e, h: s };
+          });
+        } else if ("layout-sidebar-left" === e) {
+          const e = pxToW(320),
+            s = pxToH(180),
+            a = pxToH(15),
+            r = o * s + (o - 1) * a,
+            l = Math.max(0, (100 - r) / 2);
+          t.forEach((t, o) => {
+            n[t] = { x: pxToW(20), y: l + o * (s + a), w: e, h: s };
+          });
+        } else if ("layout-bottom" === e) {
+          const e = pxToW(280),
+            s = pxToH(157),
+            a = pxToW(20),
+            r = o * e + (o - 1) * a,
+            l = Math.max(0, (100 - r) / 2);
+          t.forEach((t, o) => {
+            n[t] = { x: l + o * (e + a), y: 100 - s - pxToH(20), w: e, h: s };
+          });
+        } else if ("layout-top" === e) {
+          const e = pxToW(280),
+            s = pxToH(157),
+            a = pxToW(20),
+            r = o * e + (o - 1) * a,
+            l = Math.max(0, (100 - r) / 2);
+          t.forEach((t, o) => {
+            n[t] = { x: l + o * (e + a), y: pxToH(20), w: e, h: s };
+          });
+        } else if ("layout-split" === e) {
+          const e = pxToW(320),
+            s = pxToH(180),
+            a = pxToH(30),
+            r = Math.ceil(o / 2),
+            l = r * s + (r - 1) * a,
+            i = Math.max(0, (100 - l) / 2),
+            d = pxToW(40),
+            c = 100 - pxToW(40) - e;
+          t.forEach((t, o) => {
+            const r = o % 2 != 0,
+              l = Math.floor(o / 2);
+            n[t] = { x: r ? c : d, y: i + l * (s + a), w: e, h: s };
+          });
+        } else if ("layout-center-stage" === e) {
+          const e = pxToW(300),
+            s = pxToH(169),
+            a = pxToH(15),
+            r = pxToW(20),
+            l = pxToW(15);
+          let i = (100 - 2 * r - 2 * e - 2 * l) * (9 / 16) * (1920 / 1080);
+          i > 90 && (i = 90);
+          const d = i * (16 / 9) * 0.5625,
+            c = (100 - d) / 2,
+            u = (100 - i) / 2,
+            m = r,
+            y = 100 - r - e,
+            p = Math.max(0, o - 1),
+            g = Math.ceil(p / 2),
+            f = (100 - (g * s + (g - 1) * a)) / 2;
+          let h = 0;
+          t.forEach((t, o) => {
+            if (0 === o) n[t] = { x: c, y: u, w: d, h: i };
+            else {
+              const o = Math.floor(h / 2),
+                r = h % 2 != 0;
+              ((n[t] = { x: r ? y : m, y: f + o * (s + a), w: e, h: s }), h++);
+            }
+          });
+        }
+        const a = document.getElementById("free-mode-stage");
+        for (const [e, t] of Object.entries(n)) {
+          let o = a.querySelector(`.stage-box[data-id="${e}"]`);
+          o &&
+            ((o.style.left = t.x + "%"),
+            (o.style.top = t.y + "%"),
+            (o.style.width = t.w + "%"),
+            (o.style.height = t.h + "%"),
+            broadcastCommand({
+              type: "transform-update",
+              targetId: e,
+              x: parseFloat(t.x.toFixed(4)),
+              y: parseFloat(t.y.toFixed(4)),
+              w: parseFloat(t.w.toFixed(4)),
+              h: parseFloat(t.h.toFixed(4)),
+            }));
+        }
+      }
+      function renderFreeStage() {
+        const e = document.getElementById("free-mode-stage");
+        let t = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+        (Array.from(e.children).forEach((e) => {
+          "P" === e.tagName ||
+            e.classList.contains("guide-line") ||
+            t.includes(e.dataset.id) ||
+            e.remove();
+        }),
+          t.forEach((t, o) => {
+            let s = e.querySelector(`.stage-box[data-id="${t}"]`);
+            const n = multiGuestsState[t],
+              a = n ? n.name : "Gość",
+              r = n && n.ratio ? n.ratio : "16:9";
+            let l = CAM_WIDTH_PCT;
+            if (("4:3" === r && (l = pxToW(240)), s)) {
+              if (
+                (3 === s.childNodes[0].nodeType
+                  ? (s.childNodes[0].nodeValue = a)
+                  : (s.innerText = a),
+                !s.querySelector(".resize-handle"))
+              ) {
+                const e = document.createElement("div");
+                ((e.className = "resize-handle"), s.appendChild(e));
+              }
+            } else {
+              ((s = document.createElement("div")),
+                (s.className = "stage-box"),
+                (s.dataset.id = t),
+                (s.innerText = a),
+                (s.style.width = l + "%"),
+                (s.style.height = "16.666666666666664%"),
+                (s.style.left = 2 + 2 * o + "%"),
+                (s.style.top = 2 + 2 * o + "%"));
+              const n = document.createElement("div");
+              ((n.className = "resize-handle"),
+                s.appendChild(n),
+                setupInteractions(s),
+                e.appendChild(s));
+            }
+            isLayoutLocked
+              ? s.classList.add("locked")
+              : s.classList.remove("locked");
+          }));
+      }
+      function setupInteractions(e) {
+        let t,
+          o,
+          s,
+          n,
+          a,
+          r,
+          l,
+          i,
+          d = !1,
+          c = !1;
+        const u = e.querySelector(".resize-handle");
+        (e.addEventListener("mousedown", (m) => {
+          if (isLayoutLocked) return;
+          const y = document.getElementById("free-mode-stage");
+          (m.target === u ? ((c = !0), m.stopPropagation()) : (d = !0),
+            (t = m.clientX),
+            (o = m.clientY),
+            (s = parseFloat(e.style.left) || 0),
+            (n = parseFloat(e.style.top) || 0),
+            (a = e.offsetWidth),
+            (r = e.offsetHeight),
+            e.style.left.includes("%") ||
+              ((s = (e.offsetLeft / y.clientWidth) * 100),
+              (n = (e.offsetTop / y.clientHeight) * 100)));
+          const p = e.getBoundingClientRect();
+          ((l = m.clientX - p.left),
+            (i = m.clientY - p.top),
+            (e.style.zIndex = 1e3));
+        }),
+          document.addEventListener("mousemove", (s) => {
+            const n = document.getElementById("free-mode-stage"),
+              u = n.clientWidth,
+              m = n.clientHeight;
+            if (c) {
+              const n = s.clientX - t,
+                l = s.clientY - o,
+                i = u - (parseFloat(e.style.left) / 100) * u,
+                d = m - (parseFloat(e.style.top) / 100) * m;
+              let c,
+                y = a + n;
+              if (((y = Math.max(50, Math.min(y, i))), s.shiftKey))
+                ((c = r + l), (c = Math.max(50, Math.min(c, d))));
+              else {
+                const t =
+                  "4:3" ===
+                  (multiGuestsState[e.dataset.id]
+                    ? multiGuestsState[e.dataset.id].ratio
+                    : "16:9")
+                    ? 3 / 4
+                    : 9 / 16;
+                ((c = y * t), c > d && ((c = d), (y = c * (1 / t))));
+              }
+              let p = (y / u) * 100,
+                g = (c / m) * 100;
+              ((e.style.width = p + "%"),
+                (e.style.height = g + "%"),
+                broadcastCommand({
+                  type: "transform-update",
+                  targetId: e.dataset.id,
+                  x: parseFloat(e.style.left),
+                  y: parseFloat(e.style.top),
+                  w: parseFloat(p.toFixed(4)),
+                  h: parseFloat(g.toFixed(4)),
+                }));
+            }
+            if (d) {
+              const t = s.altKey,
+                o = n.getBoundingClientRect();
+              let a = s.clientX - o.left,
+                r = s.clientY - o.top,
+                d = ((a - l) / u) * 100,
+                c = ((r - i) / m) * 100;
+              const y = parseFloat(e.style.width),
+                p = parseFloat(e.style.height),
+                g = document.getElementById("guide-x"),
+                f = document.getElementById("guide-y");
+              let h = !1,
+                b = !1;
+              if (!t) {
+                const t = 1.5,
+                  o = Array.from(
+                    document.querySelectorAll(".stage-box"),
+                  ).filter((t) => t !== e);
+                for (const e of o) {
+                  const o = parseFloat(e.style.left),
+                    s = parseFloat(e.style.top),
+                    n = parseFloat(e.style.width),
+                    a = parseFloat(e.style.height);
+                  (Math.abs(d - o) < t && ((d = o), (h = !0)),
+                    Math.abs(d - (o + n)) < t && ((d = o + n), (h = !0)),
+                    Math.abs(d + y - o) < t && ((d = o - y), (h = !0)),
+                    Math.abs(d + y - (o + n)) < t &&
+                      ((d = o + n - y), (h = !0)),
+                    Math.abs(c - s) < t && ((c = s), (b = !0)),
+                    Math.abs(c - (s + a)) < t && ((c = s + a), (b = !0)),
+                    Math.abs(c + p - s) < t && ((c = s - p), (b = !0)),
+                    Math.abs(c + p - (s + a)) < t &&
+                      ((c = s + a - p), (b = !0)));
+                }
+              }
+              (h
+                ? ((g.style.display = "block"),
+                  (g.style.left = (d * u) / 100 + "px"))
+                : (g.style.display = "none"),
+                b
+                  ? ((f.style.display = "block"),
+                    (f.style.top = (c * m) / 100 + "px"))
+                  : (f.style.display = "none"),
+                (d = Math.max(0, Math.min(d, 100 - y))),
+                (c = Math.max(0, Math.min(c, 100 - p))),
+                (e.style.left = d + "%"),
+                (e.style.top = c + "%"),
+                broadcastCommand({
+                  type: "transform-update",
+                  targetId: e.dataset.id,
+                  x: parseFloat(d.toFixed(4)),
+                  y: parseFloat(c.toFixed(4)),
+                  w: parseFloat(y.toFixed(4)),
+                  h: parseFloat(p.toFixed(4)),
+                }));
+            }
+          }),
+          document.addEventListener("mouseup", () => {
+            (d || c) &&
+              ((d = !1),
+              (c = !1),
+              (e.style.zIndex = ""),
+              (document.getElementById("guide-x").style.display = "none"),
+              (document.getElementById("guide-y").style.display = "none"));
+          }));
+      }
+      ((window.onload = function () {
+        roomID
+          ? ((document.getElementById("target-id").value = roomID),
+            isMulti
+              ? ((document.getElementById("status-msg").innerText =
+                  "📡 Tryb Multi: SERWER AKTYWNY"),
+                (document.getElementById("control-panel").style.display =
+                  "block"),
+                peer.on("connection", handleIncomingConnection))
+              : ((document.getElementById("status-msg").innerText =
+                  "Szukam OBS..."),
+                setTimeout(connectToOBS, 1e3)))
+          : (document.getElementById("status-msg").innerText =
+              "BŁĄD: Brak ID w linku.");
+      }),
+        document.addEventListener("keydown", (e) => {
+          e.ctrlKey &&
+            e.shiftKey &&
+            ("F" === e.key || "f" === e.key) &&
+            addFakeGuest();
+        }));
+    </script>
+  </body>
+</html>

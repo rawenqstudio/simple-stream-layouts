@@ -1,1 +1,944 @@
-<!doctype html><html lang="pl"><head><meta charset="UTF-8"><title>WIDOK OBS</title><script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script><style>*{box-sizing:border-box}body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:0 0;font-family:"Segoe UI",sans-serif}#video-container{width:100%;height:100%;transition:all .5s ease;position:relative}.video-box{position:relative;overflow:hidden;border:2px solid #fff;box-shadow:0 0 15px rgba(0,0,0,.7);background:#000;transition:all .5s ease;aspect-ratio:16/9}.video-box[data-ratio="4:3"]{aspect-ratio:4/3}img.fake-cam,video{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s ease}.mute-icon{position:absolute;top:10px;right:10px;color:red;font-size:24px;background:rgba(0,0,0,.5);padding:5px;border-radius:50%;display:none;z-index:20}.label{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,.7);color:#fff;padding:5px 15px;border-radius:4px;font-size:1.2rem;font-weight:700;text-shadow:1px 1px 2px #000;border-left:4px solid #00d2ff;z-index:10;display:none}#video-container:not(.show-labels) .label{display:none!important}#video-container:not(.show-icons) .mute-icon{display:none!important}#video-container.hide-borders .video-box{border:none!important}.game-card{position:absolute;top:5%;left:50%;transform:translateX(-50%);background:#ffeb3b;color:#000;padding:10px 20px;font-size:2em;font-weight:800;text-transform:uppercase;border-radius:5px;box-shadow:0 5px 15px rgba(0,0,0,.5);z-index:50;text-align:center;border:2px solid #fdd835;animation:popIn .5s cubic-bezier(.175,.885,.32,1.275);white-space:nowrap}.game-card.self-hidden{opacity:0!important;pointer-events:none}@keyframes popIn{0%{transform:translateX(-50%) scale(0) rotate(-10deg);opacity:0}100%{transform:translateX(-50%) scale(1) rotate(0);opacity:1}}#local-panel{position:absolute;bottom:40px;right:40px;background:rgba(0,0,0,.85);border:3px solid #555;border-radius:15px;padding:30px;z-index:9999;display:none;opacity:0;transition:opacity .4s ease;box-shadow:0 10px 40px rgba(0,0,0,.9);width:500px}#local-panel.visible{opacity:1}#local-panel h4{color:#00d2ff;margin:0 0 20px 0;font-size:28px;text-align:center;text-transform:uppercase}.local-btn-container{display:flex;gap:15px;flex-wrap:wrap;justify-content:center}#local-panel button{background:#444;color:#fff;border:2px solid #666;padding:15px 25px;margin:5px;border-radius:10px;cursor:pointer;font-size:22px;font-weight:700;transition:.2s;flex-grow:1}#local-panel button:hover{background:#007bff;border-color:#00d2ff}#local-panel button.active-layout{background:#007bff!important;border-color:#00d2ff!important;box-shadow:0 0 15px rgba(0,210,255,.8);transform:scale(1.05);z-index:2}.layout-free{position:relative;width:100%;height:100%}.layout-free .video-box{position:absolute;transition:width .2s,height .2s,top .1s,left .1s;width:320px;height:auto;box-shadow:0 0 5px rgba(0,0,0,.8)}.layout-grid{display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:15px;padding:20px;height:100vh}.layout-grid .video-box{width:auto;height:45%}.layout-grid[data-count="1"] .video-box{height:85%}.layout-grid[data-count="2"] .video-box{height:60%}.layout-grid[data-count="3"] .video-box,.layout-grid[data-count="4"] .video-box{height:45%}.layout-grid[data-count="5"] .video-box,.layout-grid[data-count="6"] .video-box{height:32%}.layout-grid[data-count="7"] .video-box,.layout-grid[data-count="8"] .video-box,.layout-grid[data-count="9"] .video-box{height:30%}.layout-grid[data-count="10"] .video-box,.layout-grid[data-count="11"] .video-box,.layout-grid[data-count="12"] .video-box{height:23%}.layout-sidebar-right{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding-right:20px;height:100vh;gap:15px}.layout-sidebar-right .video-box{width:320px;height:auto;margin:0}.layout-sidebar-left{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding-left:20px;height:100vh;gap:15px}.layout-sidebar-left .video-box{width:320px;height:auto;margin:0}.layout-bottom{display:flex;flex-direction:row;justify-content:center;align-items:flex-end;padding-bottom:20px;height:100vh;gap:20px}.layout-bottom .video-box{height:157px;width:auto;margin:0}.layout-top{display:flex;flex-direction:row;justify-content:center;align-items:flex-start;padding-top:20px;height:100vh;gap:20px}.layout-top .video-box{height:157px;width:auto;margin:0}.layout-split{display:grid;grid-template-columns:320px 1fr 320px;grid-auto-rows:min-content;align-content:center;row-gap:30px;padding:20px 40px;height:100vh}.layout-split .video-box{width:320px;height:auto;margin:0}.layout-split .video-box:nth-child(odd){grid-column:1;justify-self:start}.layout-split .video-box:nth-child(2n){grid-column:3;justify-self:end}.layout-center-stage{display:grid;grid-template-columns:300px 1fr 300px;grid-auto-rows:min-content;gap:15px;padding:20px;height:100vh;align-content:center}.layout-center-stage .video-box{width:300px;height:auto;margin:0}.layout-center-stage .video-box:first-child{grid-column:2;grid-row:1/span 10;height:90vh;width:auto;max-width:100%;align-self:center;justify-self:center;z-index:10;box-shadow:0 0 30px rgba(0,0,0,.8)}.layout-center-stage .video-box:nth-child(2n){grid-column:1}.layout-center-stage .video-box:nth-child(odd):not(:first-child){grid-column:3}.layout-free .video-box{cursor:grab}.layout-free .video-box:active{cursor:grabbing;z-index:1000;border-color:#ff0!important}.guide-line{position:absolute;background-color:red;z-index:9999;display:none;pointer-events:none}.guide-x{width:100%;height:1px;left:0}.guide-y{height:100%;width:1px;top:0}</style></head><body><div id="guide-x" class="guide-line guide-x"></div><div id="guide-y" class="guide-line guide-y"></div><div id="video-container" class="layout-grid" data-count="0"></div><div id="local-panel"><h4>Własny Układ</h4><div class="local-btn-container"><button onclick='setLocalLayout("layout-grid",this)' style="background:#6f42c1;width:100%" class="active-layout">🔳 Siatka</button> <button onclick='setLocalLayout("layout-top",this)'>⬆️ Góra</button> <button onclick='setLocalLayout("layout-bottom",this)'>⬇️ Dół</button> <button onclick='setLocalLayout("layout-sidebar-left",this)'>⬅️ Lewo</button> <button onclick='setLocalLayout("layout-sidebar-right",this)'>➡️ Prawo</button> <button onclick='setLocalLayout("layout-split",this)' style="width:40%">↔️ Split</button> <button onclick='setLocalLayout("layout-center-stage",this)' style="width:40%">⭐️ Center</button> <button onclick="toggleLocalFreeMode(this)" style="width:90%;background:#28a745;margin-top:10px">🔓 Swobodne Ustawianie</button></div></div><script>const urlParams=new URLSearchParams(window.location.search),myID=urlParams.get("room")||"test-room",useStunOnly=urlParams.get("stunonly"),useULL=urlParams.get("ull"),isMulti=urlParams.get("multi"),isLocal="1"===urlParams.get("local"),hideTargetName=urlParams.get("hide")?urlParams.get("hide").toLowerCase().trim():null,selectedConfig=useStunOnly?[{urls:"stun:stun.l.google.com:19302"}]:[{urls:"stun:stun.l.google.com:19302"},{urls:"turn:openrelay.metered.ca:80?transport=udp",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:80?transport=tcp",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:443?transport=udp",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:443?transport=tcp",username:"openrelayproject",credential:"openrelayproject"}],peer=new Peer(isMulti?void 0:myID,{config:{iceServers:selectedConfig}}),container=document.getElementById("video-container"),guests={},heartbeats={};let directorConn=null;const statsCache={};let hidePanelTimeout;if(isLocal){const e=document.getElementById("local-panel");e.style.display="block",container.className="layout-grid";const t=()=>{e.classList.add("visible"),clearTimeout(hidePanelTimeout),hidePanelTimeout=setTimeout(()=>{e.classList.remove("visible")},5e3)};window.addEventListener("mousemove",t),window.addEventListener("mousedown",t)}let isLocalFreeMode=!1;function updateLocalActiveButton(e){e&&(document.querySelectorAll("#local-panel button").forEach(e=>e.classList.remove("active-layout")),e.classList.add("active-layout"))}function setLocalLayout(e,t){isLocalFreeMode=!1,container.className=e,document.querySelectorAll(".video-box").forEach(e=>{e.style.top="",e.style.left="",e.style.width="",e.style.height=""}),updateLocalActiveButton(t)}function toggleLocalFreeMode(e){isLocalFreeMode=!0,container.className="layout-free";document.querySelectorAll(".video-box").forEach((e,t)=>{e.style.left||(e.style.width="320px",e.style.height="auto",e.style.left=2+5*t+"%",e.style.top=2+5*t+"%")}),updateLocalActiveButton(e),console.log("🛠️ Tryb swobodny w OBS włączony.")}let obsStartX,obsStartY,obsStartLeftPct,obsStartTopPct,obsDraggedEl=null;function connectToDirector(e){directorConn=peer.connect(e),directorConn.on("open",()=>{directorConn.send({type:"register-obs"})}),directorConn.on("data",e=>handleData(e))}function applyVideoStyle(e){const t=guests[e],o=document.getElementById(`box-${e}`);if(o&&t){const e=o.querySelector("video")||o.querySelector("img");if(e){const o=t.transform?t.transform.z:1,s=t.transform?t.transform.x:0,a=t.transform?t.transform.y:0,r=t.mirrored?-o:o,n=t.mirrored?-s:s;e.style.transform=`scale(${r}, ${o}) translate(${n}%, ${a}%)`}o.setAttribute("data-ratio",t.ratio||"16:9")}}function handleData(e,t){if("layout"===e.type&&!isLocal){const t=[];container.classList.forEach(e=>{e.startsWith("layout-")&&t.push(e)}),t.forEach(e=>container.classList.remove(e)),container.classList.add(e.mode),"layout-free"!==e.mode&&document.querySelectorAll(".video-box").forEach(e=>{e.style.top="",e.style.left="",e.style.width="",e.style.height=""})}if("transform-update"===e.type&&!isLocal){const t=document.getElementById(`box-${e.targetId}`);t&&(t.style.left=e.x+"%",t.style.top=e.y+"%",t.style.width=e.w+"%",t.style.height=e.h+"%")}if("reorder-guests"!==e.type||isLocal||e.order.forEach(e=>{const t=document.getElementById(`box-${e}`);t&&container.appendChild(t)}),"toggle-labels"===e.type&&(e.show?container.classList.add("show-labels"):container.classList.remove("show-labels")),"toggle-icons"===e.type&&(e.show?container.classList.add("show-icons"):container.classList.remove("show-icons")),"toggle-borders"===e.type&&(e.show?container.classList.remove("hide-borders"):container.classList.add("hide-borders")),"add-fake-guest"===e.type&&addFakeVideo(e.id,e.name,e.img),"refresh-cam"===e.type&&("all"===e.targetId?Object.keys(guests).forEach(e=>performRefresh(e)):performRefresh(e.targetId)),"toggle-mirror"===e.type&&guests[e.targetId]&&(guests[e.targetId].mirrored=!guests[e.targetId].mirrored,applyVideoStyle(e.targetId),sendGuestListToDirector()),"guest-cam-transform"===e.type){const o=e.targetId||(t?t.peer:null);o&&guests[o]&&(guests[o].transform=e.transform,applyVideoStyle(o))}if("game-deal"===e.type){document.querySelectorAll(".game-card").forEach(e=>e.remove());for(const[t,o]of Object.entries(e.cards))setGameCard(t,o)}if("game-update-card"===e.type&&setGameCard(e.targetId,e.word),"game-clear"===e.type&&document.querySelectorAll(".game-card").forEach(e=>e.remove()),"remote-mute"===e.type&&guests[e.targetId]&&guests[e.targetId].conn&&guests[e.targetId].conn.send({type:"mute-cmd",state:e.state}),"identify"===e.type){const o=e.targetId||(t?t.peer:null);if(!o)return;guests[o]||(guests[o]={name:"Gość",muted:!1,mirrored:!1,transform:{z:1,x:0,y:0},ratio:"16:9"}),guests[o].name=e.name||"Gość",guests[o].ratio=e.ratio||"16:9",!isMulti&&t&&(guests[o].conn=t),updateLabel(o,e.name);const s=document.getElementById(`box-${o}`);if(s){s.setAttribute("data-ratio",guests[o].ratio);const t=s.querySelector(".game-card");t&&hideTargetName&&e.name.toLowerCase().trim()===hideTargetName&&t.classList.add("self-hidden")}isMulti||sendGuestListToDirector(),applyVideoStyle(o)}"mic-status"===e.type&&t&&guests[t.peer]&&(guests[t.peer].muted=e.muted,toggleMuteIcon(t.peer,e.muted),sendGuestListToDirector()),"heartbeat"===e.type&&t&&(heartbeats[t.peer]=Date.now()),"leave"===e.type&&t&&removeGuest(t.peer)}function setGameCard(e,t){const o=document.getElementById(`box-${e}`);if(!o)return;let s=o.querySelector(".game-card");s&&s.remove();const a=document.createElement("div");a.className="game-card",a.innerText=t,hideTargetName&&guests[e]&&guests[e].name&&guests[e].name.toLowerCase().trim()===hideTargetName&&a.classList.add("self-hidden"),o.appendChild(a)}function updateGuestCount(){const e=container.querySelectorAll(".video-box").length;container.setAttribute("data-count",e)}function addFakeVideo(e,t,o){if(document.getElementById(`box-${e}`))return;guests[e]={name:t,muted:!1,mirrored:!1,transform:{z:1,x:0,y:0},ratio:"16:9",conn:null};const s=document.createElement("div");s.className="video-box",s.id=`box-${e}`,s.style.order=999;const a=document.createElement("img");a.src=o,a.className="fake-cam";const r=document.createElement("div");r.className="label",r.id=`label-${e}`,r.innerText=t;const n=document.createElement("div");n.className="mute-icon",n.innerText="🔇",n.id=`mute-${e}`,s.appendChild(a),s.appendChild(r),s.appendChild(n),container.appendChild(s),updateGuestCount(),sendGuestListToDirector(),applyVideoStyle(e)}function addVideo(e,t){if(document.getElementById(`box-${t}`))return;heartbeats[t]=Date.now(),statsCache[t]={bytes:0,delayTotal:0,emittedTotal:0},guests[t]||(guests[t]={name:"Gość",muted:!1,mirrored:!1,transform:{z:1,x:0,y:0},ratio:"16:9"});const o=document.createElement("div");o.className="video-box",o.id=`box-${t}`,o.style.order=999;const s=document.createElement("video");s.srcObject=e,s.muted=!0,s.autoplay=!0,s.playsInline=!0;const a=document.createElement("audio");a.srcObject=e,a.muted=!1,a.autoplay=!0,a.id=`audio-${t}`;const r=document.createElement("div");r.className="label",r.id=`label-${t}`;const n=document.createElement("div");n.className="mute-icon",n.innerText="🔇",n.id=`mute-${t}`,o.appendChild(s),o.appendChild(r),o.appendChild(n),o.appendChild(a),container.appendChild(o),updateGuestCount(),applyVideoStyle(t),s.play().catch(e=>console.error(e)),a.play().catch(e=>console.warn(e))}function performRefresh(e){const t=document.getElementById(`box-${e}`);if(!t)return;const o=t.querySelector("video"),s=t.querySelector("audio");if(o&&o.srcObject){const e=o.srcObject;o.srcObject=null,s&&(s.srcObject=null),setTimeout(()=>{o.srcObject=e,s&&(s.srcObject=e),o.play().catch(e=>console.log(e)),s&&s.play().catch(e=>console.log(e))},100)}}function removeGuest(e){document.getElementById(`box-${e}`)&&(document.getElementById(`box-${e}`).remove(),delete guests[e],delete heartbeats[e],delete statsCache[e],updateGuestCount(),sendGuestListToDirector())}function updateLabel(e,t){const o=document.getElementById(`label-${e}`);o&&(t&&""!==t.trim()?(o.innerText=t,o.style.display="block"):o.style.display="none")}function toggleMuteIcon(e,t){const o=document.getElementById(`mute-${e}`);o&&(o.style.display=t?"block":"none")}function sendGuestListToDirector(){if(directorConn&&directorConn.open){const e=Object.keys(guests).map(e=>({id:e,name:guests[e].name,muted:guests[e].muted,mirrored:guests[e].mirrored,ratio:guests[e].ratio}));directorConn.send({type:"guest-list",list:e})}}document.addEventListener("mousedown",e=>{if(!isLocalFreeMode)return;const t=e.target.closest(".video-box");if(!t)return;obsDraggedEl=t,obsStartX=e.clientX,obsStartY=e.clientY;const o=window.innerWidth,s=window.innerHeight;obsStartLeftPct=parseFloat(obsDraggedEl.style.left)||0,obsStartTopPct=parseFloat(obsDraggedEl.style.top)||0,obsDraggedEl.style.left.includes("%")||(obsStartLeftPct=obsDraggedEl.offsetLeft/o*100,obsStartTopPct=obsDraggedEl.offsetTop/s*100),obsDraggedEl.style.zIndex=1e3}),document.addEventListener("mousemove",e=>{if(!obsDraggedEl||!isLocalFreeMode)return;const t=e.altKey,o=window.innerWidth,s=window.innerHeight,a=e.clientX-obsStartX,r=e.clientY-obsStartY;let n=obsStartLeftPct+a/o*100,l=obsStartTopPct+r/s*100;const c=obsDraggedEl.offsetWidth/o*100,d=obsDraggedEl.offsetHeight/s*100,i=document.getElementById("guide-x"),u=document.getElementById("guide-y");let m=!1,y=!1;if(!t){const e=1.5,t=Array.from(document.querySelectorAll(".video-box")).filter(e=>e!==obsDraggedEl);for(const a of t){const t=a.offsetLeft/o*100,r=a.offsetTop/s*100,i=a.offsetWidth/o*100,u=a.offsetHeight/s*100;Math.abs(n-t)<e&&(n=t,m=!0),Math.abs(n-(t+i))<e&&(n=t+i,m=!0),Math.abs(n+c-t)<e&&(n=t-c,m=!0),Math.abs(n+c-(t+i))<e&&(n=t+i-c,m=!0),Math.abs(l-r)<e&&(l=r,y=!0),Math.abs(l-(r+u))<e&&(l=r+u,y=!0),Math.abs(l+d-r)<e&&(l=r-d,y=!0),Math.abs(l+d-(r+u))<e&&(l=r+u-d,y=!0)}}m?(i.style.display="block",i.style.left=n*o/100+"px"):i.style.display="none",y?(u.style.display="block",u.style.top=l*s/100+"px"):u.style.display="none",n=Math.max(0,Math.min(n,100-c)),l=Math.max(0,Math.min(l,100-d)),obsDraggedEl.style.left=n+"%",obsDraggedEl.style.top=l+"%"}),document.addEventListener("mouseup",()=>{obsDraggedEl&&(obsDraggedEl.style.zIndex="",obsDraggedEl=null,document.getElementById("guide-x").style.display="none",document.getElementById("guide-y").style.display="none")}),peer.on("open",e=>{isMulti&&connectToDirector(myID)}),peer.on("call",e=>{e.answer(),guests[e.peer]||(guests[e.peer]={name:"Łączenie...",muted:!1,mirrored:!1,transform:{z:1,x:0,y:0},ratio:"16:9",conn:null}),guests[e.peer].call=e,useULL&&setTimeout(()=>{const t=e.peerConnection;t&&t.getReceivers&&t.getReceivers().forEach(e=>{e.track&&"video"===e.track.kind&&"playoutDelayHint"in e&&(e.playoutDelayHint=0)})},500),e.on("stream",t=>addVideo(t,e.peer)),e.on("close",()=>removeGuest(e.peer)),e.on("error",()=>removeGuest(e.peer)),e.peerConnection.oniceconnectionstatechange=()=>{const t=e.peerConnection.iceConnectionState;"disconnected"!==t&&"failed"!==t&&"closed"!==t||removeGuest(e.peer)}}),peer.on("connection",e=>{e.on("data",t=>{"director-hello"===t.type&&(directorConn=e,sendGuestListToDirector()),handleData(t,e)}),e.on("close",()=>removeGuest(e.peer)),e.on("error",()=>removeGuest(e.peer))}),setInterval(async()=>{const e=Date.now(),t={};for(const o in guests){if(o.startsWith("fake-"))continue;if(heartbeats[o]&&e-heartbeats[o]>7e3){removeGuest(o);continue}const s=guests[o];if(s.call&&s.call.peerConnection)try{const e=await s.call.peerConnection.getStats();let a=null;if(e.forEach(e=>{"inbound-rtp"===e.type&&"video"===e.kind&&(a=e)}),a){const e=a.bytesReceived,s=8*(e-(statsCache[o]?.bytes||0))/1e3,r=a.jitterBufferDelay||0,n=a.jitterBufferEmittedCount||1,l=statsCache[o]?.delayTotal||0,c=statsCache[o]?.emittedTotal||0,d=n-c;let i=0;d>0&&(i=(r-l)/d);const u=document.getElementById(`box-${o}`);if(u){const e=u.querySelector("video");e&&!e.paused&&(i>.2?1.05!==e.playbackRate&&(e.playbackRate=1.05):i<.15&&1!==e.playbackRate&&(e.playbackRate=1),i>2&&performRefresh(o))}statsCache[o]={bytes:e,delayTotal:r,emittedTotal:n},t[o]={bitrate:Math.round(s),packetLoss:a.packetsLost||0,resolution:a.frameWidth&&a.frameHeight?`${a.frameWidth}x${a.frameHeight}`:"N/A"}}}catch(e){}}directorConn&&directorConn.open&&Object.keys(t).length>0&&directorConn.send({type:"stats-update",stats:t})},1e3)</script></body></html>
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>WIDOK OBS</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: 0 0;
+        font-family: "Segoe UI", sans-serif;
+      }
+      #video-container {
+        width: 100%;
+        height: 100%;
+        transition: all 0.5s ease;
+        position: relative;
+      }
+      .video-box {
+        position: relative;
+        overflow: hidden;
+        border: 2px solid #fff;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+        background: #000;
+        transition: all 0.5s ease;
+        aspect-ratio: 16/9;
+      }
+      .video-box[data-ratio="4:3"] {
+        aspect-ratio: 4/3;
+      }
+      img.fake-cam,
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: transform 0.2s ease;
+      }
+      .mute-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: red;
+        font-size: 24px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 5px;
+        border-radius: 50%;
+        display: none;
+        z-index: 20;
+      }
+      .label {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #fff;
+        padding: 5px 15px;
+        border-radius: 4px;
+        font-size: 1.2rem;
+        font-weight: 700;
+        text-shadow: 1px 1px 2px #000;
+        border-left: 4px solid #00d2ff;
+        z-index: 10;
+        display: none;
+      }
+      #video-container:not(.show-labels) .label {
+        display: none !important;
+      }
+      #video-container:not(.show-icons) .mute-icon {
+        display: none !important;
+      }
+      #video-container.hide-borders .video-box {
+        border: none !important;
+      }
+      .game-card {
+        position: absolute;
+        top: 5%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ffeb3b;
+        color: #000;
+        padding: 10px 20px;
+        font-size: 2em;
+        font-weight: 800;
+        text-transform: uppercase;
+        border-radius: 5px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        z-index: 50;
+        text-align: center;
+        border: 2px solid #fdd835;
+        animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        white-space: nowrap;
+      }
+      .game-card.self-hidden {
+        opacity: 0 !important;
+        pointer-events: none;
+      }
+      @keyframes popIn {
+        0% {
+          transform: translateX(-50%) scale(0) rotate(-10deg);
+          opacity: 0;
+        }
+        100% {
+          transform: translateX(-50%) scale(1) rotate(0);
+          opacity: 1;
+        }
+      }
+      #local-panel {
+        position: absolute;
+        bottom: 40px;
+        right: 40px;
+        background: rgba(0, 0, 0, 0.85);
+        border: 3px solid #555;
+        border-radius: 15px;
+        padding: 30px;
+        z-index: 9999;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+        width: 500px;
+      }
+      #local-panel.visible {
+        opacity: 1;
+      }
+      #local-panel h4 {
+        color: #00d2ff;
+        margin: 0 0 20px 0;
+        font-size: 28px;
+        text-align: center;
+        text-transform: uppercase;
+      }
+      .local-btn-container {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      #local-panel button {
+        background: #444;
+        color: #fff;
+        border: 2px solid #666;
+        padding: 15px 25px;
+        margin: 5px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 22px;
+        font-weight: 700;
+        transition: 0.2s;
+        flex-grow: 1;
+      }
+      #local-panel button:hover {
+        background: #007bff;
+        border-color: #00d2ff;
+      }
+      #local-panel button.active-layout {
+        background: #007bff !important;
+        border-color: #00d2ff !important;
+        box-shadow: 0 0 15px rgba(0, 210, 255, 0.8);
+        transform: scale(1.05);
+        z-index: 2;
+      }
+      .layout-free {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .layout-free .video-box {
+        position: absolute;
+        transition:
+          width 0.2s,
+          height 0.2s,
+          top 0.1s,
+          left 0.1s;
+        width: 320px;
+        height: auto;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+      }
+      .layout-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-content: center;
+        gap: 15px;
+        padding: 20px;
+        height: 100vh;
+      }
+      .layout-grid .video-box {
+        width: auto;
+        height: 45%;
+      }
+      .layout-grid[data-count="1"] .video-box {
+        height: 85%;
+      }
+      .layout-grid[data-count="2"] .video-box {
+        height: 60%;
+      }
+      .layout-grid[data-count="3"] .video-box,
+      .layout-grid[data-count="4"] .video-box {
+        height: 45%;
+      }
+      .layout-grid[data-count="5"] .video-box,
+      .layout-grid[data-count="6"] .video-box {
+        height: 32%;
+      }
+      .layout-grid[data-count="7"] .video-box,
+      .layout-grid[data-count="8"] .video-box,
+      .layout-grid[data-count="9"] .video-box {
+        height: 30%;
+      }
+      .layout-grid[data-count="10"] .video-box,
+      .layout-grid[data-count="11"] .video-box,
+      .layout-grid[data-count="12"] .video-box {
+        height: 23%;
+      }
+      .layout-sidebar-right {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-end;
+        padding-right: 20px;
+        height: 100vh;
+        gap: 15px;
+      }
+      .layout-sidebar-right .video-box {
+        width: 320px;
+        height: auto;
+        margin: 0;
+      }
+      .layout-sidebar-left {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        padding-left: 20px;
+        height: 100vh;
+        gap: 15px;
+      }
+      .layout-sidebar-left .video-box {
+        width: 320px;
+        height: auto;
+        margin: 0;
+      }
+      .layout-bottom {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-end;
+        padding-bottom: 20px;
+        height: 100vh;
+        gap: 20px;
+      }
+      .layout-bottom .video-box {
+        height: 157px;
+        width: auto;
+        margin: 0;
+      }
+      .layout-top {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 20px;
+        height: 100vh;
+        gap: 20px;
+      }
+      .layout-top .video-box {
+        height: 157px;
+        width: auto;
+        margin: 0;
+      }
+      .layout-split {
+        display: grid;
+        grid-template-columns: 320px 1fr 320px;
+        grid-auto-rows: min-content;
+        align-content: center;
+        row-gap: 30px;
+        padding: 20px 40px;
+        height: 100vh;
+      }
+      .layout-split .video-box {
+        width: 320px;
+        height: auto;
+        margin: 0;
+      }
+      .layout-split .video-box:nth-child(odd) {
+        grid-column: 1;
+        justify-self: start;
+      }
+      .layout-split .video-box:nth-child(2n) {
+        grid-column: 3;
+        justify-self: end;
+      }
+      .layout-center-stage {
+        display: grid;
+        grid-template-columns: 300px 1fr 300px;
+        grid-auto-rows: min-content;
+        gap: 15px;
+        padding: 20px;
+        height: 100vh;
+        align-content: center;
+      }
+      .layout-center-stage .video-box {
+        width: 300px;
+        height: auto;
+        margin: 0;
+      }
+      .layout-center-stage .video-box:first-child {
+        grid-column: 2;
+        grid-row: 1 / span 10;
+        height: 90vh;
+        width: auto;
+        max-width: 100%;
+        align-self: center;
+        justify-self: center;
+        z-index: 10;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+      }
+      .layout-center-stage .video-box:nth-child(2n) {
+        grid-column: 1;
+      }
+      .layout-center-stage .video-box:nth-child(odd):not(:first-child) {
+        grid-column: 3;
+      }
+      .layout-free .video-box {
+        cursor: grab;
+      }
+      .layout-free .video-box:active {
+        cursor: grabbing;
+        z-index: 1000;
+        border-color: #ff0 !important;
+      }
+      .guide-line {
+        position: absolute;
+        background-color: red;
+        z-index: 9999;
+        display: none;
+        pointer-events: none;
+      }
+      .guide-x {
+        width: 100%;
+        height: 1px;
+        left: 0;
+      }
+      .guide-y {
+        height: 100%;
+        width: 1px;
+        top: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="guide-x" class="guide-line guide-x"></div>
+    <div id="guide-y" class="guide-line guide-y"></div>
+    <div id="video-container" class="layout-grid" data-count="0"></div>
+    <div id="local-panel">
+      <h4>Własny Układ</h4>
+      <div class="local-btn-container">
+        <button
+          onclick="setLocalLayout('layout-grid', this)"
+          style="background: #6f42c1; width: 100%"
+          class="active-layout"
+        >
+          🔳 Siatka
+        </button>
+        <button onclick="setLocalLayout('layout-top', this)">⬆️ Góra</button>
+        <button onclick="setLocalLayout('layout-bottom', this)">⬇️ Dół</button>
+        <button onclick="setLocalLayout('layout-sidebar-left', this)">
+          ⬅️ Lewo
+        </button>
+        <button onclick="setLocalLayout('layout-sidebar-right', this)">
+          ➡️ Prawo
+        </button>
+        <button
+          onclick="setLocalLayout('layout-split', this)"
+          style="width: 40%"
+        >
+          ↔️ Split
+        </button>
+        <button
+          onclick="setLocalLayout('layout-center-stage', this)"
+          style="width: 40%"
+        >
+          ⭐️ Center
+        </button>
+        <button
+          onclick="toggleLocalFreeMode(this)"
+          style="width: 90%; background: #28a745; margin-top: 10px"
+        >
+          🔓 Swobodne Ustawianie
+        </button>
+      </div>
+    </div>
+    <script>
+      const urlParams = new URLSearchParams(window.location.search),
+        myID = urlParams.get("room") || "test-room",
+        useStunOnly = urlParams.get("stunonly"),
+        useULL = urlParams.get("ull"),
+        isMulti = urlParams.get("multi"),
+        isLocal = "1" === urlParams.get("local"),
+        hideTargetName = urlParams.get("hide")
+          ? urlParams.get("hide").toLowerCase().trim()
+          : null,
+        selectedConfig = useStunOnly
+          ? [{ urls: "stun:stun.l.google.com:19302" }]
+          : [
+              { urls: "stun:stun.l.google.com:19302" },
+              {
+                urls: "turn:openrelay.metered.ca:80?transport=udp",
+                username: "openrelayproject",
+                credential: "openrelayproject",
+              },
+              {
+                urls: "turn:openrelay.metered.ca:80?transport=tcp",
+                username: "openrelayproject",
+                credential: "openrelayproject",
+              },
+              {
+                urls: "turn:openrelay.metered.ca:443?transport=udp",
+                username: "openrelayproject",
+                credential: "openrelayproject",
+              },
+              {
+                urls: "turn:openrelay.metered.ca:443?transport=tcp",
+                username: "openrelayproject",
+                credential: "openrelayproject",
+              },
+            ],
+        peer = new Peer(isMulti ? void 0 : myID, {
+          config: { iceServers: selectedConfig },
+        }),
+        container = document.getElementById("video-container"),
+        guests = {},
+        heartbeats = {};
+      let directorConn = null;
+      const statsCache = {};
+      let hidePanelTimeout;
+      if (isLocal) {
+        const e = document.getElementById("local-panel");
+        ((e.style.display = "block"), (container.className = "layout-grid"));
+        const t = () => {
+          (e.classList.add("visible"),
+            clearTimeout(hidePanelTimeout),
+            (hidePanelTimeout = setTimeout(() => {
+              e.classList.remove("visible");
+            }, 5e3)));
+        };
+        (window.addEventListener("mousemove", t),
+          window.addEventListener("mousedown", t));
+      }
+      let isLocalFreeMode = !1;
+      function updateLocalActiveButton(e) {
+        e &&
+          (document
+            .querySelectorAll("#local-panel button")
+            .forEach((e) => e.classList.remove("active-layout")),
+          e.classList.add("active-layout"));
+      }
+      function setLocalLayout(e, t) {
+        ((isLocalFreeMode = !1),
+          (container.className = e),
+          document.querySelectorAll(".video-box").forEach((e) => {
+            ((e.style.top = ""),
+              (e.style.left = ""),
+              (e.style.width = ""),
+              (e.style.height = ""));
+          }),
+          updateLocalActiveButton(t));
+      }
+      function toggleLocalFreeMode(e) {
+        ((isLocalFreeMode = !0), (container.className = "layout-free"));
+        (document.querySelectorAll(".video-box").forEach((e, t) => {
+          e.style.left ||
+            ((e.style.width = "320px"),
+            (e.style.height = "auto"),
+            (e.style.left = 2 + 5 * t + "%"),
+            (e.style.top = 2 + 5 * t + "%"));
+        }),
+          updateLocalActiveButton(e),
+          console.log("🛠️ Tryb swobodny w OBS włączony."));
+      }
+      let obsStartX,
+        obsStartY,
+        obsStartLeftPct,
+        obsStartTopPct,
+        obsDraggedEl = null;
+      function connectToDirector(e) {
+        ((directorConn = peer.connect(e)),
+          directorConn.on("open", () => {
+            directorConn.send({ type: "register-obs" });
+          }),
+          directorConn.on("data", (e) => handleData(e)));
+      }
+      function applyVideoStyle(e) {
+        const t = guests[e],
+          o = document.getElementById(`box-${e}`);
+        if (o && t) {
+          const e = o.querySelector("video") || o.querySelector("img");
+          if (e) {
+            const o = t.transform ? t.transform.z : 1,
+              s = t.transform ? t.transform.x : 0,
+              a = t.transform ? t.transform.y : 0,
+              r = t.mirrored ? -o : o,
+              n = t.mirrored ? -s : s;
+            e.style.transform = `scale(${r}, ${o}) translate(${n}%, ${a}%)`;
+          }
+          o.setAttribute("data-ratio", t.ratio || "16:9");
+        }
+      }
+      function handleData(e, t) {
+        if ("layout" === e.type && !isLocal) {
+          const t = [];
+          (container.classList.forEach((e) => {
+            e.startsWith("layout-") && t.push(e);
+          }),
+            t.forEach((e) => container.classList.remove(e)),
+            container.classList.add(e.mode),
+            "layout-free" !== e.mode &&
+              document.querySelectorAll(".video-box").forEach((e) => {
+                ((e.style.top = ""),
+                  (e.style.left = ""),
+                  (e.style.width = ""),
+                  (e.style.height = ""));
+              }));
+        }
+        if ("transform-update" === e.type && !isLocal) {
+          const t = document.getElementById(`box-${e.targetId}`);
+          t &&
+            ((t.style.left = e.x + "%"),
+            (t.style.top = e.y + "%"),
+            (t.style.width = e.w + "%"),
+            (t.style.height = e.h + "%"));
+        }
+        if (
+          ("reorder-guests" !== e.type ||
+            isLocal ||
+            e.order.forEach((e) => {
+              const t = document.getElementById(`box-${e}`);
+              t && container.appendChild(t);
+            }),
+          "toggle-labels" === e.type &&
+            (e.show
+              ? container.classList.add("show-labels")
+              : container.classList.remove("show-labels")),
+          "toggle-icons" === e.type &&
+            (e.show
+              ? container.classList.add("show-icons")
+              : container.classList.remove("show-icons")),
+          "toggle-borders" === e.type &&
+            (e.show
+              ? container.classList.remove("hide-borders")
+              : container.classList.add("hide-borders")),
+          "add-fake-guest" === e.type && addFakeVideo(e.id, e.name, e.img),
+          "refresh-cam" === e.type &&
+            ("all" === e.targetId
+              ? Object.keys(guests).forEach((e) => performRefresh(e))
+              : performRefresh(e.targetId)),
+          "toggle-mirror" === e.type &&
+            guests[e.targetId] &&
+            ((guests[e.targetId].mirrored = !guests[e.targetId].mirrored),
+            applyVideoStyle(e.targetId),
+            sendGuestListToDirector()),
+          "guest-cam-transform" === e.type)
+        ) {
+          const o = e.targetId || (t ? t.peer : null);
+          o &&
+            guests[o] &&
+            ((guests[o].transform = e.transform), applyVideoStyle(o));
+        }
+        if ("game-deal" === e.type) {
+          document.querySelectorAll(".game-card").forEach((e) => e.remove());
+          for (const [t, o] of Object.entries(e.cards)) setGameCard(t, o);
+        }
+        if (
+          ("game-update-card" === e.type && setGameCard(e.targetId, e.word),
+          "game-clear" === e.type &&
+            document.querySelectorAll(".game-card").forEach((e) => e.remove()),
+          "remote-mute" === e.type &&
+            guests[e.targetId] &&
+            guests[e.targetId].conn &&
+            guests[e.targetId].conn.send({ type: "mute-cmd", state: e.state }),
+          "identify" === e.type)
+        ) {
+          const o = e.targetId || (t ? t.peer : null);
+          if (!o) return;
+          (guests[o] ||
+            (guests[o] = {
+              name: "Gość",
+              muted: !1,
+              mirrored: !1,
+              transform: { z: 1, x: 0, y: 0 },
+              ratio: "16:9",
+            }),
+            (guests[o].name = e.name || "Gość"),
+            (guests[o].ratio = e.ratio || "16:9"),
+            !isMulti && t && (guests[o].conn = t),
+            updateLabel(o, e.name));
+          const s = document.getElementById(`box-${o}`);
+          if (s) {
+            s.setAttribute("data-ratio", guests[o].ratio);
+            const t = s.querySelector(".game-card");
+            t &&
+              hideTargetName &&
+              e.name.toLowerCase().trim() === hideTargetName &&
+              t.classList.add("self-hidden");
+          }
+          (isMulti || sendGuestListToDirector(), applyVideoStyle(o));
+        }
+        ("mic-status" === e.type &&
+          t &&
+          guests[t.peer] &&
+          ((guests[t.peer].muted = e.muted),
+          toggleMuteIcon(t.peer, e.muted),
+          sendGuestListToDirector()),
+          "heartbeat" === e.type && t && (heartbeats[t.peer] = Date.now()),
+          "leave" === e.type && t && removeGuest(t.peer));
+      }
+      function setGameCard(e, t) {
+        const o = document.getElementById(`box-${e}`);
+        if (!o) return;
+        let s = o.querySelector(".game-card");
+        s && s.remove();
+        const a = document.createElement("div");
+        ((a.className = "game-card"),
+          (a.innerText = t),
+          hideTargetName &&
+            guests[e] &&
+            guests[e].name &&
+            guests[e].name.toLowerCase().trim() === hideTargetName &&
+            a.classList.add("self-hidden"),
+          o.appendChild(a));
+      }
+      function updateGuestCount() {
+        const e = container.querySelectorAll(".video-box").length;
+        container.setAttribute("data-count", e);
+      }
+      function addFakeVideo(e, t, o) {
+        if (document.getElementById(`box-${e}`)) return;
+        guests[e] = {
+          name: t,
+          muted: !1,
+          mirrored: !1,
+          transform: { z: 1, x: 0, y: 0 },
+          ratio: "16:9",
+          conn: null,
+        };
+        const s = document.createElement("div");
+        ((s.className = "video-box"),
+          (s.id = `box-${e}`),
+          (s.style.order = 999));
+        const a = document.createElement("img");
+        ((a.src = o), (a.className = "fake-cam"));
+        const r = document.createElement("div");
+        ((r.className = "label"), (r.id = `label-${e}`), (r.innerText = t));
+        const n = document.createElement("div");
+        ((n.className = "mute-icon"),
+          (n.innerText = "🔇"),
+          (n.id = `mute-${e}`),
+          s.appendChild(a),
+          s.appendChild(r),
+          s.appendChild(n),
+          container.appendChild(s),
+          updateGuestCount(),
+          sendGuestListToDirector(),
+          applyVideoStyle(e));
+      }
+      function addVideo(e, t) {
+        if (document.getElementById(`box-${t}`)) return;
+        ((heartbeats[t] = Date.now()),
+          (statsCache[t] = { bytes: 0, delayTotal: 0, emittedTotal: 0 }),
+          guests[t] ||
+            (guests[t] = {
+              name: "Gość",
+              muted: !1,
+              mirrored: !1,
+              transform: { z: 1, x: 0, y: 0 },
+              ratio: "16:9",
+            }));
+        const o = document.createElement("div");
+        ((o.className = "video-box"),
+          (o.id = `box-${t}`),
+          (o.style.order = 999));
+        const s = document.createElement("video");
+        ((s.srcObject = e),
+          (s.muted = !0),
+          (s.autoplay = !0),
+          (s.playsInline = !0));
+        const a = document.createElement("audio");
+        ((a.srcObject = e),
+          (a.muted = !1),
+          (a.autoplay = !0),
+          (a.id = `audio-${t}`));
+        const r = document.createElement("div");
+        ((r.className = "label"), (r.id = `label-${t}`));
+        const n = document.createElement("div");
+        ((n.className = "mute-icon"),
+          (n.innerText = "🔇"),
+          (n.id = `mute-${t}`),
+          o.appendChild(s),
+          o.appendChild(r),
+          o.appendChild(n),
+          o.appendChild(a),
+          container.appendChild(o),
+          updateGuestCount(),
+          applyVideoStyle(t),
+          s.play().catch((e) => console.error(e)),
+          a.play().catch((e) => console.warn(e)));
+      }
+      function performRefresh(e) {
+        const t = document.getElementById(`box-${e}`);
+        if (!t) return;
+        const o = t.querySelector("video"),
+          s = t.querySelector("audio");
+        if (o && o.srcObject) {
+          const e = o.srcObject;
+          ((o.srcObject = null),
+            s && (s.srcObject = null),
+            setTimeout(() => {
+              ((o.srcObject = e),
+                s && (s.srcObject = e),
+                o.play().catch((e) => console.log(e)),
+                s && s.play().catch((e) => console.log(e)));
+            }, 100));
+        }
+      }
+      function removeGuest(e) {
+        document.getElementById(`box-${e}`) &&
+          (document.getElementById(`box-${e}`).remove(),
+          delete guests[e],
+          delete heartbeats[e],
+          delete statsCache[e],
+          updateGuestCount(),
+          sendGuestListToDirector());
+      }
+      function updateLabel(e, t) {
+        const o = document.getElementById(`label-${e}`);
+        o &&
+          (t && "" !== t.trim()
+            ? ((o.innerText = t), (o.style.display = "block"))
+            : (o.style.display = "none"));
+      }
+      function toggleMuteIcon(e, t) {
+        const o = document.getElementById(`mute-${e}`);
+        o && (o.style.display = t ? "block" : "none");
+      }
+      function sendGuestListToDirector() {
+        if (directorConn && directorConn.open) {
+          const e = Object.keys(guests).map((e) => ({
+            id: e,
+            name: guests[e].name,
+            muted: guests[e].muted,
+            mirrored: guests[e].mirrored,
+            ratio: guests[e].ratio,
+          }));
+          directorConn.send({ type: "guest-list", list: e });
+        }
+      }
+      (document.addEventListener("mousedown", (e) => {
+        if (!isLocalFreeMode) return;
+        const t = e.target.closest(".video-box");
+        if (!t) return;
+        ((obsDraggedEl = t), (obsStartX = e.clientX), (obsStartY = e.clientY));
+        const o = window.innerWidth,
+          s = window.innerHeight;
+        ((obsStartLeftPct = parseFloat(obsDraggedEl.style.left) || 0),
+          (obsStartTopPct = parseFloat(obsDraggedEl.style.top) || 0),
+          obsDraggedEl.style.left.includes("%") ||
+            ((obsStartLeftPct = (obsDraggedEl.offsetLeft / o) * 100),
+            (obsStartTopPct = (obsDraggedEl.offsetTop / s) * 100)),
+          (obsDraggedEl.style.zIndex = 1e3));
+      }),
+        document.addEventListener("mousemove", (e) => {
+          if (!obsDraggedEl || !isLocalFreeMode) return;
+          const t = e.altKey,
+            o = window.innerWidth,
+            s = window.innerHeight,
+            a = e.clientX - obsStartX,
+            r = e.clientY - obsStartY;
+          let n = obsStartLeftPct + (a / o) * 100,
+            l = obsStartTopPct + (r / s) * 100;
+          const c = (obsDraggedEl.offsetWidth / o) * 100,
+            d = (obsDraggedEl.offsetHeight / s) * 100,
+            i = document.getElementById("guide-x"),
+            u = document.getElementById("guide-y");
+          let m = !1,
+            y = !1;
+          if (!t) {
+            const e = 1.5,
+              t = Array.from(document.querySelectorAll(".video-box")).filter(
+                (e) => e !== obsDraggedEl,
+              );
+            for (const a of t) {
+              const t = (a.offsetLeft / o) * 100,
+                r = (a.offsetTop / s) * 100,
+                i = (a.offsetWidth / o) * 100,
+                u = (a.offsetHeight / s) * 100;
+              (Math.abs(n - t) < e && ((n = t), (m = !0)),
+                Math.abs(n - (t + i)) < e && ((n = t + i), (m = !0)),
+                Math.abs(n + c - t) < e && ((n = t - c), (m = !0)),
+                Math.abs(n + c - (t + i)) < e && ((n = t + i - c), (m = !0)),
+                Math.abs(l - r) < e && ((l = r), (y = !0)),
+                Math.abs(l - (r + u)) < e && ((l = r + u), (y = !0)),
+                Math.abs(l + d - r) < e && ((l = r - d), (y = !0)),
+                Math.abs(l + d - (r + u)) < e && ((l = r + u - d), (y = !0)));
+            }
+          }
+          (m
+            ? ((i.style.display = "block"),
+              (i.style.left = (n * o) / 100 + "px"))
+            : (i.style.display = "none"),
+            y
+              ? ((u.style.display = "block"),
+                (u.style.top = (l * s) / 100 + "px"))
+              : (u.style.display = "none"),
+            (n = Math.max(0, Math.min(n, 100 - c))),
+            (l = Math.max(0, Math.min(l, 100 - d))),
+            (obsDraggedEl.style.left = n + "%"),
+            (obsDraggedEl.style.top = l + "%"));
+        }),
+        document.addEventListener("mouseup", () => {
+          obsDraggedEl &&
+            ((obsDraggedEl.style.zIndex = ""),
+            (obsDraggedEl = null),
+            (document.getElementById("guide-x").style.display = "none"),
+            (document.getElementById("guide-y").style.display = "none"));
+        }),
+        peer.on("open", (e) => {
+          isMulti && connectToDirector(myID);
+        }),
+        peer.on("call", (e) => {
+          (e.answer(),
+            guests[e.peer] ||
+              (guests[e.peer] = {
+                name: "Łączenie...",
+                muted: !1,
+                mirrored: !1,
+                transform: { z: 1, x: 0, y: 0 },
+                ratio: "16:9",
+                conn: null,
+              }),
+            (guests[e.peer].call = e),
+            useULL &&
+              setTimeout(() => {
+                const t = e.peerConnection;
+                t &&
+                  t.getReceivers &&
+                  t.getReceivers().forEach((e) => {
+                    e.track &&
+                      "video" === e.track.kind &&
+                      "playoutDelayHint" in e &&
+                      (e.playoutDelayHint = 0);
+                  });
+              }, 500),
+            e.on("stream", (t) => addVideo(t, e.peer)),
+            e.on("close", () => removeGuest(e.peer)),
+            e.on("error", () => removeGuest(e.peer)),
+            (e.peerConnection.oniceconnectionstatechange = () => {
+              const t = e.peerConnection.iceConnectionState;
+              ("disconnected" !== t && "failed" !== t && "closed" !== t) ||
+                removeGuest(e.peer);
+            }));
+        }),
+        peer.on("connection", (e) => {
+          (e.on("data", (t) => {
+            ("director-hello" === t.type &&
+              ((directorConn = e), sendGuestListToDirector()),
+              handleData(t, e));
+          }),
+            e.on("close", () => removeGuest(e.peer)),
+            e.on("error", () => removeGuest(e.peer)));
+        }),
+        setInterval(async () => {
+          const e = Date.now(),
+            t = {};
+          for (const o in guests) {
+            if (o.startsWith("fake-")) continue;
+            if (heartbeats[o] && e - heartbeats[o] > 7e3) {
+              removeGuest(o);
+              continue;
+            }
+            const s = guests[o];
+            if (s.call && s.call.peerConnection)
+              try {
+                const e = await s.call.peerConnection.getStats();
+                let a = null;
+                if (
+                  (e.forEach((e) => {
+                    "inbound-rtp" === e.type && "video" === e.kind && (a = e);
+                  }),
+                  a)
+                ) {
+                  const e = a.bytesReceived,
+                    s = (8 * (e - (statsCache[o]?.bytes || 0))) / 1e3,
+                    r = a.jitterBufferDelay || 0,
+                    n = a.jitterBufferEmittedCount || 1,
+                    l = statsCache[o]?.delayTotal || 0,
+                    c = statsCache[o]?.emittedTotal || 0,
+                    d = n - c;
+                  let i = 0;
+                  d > 0 && (i = (r - l) / d);
+                  const u = document.getElementById(`box-${o}`);
+                  if (u) {
+                    const e = u.querySelector("video");
+                    e &&
+                      !e.paused &&
+                      (i > 0.2
+                        ? 1.05 !== e.playbackRate && (e.playbackRate = 1.05)
+                        : i < 0.15 &&
+                          1 !== e.playbackRate &&
+                          (e.playbackRate = 1),
+                      i > 2 && performRefresh(o));
+                  }
+                  ((statsCache[o] = {
+                    bytes: e,
+                    delayTotal: r,
+                    emittedTotal: n,
+                  }),
+                    (t[o] = {
+                      bitrate: Math.round(s),
+                      packetLoss: a.packetsLost || 0,
+                      resolution:
+                        a.frameWidth && a.frameHeight
+                          ? `${a.frameWidth}x${a.frameHeight}`
+                          : "N/A",
+                    }));
+                }
+              } catch (e) {}
+          }
+          directorConn &&
+            directorConn.open &&
+            Object.keys(t).length > 0 &&
+            directorConn.send({ type: "stats-update", stats: t });
+        }, 1e3));
+    </script>
+  </body>
+</html>

@@ -1,1 +1,228 @@
-<!doctype html><html lang="pl"><head><meta charset="UTF-8"><title>Simple Stream Layouts</title><style>body{font-family:"Segoe UI",sans-serif;background:#1a1a1a;color:#fff;text-align:center;padding-top:80px;margin:0}.container{max-width:600px;margin:0 auto;background:#2a2a2a;padding:40px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.5);border-top:5px solid #00d2ff}h1{margin-top:0;margin-bottom:10px;color:#00d2ff;font-size:2.2em}p.subtitle{color:#aaa;margin-bottom:40px}.create-btn{background:linear-gradient(45deg,#00d2ff,#3a7bd5);border:none;padding:15px 40px;color:#fff;font-size:1.3em;font-weight:700;border-radius:30px;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 5px 15px rgba(0,210,255,.3)}.create-btn:hover{transform:scale(1.05);box-shadow:0 8px 20px rgba(0,210,255,.5)}#links-area{display:none;margin-top:40px;text-align:left;flex-direction:column}.link-group{margin-bottom:20px;background:#333;padding:15px;border-radius:8px;border-left:4px solid #555}.link-group label{display:block;color:#ddd;font-size:.95em;margin-bottom:8px;font-weight:700}.link-group input{width:95%;padding:12px;background:#111;border:1px solid #444;color:#fff;border-radius:5px;display:block;margin-bottom:10px;font-family:monospace}.action-btn{font-size:.9em;padding:8px 15px;border:none;color:#fff;cursor:pointer;border-radius:4px;margin-right:5px;transition:.2s;font-weight:700}.copy-btn{background:#555}.copy-btn:hover{background:#777}.open-btn{background:#28a745}.open-btn:hover{background:#218838}#group-dir{border-left-color:#ff9800}#group-obs{border-left-color:#6f42c1}#group-guest{border-left-color:#e91e63}.footer-credits{position:fixed;bottom:15px;right:20px;color:#666;font-size:.85em;font-family:monospace;user-select:none;pointer-events:none;z-index:1000}.donate-btn{position:fixed;bottom:15px;left:20px;z-index:1000;display:block;transition:transform .2s}.donate-btn img{height:45px;display:block}.donate-btn:hover{transform:scale(1.05)}</style></head><body><div class="container"><h1>🎥 Simple Stream Layouts</h1><p class="subtitle">Błyskawiczne studio do streamingu. Jedno kliknięcie, zero konfiguracji.</p><button class="create-btn" onclick="createRoom()">+ Utwórz Studio</button><div id="links-area"><div class="link-group" id="group-dir" style="order:1"><label id="label-dir" style="color:#ff9800">1. Twój Panel Reżysera (Uruchom jako pierwszy!):</label> <input type="text" id="director-link" readonly="readonly"> <button class="action-btn copy-btn" onclick='copy("director-link")'>📋 Skopiuj Link</button> <button class="action-btn open-btn" onclick='openLink("director-link")'>↗ Otwórz Panel</button></div><div class="link-group" id="group-obs" style="order:2"><label id="label-obs" style="color:#cda2ff">2. Źródło do OBS (Wklej jako Browser Source, 1920x1080):</label> <input type="text" id="obs-link" readonly="readonly"> <button class="action-btn copy-btn" onclick='copy("obs-link")'>📋 Skopiuj Link</button></div><div class="link-group" id="group-guest" style="order:3"><label id="label-guest" style="color:#ff9ec1">3. Link dla Gości (Wyślij znajomym na Discord/Messenger):</label> <input type="text" id="guest-link" readonly="readonly"> <button class="action-btn copy-btn" onclick='copy("guest-link")'>📋 Skopiuj Link</button></div></div></div><a href="https://www.paypal.com/paypalme/rawen90" target="_blank" class="donate-btn" title="Wsparcie / Donate"><img src="https://i.ibb.co/d48v0byS/donate-pp.png" alt="PayPal Donate"></a><div class="footer-credits">from xrawenq for Goodiez</div><script>function createRoom(){const e=`?room=${Math.random().toString(36).substring(2,9)}&stunonly=1&ull=1&multi=1`;let t=window.location.href;t.endsWith("index.html")&&(t=t.replace("index.html","")),t.endsWith("/")||(t+="/");const n=`${t}obs.html${e}`,o=`${t}director.html${e}`,l=`${t}guest.html${e}`;document.getElementById("obs-link").value=n,document.getElementById("director-link").value=o,document.getElementById("guest-link").value=l,document.getElementById("links-area").style.display="flex";const c=document.querySelector(".create-btn");c.innerText="🔄 Wygeneruj nowy pokój",c.style.background="#555",c.style.boxShadow="none"}function copy(e){document.getElementById(e).select(),document.execCommand("copy");const t=event.target,n=t.innerText;t.innerText="✅ Skopiowano",t.style.background="#28a745",setTimeout(()=>{t.innerText=n,t.style.background=""},1500)}function openLink(e){const t=document.getElementById(e).value;t&&window.open(t,"_blank")}</script></body></html>
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Simple Stream Layouts</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #1a1a1a;
+        color: #fff;
+        text-align: center;
+        padding-top: 80px;
+        margin: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #2a2a2a;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        border-top: 5px solid #00d2ff;
+      }
+      h1 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        color: #00d2ff;
+        font-size: 2.2em;
+      }
+      p.subtitle {
+        color: #aaa;
+        margin-bottom: 40px;
+      }
+      .create-btn {
+        background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+        border: none;
+        padding: 15px 40px;
+        color: #fff;
+        font-size: 1.3em;
+        font-weight: 700;
+        border-radius: 30px;
+        cursor: pointer;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);
+      }
+      .create-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 8px 20px rgba(0, 210, 255, 0.5);
+      }
+      #links-area {
+        display: none;
+        margin-top: 40px;
+        text-align: left;
+        flex-direction: column;
+      }
+      .link-group {
+        margin-bottom: 20px;
+        background: #333;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #555;
+      }
+      .link-group label {
+        display: block;
+        color: #ddd;
+        font-size: 0.95em;
+        margin-bottom: 8px;
+        font-weight: 700;
+      }
+      .link-group input {
+        width: 95%;
+        padding: 12px;
+        background: #111;
+        border: 1px solid #444;
+        color: #fff;
+        border-radius: 5px;
+        display: block;
+        margin-bottom: 10px;
+        font-family: monospace;
+      }
+      .action-btn {
+        font-size: 0.9em;
+        padding: 8px 15px;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+        border-radius: 4px;
+        margin-right: 5px;
+        transition: 0.2s;
+        font-weight: 700;
+      }
+      .copy-btn {
+        background: #555;
+      }
+      .copy-btn:hover {
+        background: #777;
+      }
+      .open-btn {
+        background: #28a745;
+      }
+      .open-btn:hover {
+        background: #218838;
+      }
+      #group-dir {
+        border-left-color: #ff9800;
+      }
+      #group-obs {
+        border-left-color: #6f42c1;
+      }
+      #group-guest {
+        border-left-color: #e91e63;
+      }
+      .footer-credits {
+        position: fixed;
+        bottom: 15px;
+        right: 20px;
+        color: #666;
+        font-size: 0.85em;
+        font-family: monospace;
+        user-select: none;
+        pointer-events: none;
+        z-index: 1000;
+      }
+      .donate-btn {
+        position: fixed;
+        bottom: 15px;
+        left: 20px;
+        z-index: 1000;
+        display: block;
+        transition: transform 0.2s;
+      }
+      .donate-btn img {
+        height: 45px;
+        display: block;
+      }
+      .donate-btn:hover {
+        transform: scale(1.05);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎥 Simple Stream Layouts</h1>
+      <p class="subtitle">
+        Błyskawiczne studio do streamingu. Jedno kliknięcie, zero konfiguracji.
+      </p>
+      <button class="create-btn" onclick="createRoom()">+ Utwórz Studio</button>
+      <div id="links-area">
+        <div class="link-group" id="group-dir" style="order: 1">
+          <label id="label-dir" style="color: #ff9800"
+            >1. Twój Panel Reżysera (Uruchom jako pierwszy!):</label
+          >
+          <input type="text" id="director-link" readonly="readonly" />
+          <button class="action-btn copy-btn" onclick="copy('director-link')">
+            📋 Skopiuj Link
+          </button>
+          <button
+            class="action-btn open-btn"
+            onclick="openLink('director-link')"
+          >
+            ↗ Otwórz Panel
+          </button>
+        </div>
+        <div class="link-group" id="group-obs" style="order: 2">
+          <label id="label-obs" style="color: #cda2ff"
+            >2. Źródło do OBS (Wklej jako Browser Source, 1920x1080):</label
+          >
+          <input type="text" id="obs-link" readonly="readonly" />
+          <button class="action-btn copy-btn" onclick="copy('obs-link')">
+            📋 Skopiuj Link
+          </button>
+        </div>
+        <div class="link-group" id="group-guest" style="order: 3">
+          <label id="label-guest" style="color: #ff9ec1"
+            >3. Link dla Gości (Wyślij znajomym na Discord/Messenger):</label
+          >
+          <input type="text" id="guest-link" readonly="readonly" />
+          <button class="action-btn copy-btn" onclick="copy('guest-link')">
+            📋 Skopiuj Link
+          </button>
+        </div>
+      </div>
+    </div>
+    <a
+      href="https://www.paypal.com/paypalme/rawen90"
+      target="_blank"
+      class="donate-btn"
+      title="Wsparcie / Donate"
+      ><img src="https://i.ibb.co/d48v0byS/donate-pp.png" alt="PayPal Donate"
+    /></a>
+    <div class="footer-credits">from xrawenq for Goodiez</div>
+    <script>
+      function createRoom() {
+        const e = `?room=${Math.random().toString(36).substring(2, 9)}&stunonly=1&ull=1&multi=1`;
+        let t = window.location.href;
+        (t.endsWith("index.html") && (t = t.replace("index.html", "")),
+          t.endsWith("/") || (t += "/"));
+        const n = `${t}obs.html${e}`,
+          o = `${t}director.html${e}`,
+          l = `${t}guest.html${e}`;
+        ((document.getElementById("obs-link").value = n),
+          (document.getElementById("director-link").value = o),
+          (document.getElementById("guest-link").value = l),
+          (document.getElementById("links-area").style.display = "flex"));
+        const c = document.querySelector(".create-btn");
+        ((c.innerText = "🔄 Wygeneruj nowy pokój"),
+          (c.style.background = "#555"),
+          (c.style.boxShadow = "none"));
+      }
+      function copy(e) {
+        (document.getElementById(e).select(), document.execCommand("copy"));
+        const t = event.target,
+          n = t.innerText;
+        ((t.innerText = "✅ Skopiowano"),
+          (t.style.background = "#28a745"),
+          setTimeout(() => {
+            ((t.innerText = n), (t.style.background = ""));
+          }, 1500));
+      }
+      function openLink(e) {
+        const t = document.getElementById(e).value;
+        t && window.open(t, "_blank");
+      }
+    </script>
+  </body>
+</html>
