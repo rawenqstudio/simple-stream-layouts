@@ -165,7 +165,8 @@
         </div>
         <div class="link-group" id="group-obs" style="order: 2">
           <label id="label-obs" style="color: #cda2ff"
-            >2. Źródło do OBS (Wklej jako Browser Source, 1920x1080):</label
+            >2. Źródło do OBS / Ekran Gry (Browser Source 1920x1080 lub wspólny
+            podgląd do trybu gry):</label
           >
           <input type="text" id="obs-link" readonly="readonly" />
           <button class="action-btn copy-btn" onclick="copy('obs-link')">
@@ -174,11 +175,14 @@
         </div>
         <div class="link-group" id="group-guest" style="order: 3">
           <label id="label-guest" style="color: #ff9ec1"
-            >3. Link dla Gości (Wyślij znajomym na Discord/Messenger):</label
+            >3. Link dla Gości (Wyślij znajomym):</label
           >
           <input type="text" id="guest-link" readonly="readonly" />
           <button class="action-btn copy-btn" onclick="copy('guest-link')">
             📋 Skopiuj Link
+          </button>
+          <button class="action-btn open-btn" onclick="openLink('guest-link')">
+            ↗ Otwórz w nowej karcie
           </button>
         </div>
       </div>

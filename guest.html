@@ -280,8 +280,8 @@
       <div class="settings-group">
         <label
           >Twoje Imię
-          <span style="color: #ffeb3b; font-size: 0.9em; font-weight: 400"
-            >(Wymagane do gry)</span
+          <span style="color: #ff4444; font-size: 0.9em; font-weight: 700"
+            >(Pole wymagane)</span
           >:</label
         >
         <input type="text" id="username" placeholder="Wpisz swoje imię..." />
@@ -495,8 +495,26 @@
           : "none";
       }
       async function joinRoom() {
+        const uInput = document.getElementById("username");
+        const t = uInput.value.trim();
+        if (!t || t.length < 2) {
+          uInput.style.border = "2px solid #ff4444";
+          uInput.focus();
+          log(
+            "BŁĄD: Wpisz swoje imię (min. 2 znaki) przed dołączeniem!",
+            "error",
+          );
+          alert(
+            "Podaj swoje imię (minimum 2 znaki), aby móc dołączyć do studia.",
+          );
+          return;
+        }
+        uInput.style.border = "1px solid #555";
+        try {
+          localStorage.setItem("ssl_guest_name", t);
+        } catch (err) {}
+
         const e = document.getElementById("target-id").value,
-          t = document.getElementById("username").value.trim(),
           n = document.getElementById("high-bitrate").checked,
           o = document.getElementById("cameraRatio").value;
         ((joinBtn.disabled = !0),
@@ -653,6 +671,15 @@
         }
       }
       ((window.onload = async function () {
+        try {
+          const savedName = localStorage.getItem("ssl_guest_name");
+          if (savedName) document.getElementById("username").value = savedName;
+        } catch (err) {}
+        document
+          .getElementById("username")
+          .addEventListener("input", function () {
+            this.style.border = "1px solid #555";
+          });
         const e = urlParams.get("room");
         e
           ? ((document.getElementById("target-id").value = e),
