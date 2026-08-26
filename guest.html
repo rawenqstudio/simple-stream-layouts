@@ -142,6 +142,13 @@
       .btn-monitor:hover {
         background: #e68900;
       }
+      .btn-monitor-dir {
+        background: #6f42c1;
+        color: #fff;
+      }
+      .btn-monitor-dir:hover {
+        background: #59339d;
+      }
       .crop-controls {
         background: #222;
         padding: 15px;
@@ -291,24 +298,18 @@
         Ładowanie kamery...
       </button>
       <div id="monitor-area">
-        <p style="margin-bottom: 5px; color: #ccc">
-          Potrzebujesz widzieć grę i innych?
+        <p style="margin-bottom: 12px; color: #ccc; font-weight: 600">
+          Potrzebujesz widzieć grę i innych? Wybierz podgląd:
         </p>
-        <label
-          class="checkbox-group"
-          style="justify-content: center; margin-bottom: 15px"
-          ><input
-            type="checkbox"
-            id="local-monitor"
-            checked="checked"
-            onchange="regenerateLink()"
-          />
-          <span style="font-size: 0.85em; color: #00d2ff"
-            >🛠️ Niezależny Podgląd (Zmieniaj układ samemu)</span
-          ></label
+        <button
+          id="btn-monitor-local"
+          class="btn-monitor"
+          style="margin-bottom: 8px"
         >
-        <button id="btn-open-monitor" class="btn-monitor">
-          📋 Skopiuj Link Podglądu (Ukryj moje hasło)
+          📋 Skopiuj Własny Podgląd (Niezależny)
+        </button>
+        <button id="btn-monitor-director" class="btn-monitor btn-monitor-dir">
+          📋 Skopiuj Podgląd Live Reżysera (Tryb gry)
         </button>
       </div>
       <div id="logs"></div>
@@ -570,37 +571,42 @@
                 globalConn.send({ type: "leave" }));
           }));
       }
-      function regenerateLink() {
-        generateMonitorLink(
-          document.getElementById("target-id").value,
-          document.getElementById("username").value.trim(),
-        );
+      function copyWithFeedback(btn, text) {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            const originalText = btn.innerText;
+            const originalBg = btn.style.background;
+            btn.innerText = "✅ Skopiowano!";
+            btn.style.background = "#28a745";
+            setTimeout(() => {
+              btn.innerText = originalText;
+              btn.style.background = originalBg;
+            }, 2000);
+          })
+          .catch(() => {
+            alert("Twój link to:\n" + text);
+          });
       }
+
       function generateMonitorLink(e, t) {
-        const n = document.getElementById("btn-open-monitor");
-        let o = window.location.href.split("guest.html")[0],
-          a = `?room=${e}`;
-        (useStunOnly && (a += "&stunonly=1"),
-          isMulti && (a += "&multi=1"),
-          t && (a += `&exclude=${encodeURIComponent(t)}`),
-          document.getElementById("local-monitor").checked &&
-            (a += "&local=1"));
-        const r = `${o}obs.html${a}`;
-        n.onclick = () => {
-          navigator.clipboard
-            .writeText(r)
-            .then(() => {
-              const e = n.innerText;
-              ((n.innerText = "✅ Skopiowano!"),
-                (n.style.background = "#28a745"),
-                setTimeout(() => {
-                  ((n.innerText = e), (n.style.background = ""));
-                }, 2e3));
-            })
-            .catch((e) => {
-              alert("Twój link to:\n" + r);
-            });
-        };
+        let o = window.location.href.split("guest.html")[0];
+        let baseParams = `?room=${e}`;
+        if (useStunOnly) baseParams += "&stunonly=1";
+        if (urlParams.get("ull")) baseParams += "&ull=1";
+        if (isMulti) baseParams += "&multi=1";
+
+        const localUrl = `${o}obs.html${baseParams}${t ? `&exclude=${encodeURIComponent(t)}` : ""}&local=1`;
+        const directorUrl = `${o}obs.html${baseParams}`;
+
+        const btnLocal = document.getElementById("btn-monitor-local");
+        const btnDirector = document.getElementById("btn-monitor-director");
+
+        if (btnLocal)
+          btnLocal.onclick = () => copyWithFeedback(btnLocal, localUrl);
+        if (btnDirector)
+          btnDirector.onclick = () =>
+            copyWithFeedback(btnDirector, directorUrl);
       }
       function callSingleOBS(e, t, n, o) {
         (log(`Dzwonię do ekranu: ${e}`), activeCallIds.push(e));
