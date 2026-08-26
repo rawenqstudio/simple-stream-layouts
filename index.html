@@ -3,120 +3,246 @@
   <head>
     <meta charset="UTF-8" />
     <title>Simple Stream Layouts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        --bg-main: #090b10;
+        --bg-card: #121622;
+        --bg-card-raised: #181e2e;
+        --bg-input: #0b0e17;
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --text-subtle: #64748b;
+        --accent-sky: #38bdf8;
+        --accent-amber: #f59e0b;
+        --accent-pink: #ec4899;
+        --accent-violet: #8b5cf6;
+        --accent-emerald: #10b981;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
-        font-family: "Segoe UI", sans-serif;
-        background: #1a1a1a;
-        color: #fff;
-        text-align: center;
-        padding-top: 80px;
+        font-family:
+          "Plus Jakarta Sans",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        min-height: 100vh;
+        background-image:
+          radial-gradient(
+            circle at 50% 0%,
+            rgba(56, 189, 248, 0.12) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            circle at 85% 30%,
+            rgba(99, 102, 241, 0.08) 0%,
+            transparent 50%
+          );
+        padding: 60px 20px 80px;
         margin: 0;
+        text-align: center;
       }
+
       .container {
-        max-width: 600px;
+        max-width: 640px;
         margin: 0 auto;
-        background: #2a2a2a;
-        padding: 40px;
-        border-radius: 10px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        border-top: 5px solid #00d2ff;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        padding: 36px;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+        position: relative;
+        overflow: hidden;
       }
+      .container::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+      }
+
       h1 {
-        margin-top: 0;
-        margin-bottom: 10px;
-        color: #00d2ff;
-        font-size: 2.2em;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 0 0 8px 0;
+        background: linear-gradient(135deg, #fff 40%, #94a3b8);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
+
       p.subtitle {
-        color: #aaa;
-        margin-bottom: 40px;
+        color: var(--text-muted);
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0 0 28px 0;
       }
+
       .create-btn {
-        background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+        width: 100%;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, var(--accent-sky), #0284c7);
         border: none;
-        padding: 15px 40px;
-        color: #fff;
-        font-size: 1.3em;
+        border-radius: 12px;
+        color: #000;
         font-weight: 700;
-        border-radius: 30px;
+        font-size: 15px;
         cursor: pointer;
-        transition:
-          transform 0.2s,
-          box-shadow 0.2s;
-        box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 4px 18px rgba(56, 189, 248, 0.25);
       }
       .create-btn:hover {
-        transform: scale(1.05);
-        box-shadow: 0 8px 20px rgba(0, 210, 255, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(56, 189, 248, 0.4);
       }
+
       #links-area {
         display: none;
-        margin-top: 40px;
+        margin-top: 24px;
         text-align: left;
         flex-direction: column;
+        gap: 14px;
       }
-      .link-group {
-        margin-bottom: 20px;
-        background: #333;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 4px solid #555;
+
+      .link-group-card {
+        background: var(--bg-card-raised);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        padding: 16px;
+        transition: border-color 0.2s ease;
       }
-      .link-group label {
-        display: block;
-        color: #ddd;
-        font-size: 0.95em;
-        margin-bottom: 8px;
-        font-weight: 700;
+      .link-group-card:hover {
+        border-color: rgba(255, 255, 255, 0.15);
       }
-      .link-group input {
-        width: 95%;
-        padding: 12px;
-        background: #111;
-        border: 1px solid #444;
-        color: #fff;
-        border-radius: 5px;
-        display: block;
-        margin-bottom: 10px;
+
+      .link-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .badge-step {
+        width: 24px;
+        height: 24px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .badge-step.step-dir {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--accent-amber);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+      .badge-step.step-guest {
+        background: rgba(236, 72, 153, 0.2);
+        color: var(--accent-pink);
+        border: 1px solid rgba(236, 72, 153, 0.3);
+      }
+      .badge-step.step-obs {
+        background: rgba(139, 92, 246, 0.2);
+        color: var(--accent-violet);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+      }
+
+      .link-title {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-main);
+      }
+      .link-desc {
+        font-size: 11.5px;
+        color: var(--text-subtle);
+        margin-left: auto;
+      }
+
+      .input-action-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      .clean-input {
+        flex: 1;
+        background: var(--bg-input);
+        border: 1px solid var(--border-subtle);
+        color: #94a3b8;
         font-family: monospace;
+        font-size: 13px;
+        padding: 10px 14px;
+        border-radius: 9px;
+        outline: none;
+        transition: all 0.2s;
+        width: 100%;
+        box-sizing: border-box;
       }
-      .action-btn {
-        font-size: 0.9em;
-        padding: 8px 15px;
-        border: none;
-        color: #fff;
+      .clean-input:focus {
+        border-color: var(--accent-sky);
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+      }
+
+      .btn-action {
+        padding: 10px 14px;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 600;
         cursor: pointer;
-        border-radius: 4px;
-        margin-right: 5px;
-        transition: 0.2s;
-        font-weight: 700;
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        transition: all 0.15s;
       }
-      .copy-btn {
-        background: #555;
+      .btn-copy {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-main);
+        border-color: var(--border-subtle);
       }
-      .copy-btn:hover {
-        background: #777;
+      .btn-copy:hover {
+        background: rgba(255, 255, 255, 0.12);
       }
-      .open-btn {
-        background: #28a745;
+      .btn-open {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        border-color: rgba(16, 185, 129, 0.3);
       }
-      .open-btn:hover {
-        background: #218838;
+      .btn-open:hover {
+        background: rgba(16, 185, 129, 0.25);
       }
-      #group-dir {
-        border-left-color: #ff9800;
-      }
-      #group-obs {
-        border-left-color: #6f42c1;
-      }
-      #group-guest {
-        border-left-color: #e91e63;
-      }
+
       .footer-credits {
         position: fixed;
         bottom: 15px;
         right: 20px;
-        color: #666;
+        color: var(--text-subtle);
         font-size: 0.85em;
         font-family: monospace;
         user-select: none;
@@ -146,44 +272,80 @@
       <p class="subtitle">
         Błyskawiczne studio do streamingu. Jedno kliknięcie, zero konfiguracji.
       </p>
-      <button class="create-btn" onclick="createRoom()">+ Utwórz Studio</button>
+      <button class="create-btn" onclick="createRoom()">
+        + Utwórz Nowe Studio
+      </button>
       <div id="links-area">
-        <div class="link-group" id="group-dir" style="order: 1">
-          <label id="label-dir" style="color: #ff9800"
-            >1. Twój Panel Reżysera (Uruchom jako pierwszy!):</label
-          >
-          <input type="text" id="director-link" readonly="readonly" />
-          <button class="action-btn copy-btn" onclick="copy('director-link')">
-            📋 Skopiuj Link
-          </button>
-          <button
-            class="action-btn open-btn"
-            onclick="openLink('director-link')"
-          >
-            ↗ Otwórz Panel
-          </button>
+        <!-- 1. REŻYSER -->
+        <div class="link-group-card" id="group-dir" style="order: 1">
+          <div class="link-header">
+            <div class="badge-step step-dir">1</div>
+            <span class="link-title">Twój Panel Reżysera</span>
+            <span class="link-desc">Uruchom jako pierwszy</span>
+          </div>
+          <div class="input-action-row">
+            <input
+              type="text"
+              id="director-link"
+              class="clean-input"
+              readonly="readonly"
+            />
+            <button class="btn-action btn-copy" onclick="copy('director-link')">
+              📋 Kopiuj
+            </button>
+            <button
+              class="btn-action btn-open"
+              onclick="openLink('director-link')"
+            >
+              ↗ Otwórz
+            </button>
+          </div>
         </div>
-        <div class="link-group" id="group-obs" style="order: 2">
-          <label id="label-obs" style="color: #cda2ff"
-            >2. Źródło do OBS / Ekran Gry (Browser Source 1920x1080 lub wspólny
-            podgląd do trybu gry):</label
-          >
-          <input type="text" id="obs-link" readonly="readonly" />
-          <button class="action-btn copy-btn" onclick="copy('obs-link')">
-            📋 Skopiuj Link
-          </button>
+
+        <!-- 2. GOŚCIE -->
+        <div class="link-group-card" id="group-guest" style="order: 2">
+          <div class="link-header">
+            <div class="badge-step step-guest">2</div>
+            <span class="link-title">Link dla Gości</span>
+            <span class="link-desc">Wyślij uczestnikom</span>
+          </div>
+          <div class="input-action-row">
+            <input
+              type="text"
+              id="guest-link"
+              class="clean-input"
+              readonly="readonly"
+            />
+            <button class="btn-action btn-copy" onclick="copy('guest-link')">
+              📋 Kopiuj
+            </button>
+            <button
+              class="btn-action btn-open"
+              onclick="openLink('guest-link')"
+            >
+              ↗ Otwórz
+            </button>
+          </div>
         </div>
-        <div class="link-group" id="group-guest" style="order: 3">
-          <label id="label-guest" style="color: #ff9ec1"
-            >3. Link dla Gości (Wyślij znajomym):</label
-          >
-          <input type="text" id="guest-link" readonly="readonly" />
-          <button class="action-btn copy-btn" onclick="copy('guest-link')">
-            📋 Skopiuj Link
-          </button>
-          <button class="action-btn open-btn" onclick="openLink('guest-link')">
-            ↗ Otwórz w nowej karcie
-          </button>
+
+        <!-- 3. OBS / EKRAN GRY -->
+        <div class="link-group-card" id="group-obs" style="order: 3">
+          <div class="link-header">
+            <div class="badge-step step-obs">3</div>
+            <span class="link-title">Źródło OBS / Ekran Gry</span>
+            <span class="link-desc">Browser Source (1920x1080)</span>
+          </div>
+          <div class="input-action-row">
+            <input
+              type="text"
+              id="obs-link"
+              class="clean-input"
+              readonly="readonly"
+            />
+            <button class="btn-action btn-copy" onclick="copy('obs-link')">
+              📋 Kopiuj
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -210,18 +372,33 @@
           (document.getElementById("links-area").style.display = "flex"));
         const c = document.querySelector(".create-btn");
         ((c.innerText = "🔄 Wygeneruj nowy pokój"),
-          (c.style.background = "#555"),
+          (c.style.background = "rgba(255, 255, 255, 0.08)"),
+          (c.style.color = "var(--text-main)"),
+          (c.style.border = "1px solid var(--border-subtle)"),
           (c.style.boxShadow = "none"));
       }
       function copy(e) {
-        (document.getElementById(e).select(), document.execCommand("copy"));
-        const t = event.target,
-          n = t.innerText;
-        ((t.innerText = "✅ Skopiowano"),
-          (t.style.background = "#28a745"),
-          setTimeout(() => {
-            ((t.innerText = n), (t.style.background = ""));
-          }, 1500));
+        const input = document.getElementById(e);
+        input.select();
+        navigator.clipboard
+          .writeText(input.value)
+          .then(() => {
+            const btn = event.target.closest("button");
+            const originalText = btn.innerText;
+            btn.innerText = "✅ Skopiowano";
+            btn.style.background = "rgba(16, 185, 129, 0.25)";
+            btn.style.color = "#34d399";
+            btn.style.borderColor = "rgba(16, 185, 129, 0.4)";
+            setTimeout(() => {
+              btn.innerText = originalText;
+              btn.style.background = "";
+              btn.style.color = "";
+              btn.style.borderColor = "";
+            }, 1500);
+          })
+          .catch(() => {
+            document.execCommand("copy");
+          });
       }
       function openLink(e) {
         const t = document.getElementById(e).value;

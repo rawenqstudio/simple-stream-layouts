@@ -2,9 +2,20 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <title>WIDOK OBS</title>
+    <title>WIDOK OBS - Simple Stream Layouts</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        --accent-sky: #38bdf8;
+        --accent-rose: #f43f5e;
+      }
+
       * {
         box-sizing: border-box;
       }
@@ -16,23 +27,28 @@
         height: 100%;
         overflow: hidden;
         background: transparent;
-        font-family: "Segoe UI", sans-serif;
+        font-family:
+          "Plus Jakarta Sans",
+          system-ui,
+          -apple-system,
+          sans-serif;
       }
 
       #video-container {
         width: 100%;
         height: 100%;
-        transition: all 0.5s ease;
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         position: relative;
       }
 
       .video-box {
         position: relative;
         overflow: hidden;
-        border: 2px solid white;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
         background: #000;
-        transition: all 0.5s ease;
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         aspect-ratio: 16 / 9;
       }
       .video-box[data-ratio="4:3"] {
@@ -50,28 +66,35 @@
 
       .mute-icon {
         position: absolute;
-        top: 10px;
-        right: 10px;
-        color: red;
-        font-size: 24px;
-        background: rgba(0, 0, 0, 0.5);
-        padding: 5px;
-        border-radius: 50%;
+        top: 12px;
+        right: 12px;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        background: rgba(244, 63, 94, 0.9);
+        backdrop-filter: blur(8px);
+        padding: 5px 10px;
+        border-radius: 6px;
         display: none;
         z-index: 20;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
       }
+
       .label {
         position: absolute;
-        bottom: 10px;
-        left: 10px;
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 5px 15px;
-        border-radius: 4px;
-        font-size: 1.2rem;
-        font-weight: bold;
-        text-shadow: 1px 1px 2px black;
-        border-left: 4px solid #00d2ff;
+        bottom: 12px;
+        left: 12px;
+        background: rgba(9, 11, 16, 0.85);
+        backdrop-filter: blur(10px);
+        color: #f8fafc;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 1.15rem;
+        font-weight: 700;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-left: 4px solid var(--accent-sky);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
         z-index: 10;
         display: none;
       }
@@ -86,22 +109,23 @@
         border: none !important;
       }
 
+      /* KARTY GRY (CZÓŁKO) */
       .game-card {
         position: absolute;
-        top: 5%;
+        top: 6%;
         left: 50%;
         transform: translateX(-50%);
-        background: #ffeb3b;
+        background: linear-gradient(135deg, #fde047, #eab308);
         color: #000;
-        padding: 10px 20px;
-        font-size: 2em;
+        padding: 8px 24px;
+        font-size: 1.9em;
         font-weight: 800;
         text-transform: uppercase;
-        border-radius: 5px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
         z-index: 50;
         text-align: center;
-        border: 2px solid #fdd835;
+        border: 2px solid rgba(255, 255, 255, 0.8);
         animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         white-space: nowrap;
       }
@@ -120,61 +144,67 @@
         }
       }
 
-      /* --- LOKALNY PANEL W OBS --- */
+      /* --- LOKALNY PANEL W OBS (&local=1) --- */
       #local-panel {
         position: absolute;
-        bottom: 40px;
-        right: 40px;
-        background: rgba(0, 0, 0, 0.85);
-        border: 3px solid #555;
-        border-radius: 15px;
-        padding: 30px;
+        bottom: 30px;
+        right: 30px;
+        background: rgba(14, 18, 28, 0.88);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        padding: 24px;
         z-index: 9999;
         display: none;
         opacity: 0;
-        transition: opacity 0.4s ease;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
-        width: 500px;
+        transition:
+          opacity 0.3s ease,
+          transform 0.3s ease;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        width: 440px;
       }
       #local-panel.visible {
         opacity: 1;
       }
       #local-panel h4 {
-        color: #00d2ff;
-        margin: 0 0 20px 0;
-        font-size: 28px;
+        color: var(--accent-sky);
+        margin: 0 0 16px 0;
+        font-size: 18px;
+        font-weight: 800;
         text-align: center;
+        letter-spacing: 0.04em;
         text-transform: uppercase;
       }
       .local-btn-container {
-        display: flex;
-        gap: 15px;
-        flex-wrap: wrap;
-        justify-content: center;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
       }
       #local-panel button {
-        background: #444;
-        color: white;
-        border: 2px solid #666;
-        padding: 15px 25px;
-        margin: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        color: #f8fafc;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 12px 14px;
         border-radius: 10px;
         cursor: pointer;
-        font-size: 22px;
-        font-weight: bold;
-        transition: 0.2s;
-        flex-grow: 1;
+        font-size: 14px;
+        font-weight: 700;
+        transition: all 0.15s ease;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
       }
       #local-panel button:hover {
-        background: #007bff;
-        border-color: #00d2ff;
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.25);
       }
       #local-panel button.active-layout {
-        background: #007bff !important;
-        border-color: #00d2ff !important;
-        box-shadow: 0 0 15px rgba(0, 210, 255, 0.8);
-        transform: scale(1.05);
-        z-index: 2;
+        background: rgba(56, 189, 248, 0.2) !important;
+        border-color: var(--accent-sky) !important;
+        color: #fff;
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
       }
 
       /* --- UKŁADY --- */
@@ -192,12 +222,12 @@
           left 0.1s;
         width: 320px;
         height: auto;
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8);
       }
       .layout-free .video-box:active {
         cursor: grabbing;
         z-index: 1000;
-        border-color: yellow !important;
+        border-color: var(--accent-sky) !important;
       }
 
       .layout-grid {
@@ -344,7 +374,7 @@
         align-self: center;
         justify-self: center;
         z-index: 10;
-        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
       }
       .layout-center-stage .video-box:nth-child(2n) {
         grid-column: 1;
@@ -355,7 +385,7 @@
 
       .guide-line {
         position: absolute;
-        background-color: red;
+        background-color: var(--accent-rose);
         z-index: 9999;
         display: none;
         pointer-events: none;
@@ -382,14 +412,14 @@
     <div id="video-container" class="layout-grid" data-count="0"></div>
 
     <div id="local-panel">
-      <h4>Własny Układ</h4>
+      <h4>Własny Układ Ekranu</h4>
       <div class="local-btn-container">
         <button
           onclick="setLocalLayout('layout-grid', this)"
-          style="background: #6f42c1; width: 100%"
+          style="grid-column: span 2"
           class="active-layout"
         >
-          🔳 Siatka
+          🔳 Pełna Siatka
         </button>
         <button onclick="setLocalLayout('layout-top', this)">⬆️ Góra</button>
         <button onclick="setLocalLayout('layout-bottom', this)">⬇️ Dół</button>
@@ -399,21 +429,18 @@
         <button onclick="setLocalLayout('layout-sidebar-right', this)">
           ➡️ Prawo
         </button>
-        <button
-          onclick="setLocalLayout('layout-split', this)"
-          style="width: 40%"
-        >
-          ↔️ Split
-        </button>
-        <button
-          onclick="setLocalLayout('layout-center-stage', this)"
-          style="width: 40%"
-        >
+        <button onclick="setLocalLayout('layout-split', this)">↔️ Split</button>
+        <button onclick="setLocalLayout('layout-center-stage', this)">
           ⭐️ Center
         </button>
         <button
           onclick="toggleLocalFreeMode(this)"
-          style="width: 90%; background: #28a745; margin-top: 10px"
+          style="
+            grid-column: span 2;
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #34d399;
+          "
         >
           🔓 Swobodne Ustawianie
         </button>

@@ -2,326 +2,215 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <title>REŻYSERKA</title>
+    <title>Panel Reżysera - Simple Stream Layouts</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        --bg-main: #090b10;
+        --bg-card: #121622;
+        --bg-card-raised: #181e2e;
+        --bg-input: #0b0e17;
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --text-subtle: #64748b;
+        --accent-sky: #38bdf8;
+        --accent-indigo: #6366f1;
+        --accent-violet: #8b5cf6;
+        --accent-emerald: #10b981;
+        --accent-rose: #f43f5e;
+        --accent-amber: #f59e0b;
+        --accent-pink: #ec4899;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
-        font-family: sans-serif;
-        background: #333;
-        color: #fff;
-        text-align: center;
-        padding: 20px;
+        font-family:
+          "Plus Jakarta Sans",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        min-height: 100vh;
+        background-image:
+          radial-gradient(
+            circle at 50% 0%,
+            rgba(56, 189, 248, 0.12) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            circle at 85% 30%,
+            rgba(99, 102, 241, 0.08) 0%,
+            transparent 50%
+          );
+        padding: 40px 20px 80px;
+        margin: 0;
       }
+
       .container {
-        max-width: 800px;
+        max-width: 860px;
         margin: 0 auto;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        padding: 32px;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+        position: relative;
+        overflow: hidden;
       }
-      button {
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-        color: #fff;
-        transition: 0.2s;
+      .container::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
       }
-      button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        filter: grayscale(100%);
+
+      h1 {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 0 0 6px 0;
+        background: linear-gradient(135deg, #fff 40%, #94a3b8);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
-      .btn-layout {
-        background: #007bff;
-        width: 45%;
-        padding: 12px;
-        font-size: 14px;
-        margin: 5px;
-      }
-      .btn-layout:hover {
-        background: #0056b3;
-      }
-      .btn-tool {
-        width: 93%;
-        padding: 10px;
-        margin: 5px auto;
-        display: block;
+
+      h2 {
+        font-size: 13px;
         font-weight: 700;
-      }
-      .btn-refresh-all {
-        background: #ff9800;
-      }
-      .btn-refresh-all:hover {
-        background: #e68900;
-      }
-      .btn-sync {
-        background: #6610f2;
-      }
-      .btn-sync:hover {
-        background: #520dc2;
-      }
-      .btn-toggle-off {
-        background: #17a2b8;
-      }
-      .btn-toggle-off:hover {
-        background: #117a8b;
-      }
-      .btn-toggle-on {
-        background: #28a745;
-      }
-      .btn-toggle-game {
-        background: #e91e63;
-        margin-top: 30px;
-      }
-      .btn-toggle-game:hover {
-        background: #c2185b;
-      }
-      .status {
-        margin-top: 10px;
-        color: #aaa;
-        font-weight: 700;
-      }
-      .controls {
-        display: none;
-        margin-top: 30px;
-        border-top: 1px solid #555;
-        padding-top: 20px;
-      }
-      input {
-        display: none;
-      }
-      #guest-list {
-        margin-top: 20px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 28px 0 12px 0;
         text-align: left;
-        background: #222;
-        padding: 20px;
-        border-radius: 10px;
-      }
-      .guest-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #444;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 5px;
-        flex-wrap: wrap;
-      }
-      .guest-info {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-      }
-      .guest-name {
-        font-size: 1.2em;
-        font-weight: 700;
-      }
-      .guest-stats {
-        font-size: 0.75em;
-        color: #aaa;
-        margin-top: 4px;
-        font-family: monospace;
-      }
-      .stat-good {
-        color: #0f0;
-      }
-      .stat-mid {
-        color: #fc0;
-      }
-      .stat-bad {
-        color: #f44;
-        font-weight: 700;
-      }
-      .guest-actions {
-        display: flex;
-        gap: 5px;
-      }
-      .btn-icon {
-        width: 40px;
-        height: 40px;
-        padding: 0;
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 20px;
+        gap: 6px;
       }
-      .mic-on {
-        background: #28a745;
-      }
-      .mic-off {
-        background: #dc3545;
-      }
-      .btn-refresh {
-        background: #ff9800;
-      }
-      .btn-refresh:hover {
-        background: #e68900;
-      }
-      .btn-mirror {
-        background: #6c757d;
-      }
-      .btn-mirror:hover {
-        background: #5a6268;
-      }
-      .mirror-on {
-        background: #007bff;
-        border: 2px solid #fff;
-      }
-      .btn-move {
-        background: #343a40;
-        font-size: 14px;
-      }
-      .btn-move:hover {
-        background: #495057;
-      }
-      .game-section {
-        background: #2a2a2a;
-        padding: 15px;
-        border-radius: 10px;
-        margin-top: 10px;
-        border: 1px solid #444;
-        display: none;
-      }
-      .game-menu-grid {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-      .game-tile {
-        width: 45%;
-        padding: 20px;
-        background: #444;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: 0.2s;
-        font-weight: 700;
-      }
-      .game-tile:hover {
-        background: #555;
-        transform: scale(1.05);
-      }
-      .game-tile-active {
-        background: #e91e63;
-      }
-      #game-heads-up {
-        display: none;
-      }
-      .game-select {
-        width: 100%;
-        padding: 10px;
-        background: #444;
-        color: #fff;
-        border: none;
-        border-radius: 5px;
-        font-size: 16px;
-        margin-bottom: 10px;
-      }
-      .btn-game-back {
-        background: #666;
-        width: 100%;
-        padding: 8px;
-        margin-bottom: 15px;
-      }
-      .btn-game-start {
-        background: #e91e63;
-        width: 48%;
-        display: inline-block;
-        padding: 12px;
-        font-weight: 700;
-      }
-      .btn-game-clear {
-        background: #555;
-        width: 48%;
-        display: inline-block;
-        padding: 12px;
-        font-weight: 700;
-      }
-      #game-players-list {
-        margin-top: 15px;
-        text-align: left;
-        width: 100%;
-      }
-      .game-player-row {
-        display: flex;
+
+      .status-pill {
+        display: inline-flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 8px;
-        background: #3a3a3a;
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #555;
-      }
-      .game-player-name {
-        width: 90px;
-        min-width: 90px;
-        font-weight: 700;
-        font-size: 0.9em;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      input.game-input {
-        display: inline-block !important;
-        background: #fff !important;
-        border: 2px solid #666 !important;
-        color: #000 !important;
-        padding: 8px !important;
-        flex-grow: 1;
-        min-width: 50px;
-        border-radius: 4px;
-        font-size: 14px;
-        height: auto;
-      }
-      input.game-input:focus {
-        border-color: #00d2ff !important;
-        outline: 0;
-      }
-      .btn-mini {
-        padding: 8px 12px;
+        padding: 6px 16px;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        color: #34d399;
+        border-radius: 20px;
         font-size: 13px;
-        width: auto;
         font-weight: 700;
-        border-radius: 4px;
-        border: none;
+        margin-bottom: 20px;
+      }
+
+      .controls {
+        display: none;
+      }
+
+      /* SIATKA UKŁADÓW */
+      .layout-selector-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      @media (max-width: 600px) {
+        .layout-selector-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      .btn-layout {
+        background: var(--bg-card-raised);
+        border: 1px solid var(--border-subtle);
+        padding: 12px 10px;
+        border-radius: 10px;
+        color: var(--text-muted);
+        font-size: 13px;
+        font-weight: 600;
         cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .btn-layout:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-main);
+        border-color: rgba(255, 255, 255, 0.15);
+        transform: translateY(-1px);
+      }
+      .btn-layout.active-layout-btn {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: var(--accent-violet);
         color: #fff;
-        transition: 0.2s;
+        box-shadow: 0 0 15px rgba(139, 92, 246, 0.25);
       }
-      .btn-reroll {
-        background: #9c27b0;
+      .btn-free-mode {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.3);
+        color: #34d399;
+        grid-column: 1 / -1;
       }
-      .btn-reroll:hover {
-        background: #7b1fa2;
+      .btn-free-mode:hover {
+        background: rgba(16, 185, 129, 0.25);
+        color: #fff;
       }
-      .btn-send {
-        background: #009688;
-      }
-      .btn-send:hover {
-        background: #00796b;
-      }
+
+      /* STÓŁ MONTAŻOWY (FREE MODE) */
       #free-mode-container {
         display: none;
-        margin-top: 20px;
+        margin-top: 14px;
+        background: var(--bg-card-raised);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        padding: 16px;
       }
       #free-mode-stage {
         display: block;
         width: 100%;
-        aspect-ratio: 16/9;
-        background: #000;
-        outline: 2px solid #00d2ff;
+        aspect-ratio: 16 / 9;
+        background: #06080d;
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        border-radius: 12px;
         position: relative;
-        margin-top: 20px;
         overflow: hidden;
         box-sizing: border-box;
-        background-image:
-          linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-        background-size: 10% 10%;
+        background-image: radial-gradient(
+          rgba(255, 255, 255, 0.1) 1px,
+          transparent 1px
+        );
+        background-size: 16px 16px;
       }
+
       .stage-box {
         position: absolute;
-        background: rgba(0, 123, 255, 0.8);
-        border: 2px solid #fff;
+        background: rgba(56, 189, 248, 0.18);
+        backdrop-filter: blur(4px);
+        border: 1.5px solid rgba(255, 255, 255, 0.85);
+        border-radius: 8px;
         color: #fff;
-        font-size: 11px;
+        font-size: 11.5px;
+        font-weight: 700;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -330,55 +219,42 @@
         overflow: hidden;
         text-align: center;
         line-height: 1.2;
-        padding: 2px;
+        padding: 4px;
         box-sizing: border-box;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       }
       .stage-box:active {
         cursor: grabbing;
-        border-color: #ff0;
+        border-color: var(--accent-sky);
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
         z-index: 1000;
-        background: #007bff;
+        background: rgba(56, 189, 248, 0.35);
       }
-      .btn-free-mode {
-        background: #28a745;
-        width: 90%;
-        margin-top: 20px;
+      .stage-box.locked {
+        cursor: not-allowed !important;
+        opacity: 0.75;
+      }
+      .stage-box.locked .resize-handle {
+        display: none;
       }
       .resize-handle {
-        width: 15px;
-        height: 15px;
-        background: linear-gradient(135deg, transparent 50%, #fff 50%);
+        width: 16px;
+        height: 16px;
+        background: linear-gradient(
+          135deg,
+          transparent 50%,
+          var(--accent-sky) 50%
+        );
         position: absolute;
         right: 0;
         bottom: 0;
         cursor: se-resize;
         z-index: 10;
       }
-      .resize-handle:hover {
-        background: linear-gradient(135deg, transparent 50%, #ff0 50%);
-      }
-      .btn-lock-on {
-        background: #dc3545;
-      }
-      .btn-lock-on:hover {
-        background: #c82333;
-      }
-      .btn-lock-off {
-        background: #28a745;
-      }
-      .btn-lock-off:hover {
-        background: #218838;
-      }
-      .stage-box.locked {
-        cursor: not-allowed !important;
-        opacity: 0.7;
-      }
-      .stage-box.locked .resize-handle {
-        display: none;
-      }
+
       .guide-line {
         position: absolute;
-        background-color: red;
+        background-color: var(--accent-rose);
         z-index: 999;
         display: none;
         pointer-events: none;
@@ -393,11 +269,346 @@
         width: 1px;
         top: 0;
       }
+
+      /* NARZĘDZIA */
+      .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      @media (max-width: 600px) {
+        .tools-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .btn-tool {
+        width: 100%;
+        padding: 11px 14px;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .btn-toggle-on {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.3);
+        color: #34d399;
+      }
+      .btn-toggle-on:hover {
+        background: rgba(16, 185, 129, 0.25);
+      }
+      .btn-toggle-off {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--border-subtle);
+        color: var(--text-muted);
+      }
+      .btn-toggle-off:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-main);
+      }
+      .btn-refresh-all {
+        background: rgba(245, 158, 11, 0.15);
+        border-color: rgba(245, 158, 11, 0.3);
+        color: #fbbf24;
+      }
+      .btn-refresh-all:hover {
+        background: rgba(245, 158, 11, 0.25);
+      }
+      .btn-sync {
+        background: rgba(139, 92, 246, 0.15);
+        border-color: rgba(139, 92, 246, 0.3);
+        color: #c4b5fd;
+      }
+      .btn-sync:hover {
+        background: rgba(139, 92, 246, 0.25);
+      }
+      .btn-toggle-game {
+        background: rgba(236, 72, 153, 0.15);
+        border-color: rgba(236, 72, 153, 0.3);
+        color: var(--accent-pink);
+        width: 100%;
+        margin-top: 10px;
+        padding: 12px;
+      }
+      .btn-toggle-game:hover {
+        background: rgba(236, 72, 153, 0.25);
+      }
+
+      .btn-lock-on {
+        background: rgba(244, 63, 94, 0.2);
+        border: 1px solid rgba(244, 63, 94, 0.4);
+        color: #fb7185;
+      }
+      .btn-lock-off {
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: #34d399;
+      }
+
+      /* SEKCJA GIER */
+      .game-section {
+        background: var(--bg-card-raised);
+        border: 1px solid rgba(236, 72, 153, 0.25);
+        border-radius: 14px;
+        padding: 20px;
+        margin-top: 14px;
+        display: none;
+        text-align: left;
+      }
+      .game-menu-grid {
+        display: flex;
+        gap: 10px;
+      }
+      .game-tile {
+        flex: 1;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 700;
+        text-align: center;
+      }
+      .game-tile:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--accent-pink);
+      }
+      .game-tile-active {
+        background: rgba(236, 72, 153, 0.2);
+        border-color: var(--accent-pink);
+        color: #fff;
+      }
+      .game-select {
+        width: 100%;
+        padding: 10px 14px;
+        background: var(--bg-input);
+        color: var(--text-main);
+        border: 1px solid var(--border-subtle);
+        border-radius: 9px;
+        font-size: 14px;
+        margin-bottom: 12px;
+        outline: none;
+      }
+      .btn-game-back {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-muted);
+        width: 100%;
+        padding: 8px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .btn-game-start {
+        background: linear-gradient(135deg, var(--accent-pink), #db2777);
+        border: none;
+        border-radius: 9px;
+        color: #fff;
+        padding: 11px 18px;
+        font-weight: 700;
+        cursor: pointer;
+        flex: 1;
+      }
+      .btn-game-clear {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-muted);
+        border-radius: 9px;
+        padding: 11px 18px;
+        font-weight: 700;
+        cursor: pointer;
+        flex: 1;
+      }
+      .btn-game-clear:hover {
+        color: var(--text-main);
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .game-player-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        background: var(--bg-input);
+        padding: 8px 12px;
+        border-radius: 9px;
+        border: 1px solid var(--border-subtle);
+      }
+      .game-player-name {
+        width: 100px;
+        min-width: 100px;
+        font-weight: 700;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      input.game-input {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--border-subtle) !important;
+        color: var(--text-main) !important;
+        padding: 8px 12px !important;
+        flex-grow: 1;
+        border-radius: 6px;
+        font-size: 13px;
+        outline: none;
+      }
+      input.game-input:focus {
+        border-color: var(--accent-pink) !important;
+      }
+      .btn-mini {
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        color: #fff;
+        transition: 0.2s;
+      }
+      .btn-reroll {
+        background: rgba(139, 92, 246, 0.3);
+        border: 1px solid rgba(139, 92, 246, 0.4);
+        color: #c4b5fd;
+      }
+      .btn-send {
+        background: rgba(16, 185, 129, 0.3);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        color: #34d399;
+      }
+
+      /* LISTA GOŚCI */
+      #guest-list {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .guest-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--bg-card-raised);
+        border: 1px solid var(--border-subtle);
+        padding: 10px 14px;
+        border-radius: 12px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .guest-meta-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-align: left;
+      }
+      .guest-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(
+          135deg,
+          var(--accent-sky),
+          var(--accent-indigo)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 13.5px;
+        color: #000;
+        user-select: none;
+      }
+      .guest-info {
+        display: flex;
+        flex-direction: column;
+      }
+      .guest-name {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+      .guest-stats {
+        font-size: 11px;
+        color: var(--text-subtle);
+        margin-top: 2px;
+        font-family: monospace;
+      }
+      .stat-good {
+        color: #34d399;
+        font-weight: 600;
+      }
+      .stat-mid {
+        color: #fbbf24;
+      }
+      .stat-bad {
+        color: #fb7185;
+        font-weight: 700;
+      }
+
+      .guest-actions {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .btn-icon {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        border-radius: 8px;
+        border: 1px solid var(--border-subtle);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-main);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn-icon:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .btn-move {
+        font-size: 11px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .mic-on {
+        background: rgba(16, 185, 129, 0.2);
+        border-color: rgba(16, 185, 129, 0.35);
+        color: #34d399;
+      }
+      .mic-off {
+        background: rgba(244, 63, 94, 0.2);
+        border-color: rgba(244, 63, 94, 0.35);
+        color: #fb7185;
+      }
+      .mirror-on {
+        background: rgba(56, 189, 248, 0.2);
+        border-color: var(--accent-sky);
+      }
+      .btn-refresh:hover {
+        background: rgba(245, 158, 11, 0.2);
+      }
+
+      input[type="text"]#target-id {
+        display: none;
+      }
+
       .footer-credits {
         position: fixed;
         bottom: 15px;
         right: 20px;
-        color: #666;
+        color: var(--text-subtle);
         font-size: 0.85em;
         font-family: monospace;
         user-select: none;
@@ -424,33 +635,16 @@
   <body>
     <div class="container">
       <h1>Panel Reżysera</h1>
-      <div class="status" id="status-msg">Inicjalizacja...</div>
+      <div class="status-pill" id="status-msg">Inicjalizacja...</div>
       <input type="text" id="target-id" />
+
       <div class="controls" id="control-panel">
-        <h2>🎥 Układ kamer:</h2>
-        <div
-          style="
-            margin-bottom: 15px;
-            border-bottom: 1px solid #555;
-            padding-bottom: 10px;
-          "
-        >
-          <button
-            class="btn-layout"
-            onclick="sendLayout('layout-grid')"
-            style="width: 90%; background: #6f42c1"
-          >
-            🔳 Pełna Siatka (Grid)
+        <h2>🎥 Układ Sceny w OBS:</h2>
+
+        <div class="layout-selector-grid">
+          <button class="btn-layout" onclick="sendLayout('layout-grid')">
+            🔳 Pełna Siatka
           </button>
-        </div>
-        <div
-          style="
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 5px;
-          "
-        >
           <button class="btn-layout" onclick="sendLayout('layout-top')">
             ⬆️ Góra
           </button>
@@ -461,126 +655,171 @@
             class="btn-layout"
             onclick="sendLayout('layout-sidebar-left')"
           >
-            ⬅️ Lewo
+            ⬅️ Lewy Pasek
           </button>
           <button
             class="btn-layout"
             onclick="sendLayout('layout-sidebar-right')"
           >
-            ➡️ Prawo
+            ➡️ Prawy Pasek
           </button>
-        </div>
-        <div style="margin-top: 10px">
-          <button
-            class="btn-layout"
-            onclick="sendLayout('layout-split')"
-            style="width: 90%; background: #e83e8c"
-          >
-            ↔️ Obie Strony (Split)
+          <button class="btn-layout" onclick="sendLayout('layout-split')">
+            ↔️ Split (Obie Strony)
           </button>
-        </div>
-        <div style="margin-top: 5px">
           <button
             class="btn-layout"
             onclick="sendLayout('layout-center-stage')"
-            style="width: 90%; background: #6610f2"
           >
             ⭐️ Center Stage
           </button>
-        </div>
-        <button class="btn-layout btn-free-mode" onclick="toggleFreeMode()">
-          🔓 Swobodne Ustawianie (Free Mode)
-        </button>
-        <div id="free-mode-container">
-          <button
-            id="btn-lock-layout"
-            class="btn-tool btn-lock-off"
-            style="margin-bottom: 10px"
-            onclick="toggleLayoutLock()"
-          >
-            🔓 Układ: ODBLOKOWANY
+          <button class="btn-layout btn-free-mode" onclick="toggleFreeMode()">
+            🔓 Swobodne Ustawianie (Free Mode)
           </button>
+        </div>
+
+        <!-- STÓŁ MONTAŻOWY -->
+        <div id="free-mode-container">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 10px;
+            "
+          >
+            <span
+              style="
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--text-muted);
+                text-transform: uppercase;
+              "
+            >
+              Stół Montażowy (16:9)
+            </span>
+            <button
+              id="btn-lock-layout"
+              class="btn-tool btn-lock-off"
+              style="width: auto; padding: 6px 14px; font-size: 12px"
+              onclick="toggleLayoutLock()"
+            >
+              🔓 Układ: ODBLOKOWANY
+            </button>
+          </div>
+
           <div id="free-mode-stage">
             <div id="guide-x" class="guide-line guide-x"></div>
             <div id="guide-y" class="guide-line guide-y"></div>
             <p
               style="
-                color: #555;
+                color: var(--text-subtle);
                 position: absolute;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
                 width: 100%;
                 pointer-events: none;
+                font-size: 12px;
+                line-height: 1.6;
               "
             >
-              Stół Montażowy (16:9)<br /><small
-                >Przesuwanie: Chwyć środek (ALT = brak snapu)<br />Skalowanie:
-                Róg (<b>SHIFT</b> = crop)</small
-              >
+              Przesuwanie: Chwyć środek (ALT = brak snapu)<br />
+              Skalowanie: Róg (<b>SHIFT</b> = crop)
             </p>
           </div>
         </div>
-        <h2 style="margin-top: 30px">⚙️ Narzędzia:</h2>
-        <button
-          class="btn-tool btn-toggle-on"
-          id="btn-borders"
-          onclick="toggleBorders()"
-        >
-          🔳 Ramki: WIDOCZNE
-        </button>
-        <button
-          class="btn-tool btn-toggle-off"
-          id="btn-labels"
-          onclick="toggleLabels()"
-        >
-          🔤 Podpisy: UKRYTE
-        </button>
-        <button
-          class="btn-tool btn-toggle-off"
-          id="btn-icons"
-          onclick="toggleIcons()"
-        >
-          🔇 Ikony Mute: UKRYTE
-        </button>
-        <button
-          class="btn-tool btn-refresh-all"
-          onclick="refreshCam('all')"
-          style="margin-top: 20px"
-        >
-          🔄 Odśwież Bufory (Fix Lag)
-        </button>
-        <button class="btn-tool btn-sync" onclick="syncGuestsWithOBS()">
-          📡 Wymuś połączenie z nowym OBS
-        </button>
+
+        <h2>⚙️ Narzędzia i Opcje Realizacji:</h2>
+        <div class="tools-grid">
+          <button
+            class="btn-tool btn-toggle-on"
+            id="btn-borders"
+            onclick="toggleBorders()"
+          >
+            🔳 Ramki: WIDOCZNE
+          </button>
+          <button
+            class="btn-tool btn-toggle-off"
+            id="btn-labels"
+            onclick="toggleLabels()"
+          >
+            🔤 Podpisy: UKRYTE
+          </button>
+          <button
+            class="btn-tool btn-toggle-off"
+            id="btn-icons"
+            onclick="toggleIcons()"
+          >
+            🔇 Ikony Mute: UKRYTE
+          </button>
+          <button class="btn-tool btn-refresh-all" onclick="refreshCam('all')">
+            🔄 Odśwież Bufory (Fix Lag)
+          </button>
+          <button
+            class="btn-tool btn-sync"
+            onclick="syncGuestsWithOBS()"
+            style="grid-column: span 2"
+          >
+            📡 Wymuś połączenie z nowym OBS
+          </button>
+        </div>
+
         <button class="btn-tool btn-toggle-game" onclick="toggleGamePanel()">
-          🎮 Pokaż Panel Gier
+          🎮 Pokaż / Ukryj Panel Gier
         </button>
+
+        <!-- PANEL GIER -->
         <div id="game-section" class="game-section">
           <div id="game-menu">
-            <h3>Wybierz Grę:</h3>
+            <h3
+              style="
+                margin: 0 0 12px 0;
+                font-size: 14px;
+                color: var(--text-main);
+              "
+            >
+              Wybierz Grę:
+            </h3>
             <div class="game-menu-grid">
               <div
                 class="game-tile game-tile-active"
                 onclick="openGame('heads-up')"
               >
-                🎲 Czółko<br /><span style="font-size: 0.8em; font-weight: 400"
-                  >Hasła na czoło</span
+                🎲 Czółko<br /><span
+                  style="
+                    font-size: 0.8em;
+                    font-weight: 400;
+                    color: var(--text-muted);
+                  "
+                  >Hasła na czołach</span
                 >
               </div>
-              <div class="game-tile" style="opacity: 0.5; cursor: not-allowed">
+              <div class="game-tile" style="opacity: 0.4; cursor: not-allowed">
                 🚧 Kalambury<br /><span
-                  style="font-size: 0.8em; font-weight: 400"
+                  style="
+                    font-size: 0.8em;
+                    font-weight: 400;
+                    color: var(--text-subtle);
+                  "
                   >(Wkrótce)</span
                 >
               </div>
             </div>
           </div>
+
           <div id="game-heads-up">
             <button class="btn-game-back" onclick="closeGame()">
-              ⬅ Wróć do menu
+              ⬅ Wróć do menu gier
             </button>
-            <h3 style="margin-top: 0">Gra: Czółko</h3>
+            <h3
+              style="
+                margin: 0 0 12px 0;
+                font-size: 15px;
+                color: var(--accent-pink);
+              "
+            >
+              Gra: Czółko
+            </h3>
             <select id="game-category" class="game-select">
               <option value="Zwierzęta">🐶 Zwierzęta</option>
               <option value="Filmy">🎬 Filmy</option>
@@ -588,13 +827,7 @@
               <option value="Zawody">👷 Zawody</option>
               <option value="Przedmioty">📦 Przedmioty</option>
             </select>
-            <div
-              style="
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 15px;
-              "
-            >
+            <div style="display: flex; gap: 8px; margin-bottom: 15px">
               <button class="btn-game-clear" onclick="clearGame()">
                 🗑️ Wyczyść Wszystkich
               </button>
@@ -602,19 +835,41 @@
                 🎲 Rozdaj Wszystkim
               </button>
             </div>
-            <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0" />
-            <p style="color: #aaa; font-size: 0.8em; margin-bottom: 5px">
-              Zarządzanie ręczne (Wpisz i kliknij Wyślij):
+            <p
+              style="
+                color: var(--text-subtle);
+                font-size: 11.5px;
+                margin: 0 0 8px 0;
+              "
+            >
+              Zarządzanie ręczne (Wpisz hasło i kliknij Wyślij):
             </p>
             <div id="game-players-list"></div>
           </div>
         </div>
-        <h2>🎤 Zarządzanie Gośćmi:</h2>
+
+        <h2>🎤 Uczestnicy Online:</h2>
         <div id="guest-list">
-          <p style="text-align: center; color: #777">Oczekiwanie na gości...</p>
+          <p
+            style="
+              text-align: center;
+              color: var(--text-subtle);
+              font-size: 13px;
+            "
+          >
+            Oczekiwanie na gości...
+          </p>
         </div>
-        <p style="color: #555; font-size: 0.8em; margin-top: 10px">
-          Easter Egg: Ctrl + Shift + F
+
+        <p
+          style="
+            color: var(--text-subtle);
+            font-size: 11px;
+            margin-top: 20px;
+            font-family: monospace;
+          "
+        >
+          Easter Egg: Ctrl + Shift + F (Dodaj bota testowego)
         </p>
       </div>
     </div>
@@ -1092,22 +1347,45 @@
       }
       function renderGuestList(e) {
         const t = document.getElementById("guest-list");
-        ((t.innerHTML = ""),
-          0 !== e.length
-            ? e.forEach((o, s) => {
-                const n = document.createElement("div");
-                n.className = "guest-item";
-                const a = o.muted ? "mic-off" : "mic-on",
-                  r = o.muted ? "🔇" : "🎤",
-                  l = o.muted ? "(Wyciszony)" : "",
-                  i = o.mirrored ? "mirror-on" : "mirror-off",
-                  d = 0 === s ? "visibility:hidden" : "",
-                  c = s === e.length - 1 ? "visibility:hidden" : "";
-                ((n.innerHTML = ` <div class="guest-actions" style="margin-right: 10px;"> <button class="btn-icon btn-move" onclick="moveGuest('${o.id}', 'up')" style="${d}">⬆️</button> <button class="btn-icon btn-move" onclick="moveGuest('${o.id}', 'down')" style="${c}">⬇️</button> </div> <div class="guest-info"> <span class="guest-name">${o.name} <small style="font-weight:normal; font-size:0.7em">${l}</small></span> <span id="stats-${o.id}" class="guest-stats">${o.id.startsWith("fake-") ? "SZTUCZNY GOŚĆ" : "Czekam na dane..."}</span> </div> <div class="guest-actions"> <button class="btn-icon ${i}" onclick="toggleMirror('${o.id}')" title="Lustrzane odbicie">🪞</button> <button class="btn-icon btn-refresh" onclick="refreshCam('${o.id}')" title="Odśwież">🔄</button> <button class="btn-icon btn-mic ${a}" onclick="toggleGuestMic('${o.id}', ${o.muted})" title="Wycisz/Odcisz">${r}</button> </div> `),
-                  t.appendChild(n));
-              })
-            : (t.innerHTML =
-                '<p style="text-align:center; color:#777;">Brak gości online.</p>'));
+        t.innerHTML = "";
+        if (0 !== e.length) {
+          e.forEach((o, s) => {
+            const n = document.createElement("div");
+            n.className = "guest-item";
+            const a = o.muted ? "mic-off" : "mic-on",
+              r = o.muted ? "🔇" : "🎤",
+              l = o.muted
+                ? `<small style="color:var(--accent-rose); font-weight:normal; font-size:11px;"> (Wyciszony)</small>`
+                : "",
+              i = o.mirrored ? "mirror-on" : "mirror-off",
+              d = 0 === s ? "visibility:hidden" : "",
+              c = s === e.length - 1 ? "visibility:hidden" : "",
+              initial = (o.name || "G").charAt(0).toUpperCase();
+
+            n.innerHTML = `
+              <div class="guest-meta-wrap">
+                <div class="guest-actions">
+                  <button class="btn-icon btn-move" onclick="moveGuest('${o.id}', 'up')" style="${d}" title="Przesuń wyżej">▲</button>
+                  <button class="btn-icon btn-move" onclick="moveGuest('${o.id}', 'down')" style="${c}" title="Przesuń niżej">▼</button>
+                </div>
+                <div class="guest-avatar">${initial}</div>
+                <div class="guest-info">
+                  <span class="guest-name">${o.name}${l}</span>
+                  <span id="stats-${o.id}" class="guest-stats">${o.id.startsWith("fake-") ? "SZTUCZNY GOŚĆ (DEMO)" : "Czekam na dane..."}</span>
+                </div>
+              </div>
+              <div class="guest-actions">
+                <button class="btn-icon ${i}" onclick="toggleMirror('${o.id}')" title="Lustrzane odbicie">🪞</button>
+                <button class="btn-icon btn-refresh" onclick="refreshCam('${o.id}')" title="Odśwież bufor">🔄</button>
+                <button class="btn-icon btn-mic ${a}" onclick="toggleGuestMic('${o.id}', ${o.muted})" title="Wycisz / Odcisz">${r}</button>
+              </div>
+            `;
+            t.appendChild(n);
+          });
+        } else {
+          t.innerHTML =
+            '<p style="text-align:center; color:var(--text-subtle); font-size:13px;">Brak gości online.</p>';
+        }
       }
       function updateStats(e) {
         for (const [t, o] of Object.entries(e)) {

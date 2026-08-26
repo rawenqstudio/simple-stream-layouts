@@ -2,189 +2,342 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <title>GOŚĆ - Ustawienia</title>
+    <title>GOŚĆ - Ustawienia Studia</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        --bg-main: #090b10;
+        --bg-card: #121622;
+        --bg-card-raised: #181e2e;
+        --bg-input: #0b0e17;
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --text-subtle: #64748b;
+        --accent-sky: #38bdf8;
+        --accent-emerald: #10b981;
+        --accent-rose: #f43f5e;
+        --accent-amber: #f59e0b;
+        --accent-violet: #8b5cf6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
-        font-family: "Segoe UI", sans-serif;
+        font-family:
+          "Plus Jakarta Sans",
+          system-ui,
+          -apple-system,
+          sans-serif;
         text-align: center;
-        background: #222;
-        color: #fff;
-        padding: 20px;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        min-height: 100vh;
+        background-image:
+          radial-gradient(
+            circle at 50% 0%,
+            rgba(56, 189, 248, 0.12) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            circle at 85% 30%,
+            rgba(99, 102, 241, 0.08) 0%,
+            transparent 50%
+          );
+        padding: 40px 20px 80px;
         margin: 0;
       }
+
       .container {
-        max-width: 600px;
+        max-width: 620px;
         margin: 0 auto;
-        background: #333;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        padding: 32px;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+        position: relative;
+        overflow: hidden;
       }
+      .container::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.2),
+          transparent
+        );
+      }
+
       h1 {
-        margin-top: 0;
-        color: #00d2ff;
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 0 0 6px 0;
+        background: linear-gradient(135deg, #fff 40%, #94a3b8);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
+      p.subtitle {
+        color: var(--text-muted);
+        font-size: 13.5px;
+        margin: 0 0 22px 0;
+      }
+
       .video-wrapper {
         position: relative;
         width: 100%;
         aspect-ratio: 16/9;
         background: #000;
-        border-radius: 8px;
+        border-radius: 14px;
         overflow: hidden;
-        margin-bottom: 20px;
-        border: 2px solid #555;
+        margin-bottom: 18px;
+        border: 1px solid var(--border-subtle);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         transition: aspect-ratio 0.3s;
       }
       video {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        display: block;
       }
       #mute-indicator {
         position: absolute;
-        top: 10px;
-        right: 10px;
-        background: red;
+        top: 12px;
+        right: 12px;
+        background: rgba(244, 63, 94, 0.9);
+        backdrop-filter: blur(8px);
         color: #fff;
-        padding: 5px 10px;
-        border-radius: 5px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
         font-weight: 700;
+        letter-spacing: 0.05em;
         display: none;
-        box-shadow: 0 0 5px #000;
-        font-size: 0.8em;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         z-index: 10;
+      }
+
+      .section-card {
+        background: var(--bg-card-raised);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 16px;
+        text-align: left;
+      }
+      .section-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 12px;
+        display: block;
+      }
+
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .slider-row span {
+        width: 80px;
+        font-size: 12.5px;
+        color: var(--text-muted);
+        text-align: left;
+        font-weight: 500;
+      }
+      .slider-row input[type="range"] {
+        flex-grow: 1;
+        accent-color: var(--accent-sky);
+        height: 5px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .btn-reset-crop {
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-main);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 6px;
+        transition: all 0.15s;
+      }
+      .btn-reset-crop:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 14px;
+        text-align: left;
       }
       .settings-group {
         text-align: left;
-        margin-bottom: 15px;
+        margin-bottom: 14px;
       }
       label {
         display: block;
-        margin-bottom: 5px;
-        color: #ccc;
-        font-size: 0.9em;
+        margin-bottom: 6px;
+        color: var(--text-muted);
+        font-size: 12.5px;
+        font-weight: 600;
       }
+
       input[type="text"],
       select {
         width: 100%;
-        padding: 10px;
-        background: #222;
-        border: 1px solid #555;
-        color: #fff;
-        border-radius: 5px;
+        padding: 10px 14px;
+        background: var(--bg-input);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-main);
+        border-radius: 9px;
+        font-size: 13.5px;
+        outline: none;
+        transition: all 0.2s;
         box-sizing: border-box;
+      }
+      input[type="text"]:focus,
+      select:focus {
+        border-color: var(--accent-sky);
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+      }
+
+      .checkboxes-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
       }
       .checkbox-group {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 10px;
+        gap: 8px;
         cursor: pointer;
+        color: var(--text-muted);
+        font-size: 12.5px;
       }
       input[type="checkbox"] {
-        width: 20px;
-        height: 20px;
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent-sky);
         cursor: pointer;
       }
-      button {
-        padding: 15px;
-        font-size: 18px;
+
+      button#join-btn {
+        width: 100%;
+        padding: 14px 24px;
+        font-size: 15px;
         font-weight: 700;
         cursor: pointer;
-        background: #28a745;
+        background: linear-gradient(135deg, var(--accent-emerald), #059669);
         color: #fff;
         border: none;
-        border-radius: 5px;
-        width: 100%;
-        margin-top: 10px;
-        transition: 0.2s;
+        border-radius: 12px;
+        margin-top: 6px;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 4px 18px rgba(16, 185, 129, 0.25);
       }
-      button:hover {
-        background: #218838;
+      button#join-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
       }
-      button:disabled {
-        background: #555;
+      button#join-btn:disabled {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border-subtle);
         cursor: not-allowed;
-        color: #aaa;
+        color: var(--text-subtle);
+        box-shadow: none;
+        transform: none;
       }
+
+      #monitor-area {
+        display: none;
+        margin-top: 20px;
+        border-top: 1px solid var(--border-subtle);
+        padding-top: 18px;
+      }
+      .btn-monitor {
+        padding: 11px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 9px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.15s;
+        width: 100%;
+        display: block;
+      }
+      .btn-monitor-local {
+        background: rgba(245, 158, 11, 0.15);
+        border-color: rgba(245, 158, 11, 0.3);
+        color: #fbbf24;
+      }
+      .btn-monitor-local:hover {
+        background: rgba(245, 158, 11, 0.25);
+      }
+      .btn-monitor-dir {
+        background: rgba(139, 92, 246, 0.15);
+        border-color: rgba(139, 92, 246, 0.3);
+        color: #c4b5fd;
+      }
+      .btn-monitor-dir:hover {
+        background: rgba(139, 92, 246, 0.25);
+      }
+
       #logs {
         margin-top: 20px;
-        color: #aaa;
-        font-size: 0.8em;
+        color: var(--text-subtle);
+        font-size: 11.5px;
         text-align: left;
-        background: #111;
-        padding: 10px;
-        border-radius: 5px;
+        background: var(--bg-input);
+        border: 1px solid var(--border-subtle);
+        padding: 12px;
+        border-radius: 10px;
         font-family: monospace;
-        max-height: 150px;
+        max-height: 120px;
         overflow-y: auto;
       }
       .error {
-        color: #f44;
+        color: var(--accent-rose);
       }
       .success {
-        color: #0f0;
+        color: #34d399;
       }
       #target-id {
         display: none;
       }
-      #monitor-area {
-        display: none;
-        margin-top: 20px;
-        border-top: 1px solid #555;
-        padding-top: 15px;
-      }
-      .btn-monitor {
-        background: #ff9800;
-        color: #fff;
-      }
-      .btn-monitor:hover {
-        background: #e68900;
-      }
-      .btn-monitor-dir {
-        background: #6f42c1;
-        color: #fff;
-      }
-      .btn-monitor-dir:hover {
-        background: #59339d;
-      }
-      .crop-controls {
-        background: #222;
-        padding: 15px;
-        border-radius: 5px;
-        border: 1px solid #444;
-        margin-bottom: 15px;
-      }
-      .slider-row {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-      }
-      .slider-row span {
-        width: 70px;
-        font-size: 0.85em;
-        color: #aaa;
-        text-align: left;
-      }
-      .slider-row input[type="range"] {
-        flex-grow: 1;
-        cursor: pointer;
-      }
-      .btn-reset-crop {
-        padding: 8px;
-        font-size: 14px;
-        background: #555;
-        margin-top: 5px;
-      }
-      .btn-reset-crop:hover {
-        background: #666;
-      }
+
       .footer-credits {
         position: fixed;
         bottom: 15px;
         right: 20px;
-        color: #666;
+        color: var(--text-subtle);
         font-size: 0.85em;
         font-family: monospace;
         user-select: none;
@@ -211,14 +364,18 @@
   <body>
     <div class="container">
       <h1>Ustawienia Studia</h1>
+      <p class="subtitle">
+        Dostosuj kadr, audio i sprzęt przed dołączeniem do transmisji.
+      </p>
+
       <div class="video-wrapper">
         <video id="localVideo" autoplay muted playsinline></video>
         <div id="mute-indicator">🔇 WYCISZONY</div>
       </div>
-      <div class="crop-controls">
-        <label style="margin-bottom: 10px; font-weight: 700; color: #fff"
-          >🖼️ Kadrowanie obrazu (Zostanie wysłane do OBS):</label
-        >
+
+      <!-- KADROWANIE PTZ -->
+      <div class="section-card">
+        <span class="section-label">🖼️ Kadrowanie Obrazu (PTZ)</span>
         <div class="slider-row">
           <span>🔍 Zoom:</span>
           <input
@@ -256,62 +413,80 @@
           />
         </div>
         <button onclick="resetTransform()" class="btn-reset-crop">
-          Początkowy Kadr
+          ↺ Resetuj Kadr
         </button>
       </div>
-      <div class="settings-group">
-        <label>📐 Format Obrazu:</label>
-        <select id="cameraRatio" onchange="startPreview()">
-          <option value="16:9">Panoramiczny (16:9)</option>
-          <option value="4:3">Klasyczny (4:3)</option>
-        </select>
+
+      <!-- SPRZĘT I FORMAT -->
+      <div class="form-grid">
+        <div>
+          <label for="cameraRatio">📐 Format Obrazu:</label>
+          <select id="cameraRatio" onchange="startPreview()">
+            <option value="16:9">16:9 (Panoramiczny)</option>
+            <option value="4:3">4:3 (Klasyczny)</option>
+          </select>
+        </div>
+        <div>
+          <label for="videoSource">📷 Kamera:</label>
+          <select id="videoSource" onchange="startPreview()"></select>
+        </div>
       </div>
+
       <div class="settings-group">
-        <label>📷 Wybierz Kamerę:</label>
-        <select id="videoSource" onchange="startPreview()"></select>
-      </div>
-      <div class="settings-group">
-        <label>🎤 Wybierz Mikrofon:</label>
+        <label for="audioSource">🎤 Mikrofon:</label>
         <select id="audioSource" onchange="startPreview()"></select>
       </div>
-      <div class="settings-group">
+
+      <div class="checkboxes-row">
         <label class="checkbox-group"
           ><input type="checkbox" id="start-muted" checked="checked" />
-          <span>Dołącz z wyciszonym mikrofonem</span></label
+          <span>Dołącz wyciszony</span></label
         >
         <label class="checkbox-group" title="Wymusza wysoki bitrate (6 Mbps)"
           ><input type="checkbox" id="high-bitrate" checked="checked" />
-          <span>🔥 Unlock Bitrate</span></label
+          <span>🔥 Unlock Bitrate (6 Mbps)</span></label
         >
       </div>
+
       <div class="settings-group">
         <label
           >Twoje Imię
-          <span style="color: #ff4444; font-size: 0.9em; font-weight: 700"
-            >(Pole wymagane)</span
+          <span
+            style="color: var(--accent-rose); font-size: 11px; font-weight: 700"
+            >(Wymagane)</span
           >:</label
         >
         <input type="text" id="username" placeholder="Wpisz swoje imię..." />
       </div>
+
       <input type="text" id="target-id" />
+
       <button id="join-btn" onclick="joinRoom()" disabled="disabled">
         Ładowanie kamery...
       </button>
+
+      <!-- PODGLĄDY DLA GOŚCIA -->
       <div id="monitor-area">
-        <p style="margin-bottom: 12px; color: #ccc; font-weight: 600">
-          Potrzebujesz widzieć grę i innych? Wybierz podgląd:
-        </p>
-        <button
-          id="btn-monitor-local"
-          class="btn-monitor"
-          style="margin-bottom: 8px"
+        <p
+          style="
+            margin: 0 0 12px 0;
+            color: var(--text-muted);
+            font-size: 12.5px;
+            font-weight: 600;
+          "
         >
-          📋 Skopiuj Własny Podgląd (Niezależny)
-        </button>
-        <button id="btn-monitor-director" class="btn-monitor btn-monitor-dir">
-          📋 Skopiuj Podgląd Live Reżysera (Tryb gry)
-        </button>
+          Podgląd na drugim ekranie (Wybierz typ):
+        </p>
+        <div style="display: flex; gap: 8px; flex-direction: column">
+          <button id="btn-monitor-local" class="btn-monitor btn-monitor-local">
+            📋 Skopiuj Własny Podgląd (Niezależny)
+          </button>
+          <button id="btn-monitor-director" class="btn-monitor btn-monitor-dir">
+            📋 Skopiuj Podgląd Live Reżysera (Tryb gry)
+          </button>
+        </div>
       </div>
+
       <div id="logs"></div>
     </div>
     <a
@@ -577,11 +752,17 @@
           .then(() => {
             const originalText = btn.innerText;
             const originalBg = btn.style.background;
-            btn.innerText = "✅ Skopiowano!";
-            btn.style.background = "#28a745";
+            const originalBorder = btn.style.borderColor;
+            const originalColor = btn.style.color;
+            btn.innerText = "✅ Skopiowano link!";
+            btn.style.background = "rgba(16, 185, 129, 0.25)";
+            btn.style.borderColor = "rgba(16, 185, 129, 0.4)";
+            btn.style.color = "#34d399";
             setTimeout(() => {
               btn.innerText = originalText;
               btn.style.background = originalBg;
+              btn.style.borderColor = originalBorder;
+              btn.style.color = originalColor;
             }, 2000);
           })
           .catch(() => {
