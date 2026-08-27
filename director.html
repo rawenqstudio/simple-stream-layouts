@@ -1183,47 +1183,53 @@
             const o = t.peer;
             guestConnections.includes(t) || guestConnections.push(t);
             const s = multiGuestsState[o] || { muted: !1, mirrored: !1 };
-            ((multiGuestsState[o] = {
+            const newRatio = e.ratio || "16:9";
+
+            multiGuestsState[o] = {
               id: o,
               name: e.name || "Gość",
-              ratio: e.ratio || "16:9",
+              ratio: newRatio,
               muted: s.muted,
               mirrored: s.mirrored,
               conn: t,
-            }),
-              guestOrder.includes(o) || guestOrder.push(o),
-              obsClients.forEach((t) => {
-                t.open &&
-                  t.send({
-                    type: "identify",
-                    targetId: o,
-                    name: e.name,
-                    ratio: e.ratio,
-                  });
-              }));
-            const n = document.getElementById("free-mode-stage"),
-              a = n.querySelector(`.stage-box[data-id="${o}"]`);
-            if (a && "block" === n.style.display) {
-              const t = parseFloat(a.style.height) || CAM_HEIGHT_PCT,
-                s = "4:3" === e.ratio ? 4 / 3 : 16 / 9,
-                n = t * s * 0.5625;
-              ((a.style.width = n + "%"),
-                obsClients.forEach((e) => {
-                  e.open &&
-                    e.send({
-                      type: "transform-update",
-                      targetId: o,
-                      x: parseFloat(a.style.left),
-                      y: parseFloat(a.style.top),
-                      w: parseFloat(n.toFixed(4)),
-                      h: parseFloat(t.toFixed(4)),
-                    });
-                }));
+            };
+
+            if (!guestOrder.includes(o)) guestOrder.push(o);
+
+            obsClients.forEach((t) => {
+              if (t.open) {
+                t.send({
+                  type: "identify",
+                  targetId: o,
+                  name: e.name,
+                  ratio: newRatio,
+                });
+              }
+            });
+
+            // Dynamiczne dopasowanie kafelka na stole montażowym do formatu 4:3 lub 16:9
+            const stage = document.getElementById("free-mode-stage");
+            const box = stage.querySelector(`.stage-box[data-id="${o}"]`);
+            if (box) {
+              const curH = parseFloat(box.style.height) || CAM_HEIGHT_PCT;
+              // Dla 4:3 w proporcji ekranu 16:9 szerokość % = wysokość % * 0.75
+              const newW = newRatio === "4:3" ? curH * 0.75 : curH;
+              box.style.width = newW.toFixed(4) + "%";
+
+              broadcastCommand({
+                type: "transform-update",
+                targetId: o,
+                x: parseFloat(parseFloat(box.style.left).toFixed(4)),
+                y: parseFloat(parseFloat(box.style.top).toFixed(4)),
+                w: parseFloat(newW.toFixed(4)),
+                h: parseFloat(curH.toFixed(4)),
+              });
             }
-            (refreshMultiModeUI(),
-              renderGameControls(),
-              renderFreeStage(),
-              updateStatusMsg());
+
+            refreshMultiModeUI();
+            renderGameControls();
+            renderFreeStage();
+            updateStatusMsg();
           }
           ("mic-status" === e.type &&
             t &&
@@ -1582,49 +1588,63 @@
         }
       }
       function renderFreeStage() {
-        const e = document.getElementById("free-mode-stage");
-        let t = isMulti ? Object.keys(multiGuestsState) : guestOrder;
-        (Array.from(e.children).forEach((e) => {
-          "P" === e.tagName ||
-            e.classList.contains("guide-line") ||
-            t.includes(e.dataset.id) ||
-            e.remove();
-        }),
-          t.forEach((t, o) => {
-            let s = e.querySelector(`.stage-box[data-id="${t}"]`);
-            const n = multiGuestsState[t],
-              a = n ? n.name : "Gość",
-              r = n && n.ratio ? n.ratio : "16:9";
-            let l = CAM_WIDTH_PCT;
-            if (("4:3" === r && (l = pxToW(240)), s)) {
-              if (
-                (3 === s.childNodes[0].nodeType
-                  ? (s.childNodes[0].nodeValue = a)
-                  : (s.innerText = a),
-                !s.querySelector(".resize-handle"))
-              ) {
-                const e = document.createElement("div");
-                ((e.className = "resize-handle"), s.appendChild(e));
-              }
+        const stage = document.getElementById("free-mode-stage");
+        let guests = isMulti ? Object.keys(multiGuestsState) : guestOrder;
+
+        Array.from(stage.children).forEach((el) => {
+          if (
+            el.tagName !== "P" &&
+            !el.classList.contains("guide-line") &&
+            !guests.includes(el.dataset.id)
+          ) {
+            el.remove();
+          }
+        });
+
+        guests.forEach((id, idx) => {
+          let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
+          const guest = multiGuestsState[id];
+          const name = guest ? guest.name : "Gość";
+          const ratio = guest && guest.ratio ? guest.ratio : "16:9";
+
+          const defaultH = 16.6667;
+          const initialW = ratio === "4:3" ? defaultH * 0.75 : defaultH;
+
+          if (box) {
+            if (box.childNodes[0] && box.childNodes[0].nodeType === 3) {
+              box.childNodes[0].nodeValue = name;
             } else {
-              ((s = document.createElement("div")),
-                (s.className = "stage-box"),
-                (s.dataset.id = t),
-                (s.innerText = a),
-                (s.style.width = l + "%"),
-                (s.style.height = "16.666666666666664%"),
-                (s.style.left = 2 + 2 * o + "%"),
-                (s.style.top = 2 + 2 * o + "%"));
-              const n = document.createElement("div");
-              ((n.className = "resize-handle"),
-                s.appendChild(n),
-                setupInteractions(s),
-                e.appendChild(s));
+              box.innerText = name;
             }
-            isLayoutLocked
-              ? s.classList.add("locked")
-              : s.classList.remove("locked");
-          }));
+            if (!box.querySelector(".resize-handle")) {
+              const handle = document.createElement("div");
+              handle.className = "resize-handle";
+              box.appendChild(handle);
+            }
+          } else {
+            box = document.createElement("div");
+            box.className = "stage-box";
+            box.dataset.id = id;
+            box.innerText = name;
+            box.style.width = initialW.toFixed(4) + "%";
+            box.style.height = defaultH.toFixed(4) + "%";
+            box.style.left = 2 + 2 * idx + "%";
+            box.style.top = 2 + 2 * idx + "%";
+
+            const handle = document.createElement("div");
+            handle.className = "resize-handle";
+            box.appendChild(handle);
+
+            setupInteractions(box);
+            stage.appendChild(box);
+          }
+
+          if (isLayoutLocked) {
+            box.classList.add("locked");
+          } else {
+            box.classList.remove("locked");
+          }
+        });
       }
       function setupInteractions(e) {
         let t,
@@ -1661,36 +1681,46 @@
               u = n.clientWidth,
               m = n.clientHeight;
             if (c) {
-              const n = s.clientX - t,
-                l = s.clientY - o,
-                i = u - (parseFloat(e.style.left) / 100) * u,
-                d = m - (parseFloat(e.style.top) / 100) * m;
-              let c,
-                y = a + n;
-              if (((y = Math.max(50, Math.min(y, i))), s.shiftKey))
-                ((c = r + l), (c = Math.max(50, Math.min(c, d))));
-              else {
-                const t =
-                  "4:3" ===
-                  (multiGuestsState[e.dataset.id]
-                    ? multiGuestsState[e.dataset.id].ratio
-                    : "16:9")
-                    ? 3 / 4
-                    : 9 / 16;
-                ((c = y * t), c > d && ((c = d), (y = c * (1 / t))));
+              const deltaX = s.clientX - t;
+              const deltaY = s.clientY - o;
+              const maxAllowedW = u - (parseFloat(e.style.left) / 100) * u;
+              const maxAllowedH = m - (parseFloat(e.style.top) / 100) * m;
+
+              let newW = a + deltaX;
+              let newH;
+
+              newW = Math.max(40, Math.min(newW, maxAllowedW));
+
+              if (s.shiftKey) {
+                // Skalowanie dowolne / crop z wciśniętym SHIFT
+                newH = r + deltaY;
+                newH = Math.max(30, Math.min(newH, maxAllowedH));
+              } else {
+                // Skalowanie z zachowaniem naturalnych proporcji kamery gościa (16:9 lub 4:3)
+                const guestRatio =
+                  multiGuestsState[e.dataset.id]?.ratio || "16:9";
+                const factor = guestRatio === "4:3" ? 0.75 : 9 / 16;
+                newH = newW * factor;
+                if (newH > maxAllowedH) {
+                  newH = maxAllowedH;
+                  newW = newH / factor;
+                }
               }
-              let p = (y / u) * 100,
-                g = (c / m) * 100;
-              ((e.style.width = p + "%"),
-                (e.style.height = g + "%"),
-                broadcastCommand({
-                  type: "transform-update",
-                  targetId: e.dataset.id,
-                  x: parseFloat(e.style.left),
-                  y: parseFloat(e.style.top),
-                  w: parseFloat(p.toFixed(4)),
-                  h: parseFloat(g.toFixed(4)),
-                }));
+
+              const wPct = (newW / u) * 100;
+              const hPct = (newH / m) * 100;
+
+              e.style.width = wPct.toFixed(4) + "%";
+              e.style.height = hPct.toFixed(4) + "%";
+
+              broadcastCommand({
+                type: "transform-update",
+                targetId: e.dataset.id,
+                x: parseFloat(parseFloat(e.style.left).toFixed(4)),
+                y: parseFloat(parseFloat(e.style.top).toFixed(4)),
+                w: parseFloat(wPct.toFixed(4)),
+                h: parseFloat(hPct.toFixed(4)),
+              });
             }
             if (d) {
               const t = s.altKey,
