@@ -2,7 +2,7 @@
 
 **Simple Stream Layouts** to przeglądarkowe narzędzie dla streamerów, mające na celu łatwo i szybko podzielić się swoimi kamerkami oraz równie szybko i wygodnie ustawić je na swoim streamie.
 
-Główną zaletą mojego rozwiązania w porównaniu do wykorzystywanego przez większość streamerów dzielenia się pojedyńczymi linkami do obs ninja i wklejaniem każdego z nich z osobna do obsa jest to, że każdy z streamerów/użytkowników, który chce podzielić się swoją kamerką dołącza do jednego pokoju za pomocą tego samego linku, a po dołączeniu każdy z użytkowników ma możliwość niezależnego od innych ułożenia obrazów z kamer za pomocą 'interakcji' w obsie.
+Główną zaletą mojego rozwiązania w porównaniu do wykorzystywanego przez większość streamerów dzielenia się pojedyńczymi linkami do obs ninja i wklejaniem każdego z nich z osobna do obsa jest to, że każdy z streamerów/użytkowników, który chce podzielić się swoją kamerką dołącza do jednego pokoju za pomocą tego samego linku, a po dołączeniu każdy z nich ma możliwość niezależnego ułożenia obrazów z kamer za pomocą 'interakcji' w obsie.
 
 ---
 
