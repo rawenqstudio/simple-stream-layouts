@@ -1470,121 +1470,197 @@
         const o = t.length;
         if (0 === o) return;
         const s = pxToW(15),
-          n = (pxToW(20), pxToH(20), {});
+          n = {};
+
         if ("layout-grid" === e) {
-          const e = Math.ceil(Math.sqrt(o)),
-            a = Math.ceil(o / e);
+          const cols = Math.ceil(Math.sqrt(o)),
+            rows = Math.ceil(o / cols);
           let r, l;
-          ((r = 1 === o ? 85 : 2 === o ? 48 : o <= 4 ? 45 : o <= 9 ? 32 : 23),
-            (l = 1 === o ? 85 : 2 === o ? 60 : o <= 6 ? 45 : o <= 9 ? 30 : 23));
-          const i = r * e + s * (e - 1),
-            d = l * a + pxToH(15) * (a - 1),
-            c = (100 - i) / 2,
-            u = (100 - d) / 2;
-          t.forEach((t, d) => {
-            const m = d % e,
-              y = Math.floor(d / e),
-              p = (y === a - 1 && o % e) || e,
-              g = c + (i - (r * p + s * (p - 1))) / 2;
-            n[t] = {
-              x: g + m * (r + s),
-              y: u + y * (l + pxToH(15)),
-              w: r,
-              h: l,
+          r = 1 === o ? 85 : 2 === o ? 48 : o <= 4 ? 45 : o <= 9 ? 32 : 23;
+          l = 1 === o ? 85 : 2 === o ? 60 : o <= 6 ? 45 : o <= 9 ? 30 : 23;
+          const totalW = r * cols + s * (cols - 1),
+            totalH = l * rows + pxToH(15) * (rows - 1),
+            startX = (100 - totalW) / 2,
+            startY = (100 - totalH) / 2;
+
+          t.forEach((guestId, idx) => {
+            const col = idx % cols,
+              row = Math.floor(idx / cols),
+              rowItems = (row === rows - 1 && o % cols) || cols,
+              rowStartX =
+                startX + (totalW - (r * rowItems + s * (rowItems - 1))) / 2;
+
+            const is43 = multiGuestsState[guestId]?.ratio === "4:3";
+            const finalH = l;
+            const finalW = is43 ? l * 0.75 : r;
+            const cellX = rowStartX + col * (r + s);
+            const finalX = is43 ? cellX + (r - finalW) / 2 : cellX;
+            const finalY = startY + row * (l + pxToH(15));
+
+            n[guestId] = {
+              x: finalX,
+              y: finalY,
+              w: finalW,
+              h: finalH,
             };
           });
         } else if ("layout-sidebar-right" === e) {
-          const e = pxToW(320),
-            s = pxToH(180),
-            a = pxToH(15),
-            r = o * s + (o - 1) * a,
-            l = Math.max(0, (100 - r) / 2);
-          t.forEach((t, o) => {
-            n[t] = { x: 100 - e - pxToW(20), y: l + o * (s + a), w: e, h: s };
+          const defH = pxToH(180),
+            gap = pxToH(15),
+            totalH = o * defH + (o - 1) * gap,
+            startY = Math.max(0, (100 - totalH) / 2);
+
+          t.forEach((guestId, idx) => {
+            const is43 = multiGuestsState[guestId]?.ratio === "4:3";
+            const finalW = is43 ? defH * 0.75 : pxToW(320);
+            n[guestId] = {
+              x: 100 - finalW - pxToW(20),
+              y: startY + idx * (defH + gap),
+              w: finalW,
+              h: defH,
+            };
           });
         } else if ("layout-sidebar-left" === e) {
-          const e = pxToW(320),
-            s = pxToH(180),
-            a = pxToH(15),
-            r = o * s + (o - 1) * a,
-            l = Math.max(0, (100 - r) / 2);
-          t.forEach((t, o) => {
-            n[t] = { x: pxToW(20), y: l + o * (s + a), w: e, h: s };
+          const defH = pxToH(180),
+            gap = pxToH(15),
+            totalH = o * defH + (o - 1) * gap,
+            startY = Math.max(0, (100 - totalH) / 2);
+
+          t.forEach((guestId, idx) => {
+            const is43 = multiGuestsState[guestId]?.ratio === "4:3";
+            const finalW = is43 ? defH * 0.75 : pxToW(320);
+            n[guestId] = {
+              x: pxToW(20),
+              y: startY + idx * (defH + gap),
+              w: finalW,
+              h: defH,
+            };
           });
         } else if ("layout-bottom" === e) {
-          const e = pxToW(280),
-            s = pxToH(157),
-            a = pxToW(20),
-            r = o * e + (o - 1) * a,
-            l = Math.max(0, (100 - r) / 2);
-          t.forEach((t, o) => {
-            n[t] = { x: l + o * (e + a), y: 100 - s - pxToH(20), w: e, h: s };
+          const defH = pxToH(157),
+            gap = pxToW(20);
+          const widths = t.map((guestId) => {
+            const is43 = multiGuestsState[guestId]?.ratio === "4:3";
+            return is43 ? defH * 0.75 : pxToW(280);
+          });
+          const totalW =
+            widths.reduce((acc, val) => acc + val, 0) + (o - 1) * gap;
+          let currentX = Math.max(0, (100 - totalW) / 2);
+
+          t.forEach((guestId, idx) => {
+            const finalW = widths[idx];
+            n[guestId] = {
+              x: currentX,
+              y: 100 - defH - pxToH(20),
+              w: finalW,
+              h: defH,
+            };
+            currentX += finalW + gap;
           });
         } else if ("layout-top" === e) {
-          const e = pxToW(280),
-            s = pxToH(157),
-            a = pxToW(20),
-            r = o * e + (o - 1) * a,
-            l = Math.max(0, (100 - r) / 2);
-          t.forEach((t, o) => {
-            n[t] = { x: l + o * (e + a), y: pxToH(20), w: e, h: s };
+          const defH = pxToH(157),
+            gap = pxToW(20);
+          const widths = t.map((guestId) => {
+            const is43 = multiGuestsState[guestId]?.ratio === "4:3";
+            return is43 ? defH * 0.75 : pxToW(280);
+          });
+          const totalW =
+            widths.reduce((acc, val) => acc + val, 0) + (o - 1) * gap;
+          let currentX = Math.max(0, (100 - totalW) / 2);
+
+          t.forEach((guestId, idx) => {
+            const finalW = widths[idx];
+            n[guestId] = {
+              x: currentX,
+              y: pxToH(20),
+              w: finalW,
+              h: defH,
+            };
+            currentX += finalW + gap;
           });
         } else if ("layout-split" === e) {
-          const e = pxToW(320),
-            s = pxToH(180),
-            a = pxToH(30),
-            r = Math.ceil(o / 2),
-            l = r * s + (r - 1) * a,
-            i = Math.max(0, (100 - l) / 2),
-            d = pxToW(40),
-            c = 100 - pxToW(40) - e;
-          t.forEach((t, o) => {
-            const r = o % 2 != 0,
-              l = Math.floor(o / 2);
-            n[t] = { x: r ? c : d, y: i + l * (s + a), w: e, h: s };
+          const defH = pxToH(180),
+            gap = pxToH(30),
+            rows = Math.ceil(o / 2),
+            totalH = rows * defH + (rows - 1) * gap,
+            startY = Math.max(0, (100 - totalH) / 2);
+
+          t.forEach((guestId, idx) => {
+            const isRight = idx % 2 !== 0,
+              row = Math.floor(idx / 2),
+              is43 = multiGuestsState[guestId]?.ratio === "4:3",
+              finalW = is43 ? defH * 0.75 : pxToW(320);
+
+            const posX = isRight ? 100 - pxToW(40) - finalW : pxToW(40);
+            n[guestId] = {
+              x: posX,
+              y: startY + row * (defH + gap),
+              w: finalW,
+              h: defH,
+            };
           });
         } else if ("layout-center-stage" === e) {
-          const e = pxToW(300),
-            s = pxToH(169),
-            a = pxToH(15),
-            r = pxToW(20),
-            l = pxToW(15);
-          let i = (100 - 2 * r - 2 * e - 2 * l) * (9 / 16) * (1920 / 1080);
-          i > 90 && (i = 90);
-          const d = i * (16 / 9) * 0.5625,
-            c = (100 - d) / 2,
-            u = (100 - i) / 2,
-            m = r,
-            y = 100 - r - e,
-            p = Math.max(0, o - 1),
-            g = Math.ceil(p / 2),
-            f = (100 - (g * s + (g - 1) * a)) / 2;
-          let h = 0;
-          t.forEach((t, o) => {
-            if (0 === o) n[t] = { x: c, y: u, w: d, h: i };
-            else {
-              const o = Math.floor(h / 2),
-                r = h % 2 != 0;
-              ((n[t] = { x: r ? y : m, y: f + o * (s + a), w: e, h: s }), h++);
+          const sideH = pxToH(169),
+            gap = pxToH(15),
+            marginSide = pxToW(20),
+            gapCenter = pxToW(15);
+
+          let mainH =
+            (100 - 2 * marginSide - 2 * pxToW(300) - 2 * gapCenter) *
+            (9 / 16) *
+            (1920 / 1080);
+          if (mainH > 90) mainH = 90;
+
+          const mainIs43 = multiGuestsState[t[0]]?.ratio === "4:3";
+          const mainW = mainIs43 ? mainH * 0.75 : mainH;
+          const mainX = (100 - mainW) / 2;
+          const mainY = (100 - mainH) / 2;
+
+          const otherCount = Math.max(0, o - 1),
+            sideRows = Math.ceil(otherCount / 2),
+            sideTotalH = sideRows * sideH + (sideRows - 1) * gap,
+            sideStartY = (100 - sideTotalH) / 2;
+
+          let sideIdx = 0;
+          t.forEach((guestId, idx) => {
+            if (idx === 0) {
+              n[guestId] = { x: mainX, y: mainY, w: mainW, h: mainH };
+            } else {
+              const sideRow = Math.floor(sideIdx / 2),
+                isRight = sideIdx % 2 !== 0,
+                is43 = multiGuestsState[guestId]?.ratio === "4:3",
+                finalW = is43 ? sideH * 0.75 : pxToW(300);
+
+              const posX = isRight ? 100 - marginSide - finalW : marginSide;
+              n[guestId] = {
+                x: posX,
+                y: sideStartY + sideRow * (sideH + gap),
+                w: finalW,
+                h: sideH,
+              };
+              sideIdx++;
             }
           });
         }
-        const a = document.getElementById("free-mode-stage");
-        for (const [e, t] of Object.entries(n)) {
-          let o = a.querySelector(`.stage-box[data-id="${e}"]`);
-          o &&
-            ((o.style.left = t.x + "%"),
-            (o.style.top = t.y + "%"),
-            (o.style.width = t.w + "%"),
-            (o.style.height = t.h + "%"),
+
+        const stage = document.getElementById("free-mode-stage");
+        for (const [id, pos] of Object.entries(n)) {
+          let box = stage.querySelector(`.stage-box[data-id="${id}"]`);
+          if (box) {
+            box.dataset.ratio = multiGuestsState[id]?.ratio || "16:9";
+            box.style.left = pos.x + "%";
+            box.style.top = pos.y + "%";
+            box.style.width = pos.w + "%";
+            box.style.height = pos.h + "%";
             broadcastCommand({
               type: "transform-update",
-              targetId: e,
-              x: parseFloat(t.x.toFixed(4)),
-              y: parseFloat(t.y.toFixed(4)),
-              w: parseFloat(t.w.toFixed(4)),
-              h: parseFloat(t.h.toFixed(4)),
-            }));
+              targetId: id,
+              x: parseFloat(pos.x.toFixed(4)),
+              y: parseFloat(pos.y.toFixed(4)),
+              w: parseFloat(pos.w.toFixed(4)),
+              h: parseFloat(pos.h.toFixed(4)),
+            });
+          }
         }
       }
       function renderFreeStage() {
@@ -1621,10 +1697,28 @@
               handle.className = "resize-handle";
               box.appendChild(handle);
             }
+
+            // Gdy format kamery gościa uległ zmianie w locie (16:9 <-> 4:3)
+            if (box.dataset.ratio !== ratio) {
+              box.dataset.ratio = ratio;
+              const curH = parseFloat(box.style.height) || defaultH;
+              const newW = ratio === "4:3" ? curH * 0.75 : curH;
+              box.style.width = newW.toFixed(4) + "%";
+
+              broadcastCommand({
+                type: "transform-update",
+                targetId: id,
+                x: parseFloat(parseFloat(box.style.left).toFixed(4)),
+                y: parseFloat(parseFloat(box.style.top).toFixed(4)),
+                w: parseFloat(newW.toFixed(4)),
+                h: parseFloat(curH.toFixed(4)),
+              });
+            }
           } else {
             box = document.createElement("div");
             box.className = "stage-box";
             box.dataset.id = id;
+            box.dataset.ratio = ratio;
             box.innerText = name;
             box.style.width = initialW.toFixed(4) + "%";
             box.style.height = defaultH.toFixed(4) + "%";
