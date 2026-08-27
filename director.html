@@ -1625,39 +1625,70 @@
             };
           });
         } else if ("layout-center-stage" === e) {
-          const sideH = pxToH(169),
-            sideGap = pxToH(15),
-            marginSide = pxToW(20);
+          if (1 === o) {
+            // Tylko 1 gość: duży centralny kafelek
+            const mainH = 85;
+            const mainW = getGuestWidth(t[0], mainH);
+            n[t[0]] = {
+              x: (100 - mainW) / 2,
+              y: (100 - mainH) / 2,
+              w: mainW,
+              h: mainH,
+            };
+          } else {
+            // Wielu gości: zarezerwowane kolumny boczne (300px) + centralny ekran
+            const sideH = pxToH(169),
+              sideGap = pxToH(15),
+              marginSide = pxToW(20),
+              sideColW = pxToW(300),
+              gapCenter = pxToW(20);
 
-          let mainH = 90;
-          const mainW = getGuestWidth(t[0], mainH);
-          const mainX = (100 - mainW) / 2;
-          const mainY = (100 - mainH) / 2;
+            // Dostępna szerokość dla środkowego ekranu pomiędzy lewą a prawą kolumną
+            const availCenterW =
+              100 - 2 * marginSide - 2 * sideColW - 2 * gapCenter;
+            const maxCenterH = 80;
 
-          const sideCount = Math.max(0, o - 1),
-            sideRows = Math.ceil(sideCount / 2),
-            sideStartY =
-              (100 - (sideRows * sideH + (sideRows - 1) * sideGap)) / 2;
+            const guest0 = multiGuestsState[t[0]];
+            const is4x3Main = guest0 && guest0.ratio === "4:3";
+            const R_main = is4x3Main ? 4 / 3 : 16 / 9;
 
-          let sideIdx = 0;
-          t.forEach((tId, idx) => {
-            if (0 === idx) {
-              n[tId] = { x: mainX, y: mainY, w: mainW, h: mainH };
-            } else {
-              const rowIndex = Math.floor(sideIdx / 2),
-                isRight = sideIdx % 2 !== 0,
-                w = getGuestWidth(tId, sideH),
-                x = isRight ? 100 - marginSide - w : marginSide;
+            let mainH = availCenterW / (R_main * 0.5625);
+            if (mainH > maxCenterH) mainH = maxCenterH;
+            const mainW = mainH * R_main * 0.5625;
+            const mainX = (100 - mainW) / 2;
+            const mainY = (100 - mainH) / 2;
 
-              n[tId] = {
-                x: x,
-                y: sideStartY + rowIndex * (sideH + sideGap),
-                w: w,
-                h: sideH,
-              };
-              sideIdx++;
-            }
-          });
+            const sideCount = o - 1,
+              sideRows = Math.ceil(sideCount / 2),
+              totalSideH = sideRows * sideH + (sideRows - 1) * sideGap,
+              sideStartY = Math.max(pxToH(20), (100 - totalSideH) / 2);
+
+            let sideIdx = 0;
+            t.forEach((tId, idx) => {
+              if (0 === idx) {
+                n[tId] = { x: mainX, y: mainY, w: mainW, h: mainH };
+              } else {
+                const rowIndex = Math.floor(sideIdx / 2),
+                  isRight = sideIdx % 2 !== 0,
+                  w = getGuestWidth(tId, sideH);
+
+                // Centrowanie w bocznej kolumnie o szerokości 300px
+                const colStartX = isRight
+                  ? 100 - marginSide - sideColW
+                  : marginSide;
+                const x = colStartX + (sideColW - w) / 2;
+                const y = sideStartY + rowIndex * (sideH + sideGap);
+
+                n[tId] = {
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: sideH,
+                };
+                sideIdx++;
+              }
+            });
+          }
         }
 
         const stageEl = document.getElementById("free-mode-stage");
