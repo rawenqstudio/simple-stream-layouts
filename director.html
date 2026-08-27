@@ -1186,10 +1186,11 @@
             const o = t.peer;
             guestConnections.includes(t) || guestConnections.push(t);
             const s = multiGuestsState[o] || { muted: !1, mirrored: !1 };
+            const guestRatio = e.ratio || "16:9";
             ((multiGuestsState[o] = {
               id: o,
               name: e.name || "Gość",
-              ratio: e.ratio || "16:9",
+              ratio: guestRatio,
               muted: s.muted,
               mirrored: s.mirrored,
               conn: t,
@@ -1201,9 +1202,39 @@
                     type: "identify",
                     targetId: o,
                     name: e.name,
-                    ratio: e.ratio,
+                    ratio: guestRatio,
                   });
               }));
+
+            // Automatyczne dopasowanie proporcji ramki do formatu kamery
+            const stageEl = document.getElementById("free-mode-stage");
+            const boxEl = stageEl
+              ? stageEl.querySelector(`.stage-box[data-id="${o}"]`)
+              : null;
+            if (boxEl) {
+              const curH = parseFloat(boxEl.style.height) || CAM_HEIGHT_PCT;
+              let curX = parseFloat(boxEl.style.left) || 0;
+              const curY = parseFloat(boxEl.style.top) || 0;
+              const R = guestRatio === "4:3" ? 4 / 3 : 16 / 9;
+              let newW = parseFloat((curH * R * 0.5625).toFixed(4));
+
+              // Zabezpieczenie przed wyjechaniem ramki poza prawą krawędź stołu
+              if (curX + newW > 100) {
+                curX = Math.max(0, parseFloat((100 - newW).toFixed(4)));
+                boxEl.style.left = curX + "%";
+              }
+              boxEl.style.width = newW + "%";
+
+              broadcastCommand({
+                type: "transform-update",
+                targetId: o,
+                x: curX,
+                y: curY,
+                w: newW,
+                h: curH,
+              });
+            }
+
             (refreshMultiModeUI(),
               renderGameControls(),
               renderFreeStage(),
@@ -1606,11 +1637,15 @@
               box.appendChild(handle);
             }
           } else {
+            const guestRatio = guest && guest.ratio ? guest.ratio : "16:9";
+            const R = guestRatio === "4:3" ? 4 / 3 : 16 / 9;
+            const initW = (CAM_HEIGHT_PCT * R * 0.5625).toFixed(4);
+
             box = document.createElement("div");
             box.className = "stage-box";
             box.dataset.id = tId;
-            box.style.width = CAM_WIDTH_PCT + "%";
-            box.style.height = "16.666666666666664%";
+            box.style.width = initW + "%";
+            box.style.height = CAM_HEIGHT_PCT + "%";
             box.style.left = 2 + 2 * idx + "%";
             box.style.top = 2 + 2 * idx + "%";
 
@@ -1672,21 +1707,28 @@
                 l = s.clientY - o,
                 i = u - (parseFloat(e.style.left) / 100) * u,
                 d = m - (parseFloat(e.style.top) / 100) * m;
-              let c,
+              let cVal,
                 y = a + n;
               y = Math.max(40, Math.min(y, i));
+
               if (s.shiftKey) {
-                c = r + l;
-                c = Math.max(30, Math.min(c, d));
+                // Swobodne kadrowanie z SHIFT-em
+                cVal = r + l;
+                cVal = Math.max(30, Math.min(cVal, d));
               } else {
-                c = y * (9 / 16);
-                if (c > d) {
-                  c = d;
-                  y = c * (16 / 9);
+                // Skalowanie proporcjonalne do natywnego formatu danej kamery
+                const guest = multiGuestsState[e.dataset.id];
+                const is4x3 = guest && guest.ratio === "4:3";
+                const R = is4x3 ? 4 / 3 : 16 / 9;
+
+                cVal = y / R;
+                if (cVal > d) {
+                  cVal = d;
+                  y = cVal * R;
                 }
               }
               let p = (y / u) * 100,
-                g = (c / m) * 100;
+                g = (cVal / m) * 100;
               ((e.style.width = p + "%"),
                 (e.style.height = g + "%"),
                 broadcastCommand({
