@@ -637,34 +637,37 @@
           }
           checkMuteState();
 
-          if (isAlreadyLive && activeCalls.length > 0) {
-            for (const call of activeCalls) {
-              if (call && call.peerConnection) {
-                const senders = call.peerConnection.getSenders();
-                const videoSender = senders.find(
-                  (s) => s.track && "video" === s.track.kind,
-                );
-                const audioSender = senders.find(
-                  (s) => s.track && "audio" === s.track.kind,
-                );
+          if (isAlreadyLive) {
+            if (activeCalls.length > 0) {
+              for (const call of activeCalls) {
+                if (call && call.peerConnection) {
+                  const senders = call.peerConnection.getSenders();
+                  const videoSender = senders.find(
+                    (s) => s.track && "video" === s.track.kind,
+                  );
+                  const audioSender = senders.find(
+                    (s) => s.track && "audio" === s.track.kind,
+                  );
 
-                if (videoSender && newVideoTrack) {
-                  await videoSender.replaceTrack(newVideoTrack);
-                  if (document.getElementById("high-bitrate").checked) {
-                    try {
-                      const params = videoSender.getParameters();
-                      if (!params.encodings) params.encodings = [{}];
-                      params.encodings[0].maxBitrate = 6e6;
-                      await videoSender.setParameters(params);
-                    } catch (e) {}
+                  if (videoSender && newVideoTrack) {
+                    await videoSender.replaceTrack(newVideoTrack);
+                    if (document.getElementById("high-bitrate").checked) {
+                      try {
+                        const params = videoSender.getParameters();
+                        if (!params.encodings) params.encodings = [{}];
+                        params.encodings[0].maxBitrate = 6e6;
+                        await videoSender.setParameters(params);
+                      } catch (e) {}
+                    }
                   }
-                }
-                if (audioSender && newAudioTrack) {
-                  await audioSender.replaceTrack(newAudioTrack);
+                  if (audioSender && newAudioTrack) {
+                    await audioSender.replaceTrack(newAudioTrack);
+                  }
                 }
               }
             }
 
+            // Zawsze wysyłaj zaktualizowany format i imię do Reżysera i OBS
             const identifyMsg = {
               type: "identify",
               name: document.getElementById("username").value.trim(),
@@ -675,6 +678,7 @@
             } else if (!isMulti && globalConn && globalConn.open) {
               globalConn.send(identifyMsg);
             }
+
             log(
               "✅ Sprzęt podmieniony w locie! Wizja aktywna bez rozłączania.",
               "success",

@@ -1696,8 +1696,34 @@
           let box = e.querySelector(`.stage-box[data-id="${tId}"]`);
           const guest = multiGuestsState[tId];
           const name = guest ? guest.name : "Gość";
+          const guestRatio = guest && guest.ratio ? guest.ratio : "16:9";
+          const R = guestRatio === "4:3" ? 4 / 3 : 16 / 9;
 
           if (box) {
+            // Jeśli format kamery zmienił się w locie, automatycznie przelicz i zaktualizuj kafelek
+            if (box.dataset.ratio !== guestRatio) {
+              const curH = parseFloat(box.style.height) || CAM_HEIGHT_PCT;
+              let curX = parseFloat(box.style.left) || 0;
+              const curY = parseFloat(box.style.top) || 0;
+              let newW = parseFloat((curH * R * 0.5625).toFixed(4));
+
+              if (curX + newW > 100) {
+                curX = Math.max(0, parseFloat((100 - newW).toFixed(4)));
+                box.style.left = curX + "%";
+              }
+              box.style.width = newW + "%";
+              box.dataset.ratio = guestRatio;
+
+              broadcastCommand({
+                type: "transform-update",
+                targetId: tId,
+                x: curX,
+                y: curY,
+                w: newW,
+                h: curH,
+              });
+            }
+
             const labelEl = box.querySelector(".box-label");
             if (labelEl) labelEl.innerText = name;
             else box.innerText = name;
@@ -1708,13 +1734,12 @@
               box.appendChild(handle);
             }
           } else {
-            const guestRatio = guest && guest.ratio ? guest.ratio : "16:9";
-            const R = guestRatio === "4:3" ? 4 / 3 : 16 / 9;
-            const initW = (CAM_HEIGHT_PCT * R * 0.5625).toFixed(4);
+            const initW = parseFloat((CAM_HEIGHT_PCT * R * 0.5625).toFixed(4));
 
             box = document.createElement("div");
             box.className = "stage-box";
             box.dataset.id = tId;
+            box.dataset.ratio = guestRatio;
             box.style.width = initW + "%";
             box.style.height = CAM_HEIGHT_PCT + "%";
             box.style.left = 2 + 2 * idx + "%";
