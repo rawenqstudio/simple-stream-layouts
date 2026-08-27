@@ -511,15 +511,23 @@
         panel.style.display = "block";
         container.className = "layout-grid";
 
+        const hidePanel = () => {
+          clearTimeout(hidePanelTimeout);
+          panel.classList.remove("visible");
+        };
+
         const showPanel = () => {
           panel.classList.add("visible");
           clearTimeout(hidePanelTimeout);
-          hidePanelTimeout = setTimeout(() => {
-            panel.classList.remove("visible");
-          }, 5000);
+          hidePanelTimeout = setTimeout(hidePanel, 5000);
         };
+
         window.addEventListener("mousemove", showPanel);
         window.addEventListener("mousedown", showPanel);
+
+        // Natychmiastowe zamykanie po zamknięciu okna interakcji w OBS
+        window.addEventListener("blur", hidePanel);
+        document.addEventListener("mouseleave", hidePanel);
       }
 
       function updateLocalActiveButton(btn) {
