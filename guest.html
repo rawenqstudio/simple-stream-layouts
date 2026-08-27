@@ -594,69 +594,93 @@
           }));
       }
       async function startPreview() {
-        const e = activeCalls.length > 0;
-        (e
-          ? log("🔄 Zmiana sprzętu w locie...", "info")
-          : ((joinBtn.disabled = !0),
-            (joinBtn.innerText = "Ustawianie kamery...")),
-          localStream && localStream.getTracks().forEach((e) => e.stop()));
-        const t = document.getElementById("cameraRatio").value,
-          n = "4:3" === t ? 1440 : 1920;
-        document.querySelector(".video-wrapper").style.aspectRatio = t.replace(
-          ":",
-          "/",
-        );
-        const o = {
+        const isConnected = activeCalls.length > 0;
+        if (isConnected) {
+          log("🔄 Zmiana sprzętu w locie...", "info");
+        } else {
+          joinBtn.disabled = true;
+          joinBtn.innerText = "Ustawianie kamery...";
+        }
+
+        if (localStream) {
+          localStream.getTracks().forEach((track) => track.stop());
+        }
+
+        const selectedRatio = document.getElementById("cameraRatio").value;
+        const idealWidth = selectedRatio === "4:3" ? 1440 : 1920;
+        document.querySelector(".video-wrapper").style.aspectRatio =
+          selectedRatio.replace(":", "/");
+
+        const constraints = {
           video: {
-            deviceId: videoSelect.value ? { exact: videoSelect.value } : void 0,
-            width: { ideal: n },
+            deviceId: videoSelect.value
+              ? { exact: videoSelect.value }
+              : undefined,
+            width: { ideal: idealWidth },
             height: { ideal: 1080 },
           },
           audio: {
-            deviceId: audioSelect.value ? { exact: audioSelect.value } : void 0,
+            deviceId: audioSelect.value
+              ? { exact: audioSelect.value }
+              : undefined,
           },
         };
+
         try {
-          ((localStream = await navigator.mediaDevices.getUserMedia(o)),
-            (document.getElementById("localVideo").srcObject = localStream));
-          const n = localStream.getVideoTracks()[0];
-          if (
-            (n && "contentHint" in n && (n.contentHint = "motion"),
-            checkMuteState(),
-            e)
-          ) {
-            activeCalls.forEach((e) => {
-              if (e.peerConnection) {
-                const t = e.peerConnection.getSenders(),
-                  n = t.find((e) => e.track && "video" === e.track.kind),
-                  o = t.find((e) => e.track && "audio" === e.track.kind);
-                (n &&
-                  localStream.getVideoTracks().length > 0 &&
-                  n.replaceTrack(localStream.getVideoTracks()[0]),
-                  o &&
-                    localStream.getAudioTracks().length > 0 &&
-                    o.replaceTrack(localStream.getAudioTracks()[0]));
+          localStream = await navigator.mediaDevices.getUserMedia(constraints);
+          document.getElementById("localVideo").srcObject = localStream;
+
+          const vTrack = localStream.getVideoTracks()[0];
+          if (vTrack && "contentHint" in vTrack) vTrack.contentHint = "motion";
+          checkMuteState();
+
+          if (isConnected) {
+            // Podmiana strumienia w locie we wszystkich aktywnych połączeniach
+            activeCalls.forEach((call) => {
+              if (call.peerConnection) {
+                const senders = call.peerConnection.getSenders();
+                const videoSender = senders.find(
+                  (s) => s.track && s.track.kind === "video",
+                );
+                const audioSender = senders.find(
+                  (s) => s.track && s.track.kind === "audio",
+                );
+                if (videoSender && localStream.getVideoTracks().length > 0) {
+                  videoSender.replaceTrack(localStream.getVideoTracks()[0]);
+                }
+                if (audioSender && localStream.getAudioTracks().length > 0) {
+                  audioSender.replaceTrack(localStream.getAudioTracks()[0]);
+                }
               }
             });
-            const e = {
+
+            // Wysłanie aktualizacji formatu do Reżysera i OBS
+            const identifyMsg = {
               type: "identify",
               name: document.getElementById("username").value.trim(),
-              ratio: t,
+              ratio: selectedRatio,
             };
-            (isMulti && directorConn && directorConn.open
-              ? directorConn.send(e)
-              : !isMulti && globalConn && globalConn.open && globalConn.send(e),
-              log(
-                "✅ Sprzęt podmieniony płynnie! OBS zaktualizowany.",
-                "success",
-              ));
-          } else
-            ((joinBtn.disabled = !1),
-              (joinBtn.innerText = "DOŁĄCZ DO STUDIA"),
-              log("Kamera gotowa. Możesz dołączyć.", "success"));
-        } catch (t) {
-          (log("Błąd sprzętu: " + t.name, "error"),
-            e || (joinBtn.innerText = "BŁĄD KAMERY"));
+
+            if (isMulti && directorConn && directorConn.open) {
+              directorConn.send(identifyMsg);
+            } else if (!isMulti && globalConn && globalConn.open) {
+              globalConn.send(identifyMsg);
+            }
+
+            log(
+              "✅ Format kamery zaktualizowany na " +
+                selectedRatio +
+                "! Reżyser i OBS powiadomieni.",
+              "success",
+            );
+          } else {
+            joinBtn.disabled = false;
+            joinBtn.innerText = "DOŁĄCZ DO STUDIA";
+            log("Kamera gotowa. Możesz dołączyć.", "success");
+          }
+        } catch (err) {
+          log("Błąd sprzętu: " + err.name, "error");
+          if (!isConnected) joinBtn.innerText = "BŁĄD KAMERY";
         }
       }
       function checkMuteState() {

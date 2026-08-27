@@ -1168,57 +1168,66 @@
       }
       function handleData(e, t) {
         if ("guest-list" === e.type && !isMulti) {
-          e.list.forEach((e) => {
-            ((multiGuestsState[e.id] = e),
-              guestOrder.includes(e.id) || guestOrder.push(e.id));
+          e.list.forEach((guest) => {
+            multiGuestsState[guest.id] = guest;
+            if (!guestOrder.includes(guest.id)) guestOrder.push(guest.id);
           });
-          const t = e.list.map((e) => e.id);
-          ((guestOrder = guestOrder.filter((e) => t.includes(e))),
-            refreshMultiModeUI(),
-            renderGameControls(),
-            renderFreeStage());
+          const validIds = e.list.map((g) => g.id);
+          guestOrder = guestOrder.filter((id) => validIds.includes(id));
+          refreshMultiModeUI();
+          renderGameControls();
+          renderFreeStage();
         }
-        if (("stats-update" === e.type && updateStats(e.stats), isMulti)) {
+
+        if ("stats-update" === e.type) {
+          updateStats(e.stats);
+        }
+
+        if (isMulti) {
           if ("identify" === e.type && t) {
-            const o = t.peer;
-            guestConnections.includes(t) || guestConnections.push(t);
-            const s = multiGuestsState[o] || { muted: !1, mirrored: !1 };
+            const peerId = t.peer;
+            if (!guestConnections.includes(t)) guestConnections.push(t);
+            const prev = multiGuestsState[peerId] || {
+              muted: false,
+              mirrored: false,
+            };
             const newRatio = e.ratio || "16:9";
 
-            multiGuestsState[o] = {
-              id: o,
+            multiGuestsState[peerId] = {
+              id: peerId,
               name: e.name || "Gość",
               ratio: newRatio,
-              muted: s.muted,
-              mirrored: s.mirrored,
+              muted: prev.muted,
+              mirrored: prev.mirrored,
               conn: t,
             };
 
-            if (!guestOrder.includes(o)) guestOrder.push(o);
+            if (!guestOrder.includes(peerId)) guestOrder.push(peerId);
 
-            obsClients.forEach((t) => {
-              if (t.open) {
-                t.send({
+            // Przekazanie zmiany do wszystkich ekranów OBS
+            obsClients.forEach((obsConn) => {
+              if (obsConn.open) {
+                obsConn.send({
                   type: "identify",
-                  targetId: o,
+                  targetId: peerId,
                   name: e.name,
                   ratio: newRatio,
                 });
               }
             });
 
-            // Dynamiczne dopasowanie kafelka na stole montażowym do formatu 4:3 lub 16:9
+            // Natychmiastowe przeliczenie kafelka na stole montażowym
             const stage = document.getElementById("free-mode-stage");
-            const box = stage.querySelector(`.stage-box[data-id="${o}"]`);
+            const box = stage.querySelector(`.stage-box[data-id="${peerId}"]`);
             if (box) {
+              box.dataset.ratio = newRatio;
               const curH = parseFloat(box.style.height) || CAM_HEIGHT_PCT;
-              // Dla 4:3 w proporcji ekranu 16:9 szerokość % = wysokość % * 0.75
               const newW = newRatio === "4:3" ? curH * 0.75 : curH;
               box.style.width = newW.toFixed(4) + "%";
 
               broadcastCommand({
                 type: "transform-update",
-                targetId: o,
+                targetId: peerId,
                 x: parseFloat(parseFloat(box.style.left).toFixed(4)),
                 y: parseFloat(parseFloat(box.style.top).toFixed(4)),
                 w: parseFloat(newW.toFixed(4)),
@@ -1231,27 +1240,31 @@
             renderFreeStage();
             updateStatusMsg();
           }
-          ("mic-status" === e.type &&
-            t &&
-            multiGuestsState[t.peer] &&
-            ((multiGuestsState[t.peer].muted = e.muted),
-            refreshMultiModeUI(),
+
+          if ("mic-status" === e.type && t && multiGuestsState[t.peer]) {
+            multiGuestsState[t.peer].muted = e.muted;
+            refreshMultiModeUI();
             obsClients.forEach((o) => {
-              o.open &&
+              if (o.open)
                 o.send({ type: "mic-status", peer: t.peer, muted: e.muted });
-            })),
+            });
+          }
+
+          if (
             "guest-cam-transform" === e.type &&
-              t &&
-              multiGuestsState[t.peer] &&
-              ((multiGuestsState[t.peer].transform = e.transform),
-              obsClients.forEach((o) => {
-                o.open &&
-                  o.send({
-                    type: "guest-cam-transform",
-                    targetId: t.peer,
-                    transform: e.transform,
-                  });
-              })));
+            t &&
+            multiGuestsState[t.peer]
+          ) {
+            multiGuestsState[t.peer].transform = e.transform;
+            obsClients.forEach((o) => {
+              if (o.open)
+                o.send({
+                  type: "guest-cam-transform",
+                  targetId: t.peer,
+                  transform: e.transform,
+                });
+            });
+          }
         }
       }
       function refreshMultiModeUI() {
@@ -1698,7 +1711,7 @@
               box.appendChild(handle);
             }
 
-            // Gdy format kamery gościa uległ zmianie w locie (16:9 <-> 4:3)
+            // Gdy format kamery gościa uległ zmianie (16:9 <-> 4:3)
             if (box.dataset.ratio !== ratio) {
               box.dataset.ratio = ratio;
               const curH = parseFloat(box.style.height) || defaultH;
