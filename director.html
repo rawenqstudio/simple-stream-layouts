@@ -1187,24 +1187,26 @@
             guestConnections.includes(t) || guestConnections.push(t);
             const s = multiGuestsState[o] || { muted: !1, mirrored: !1 };
             const guestRatio = e.ratio || "16:9";
-            ((multiGuestsState[o] = {
+            multiGuestsState[o] = {
               id: o,
               name: e.name || "Gość",
               ratio: guestRatio,
               muted: s.muted,
               mirrored: s.mirrored,
               conn: t,
-            }),
-              guestOrder.includes(o) || guestOrder.push(o),
-              obsClients.forEach((t) => {
-                t.open &&
-                  t.send({
-                    type: "identify",
-                    targetId: o,
-                    name: e.name,
-                    ratio: guestRatio,
-                  });
-              }));
+            };
+            if (!guestOrder.includes(o)) guestOrder.push(o);
+
+            obsClients.forEach((client) => {
+              if (client.open) {
+                client.send({
+                  type: "identify",
+                  targetId: o,
+                  name: e.name,
+                  ratio: guestRatio,
+                });
+              }
+            });
 
             // Automatyczne dopasowanie proporcji ramki do formatu kamery
             const stageEl = document.getElementById("free-mode-stage");

@@ -52,7 +52,7 @@
         aspect-ratio: 16 / 9;
       }
       .video-box[data-ratio="4:3"] {
-        aspect-ratio: 4 / 3;
+        aspect-ratio: 4 / 3 !important;
       }
 
       video,
@@ -796,12 +796,14 @@
           }
         }
         if (data.type === "transform-update" && !isLocal) {
-          const box = document.getElementById(`box-${data.targetId}`);
-          if (box) {
-            box.style.left = data.x + "%";
-            box.style.top = data.y + "%";
-            box.style.width = data.w + "%";
-            box.style.height = data.h + "%";
+          if (container.classList.contains("layout-free")) {
+            const box = document.getElementById(`box-${data.targetId}`);
+            if (box) {
+              box.style.left = data.x + "%";
+              box.style.top = data.y + "%";
+              box.style.width = data.w + "%";
+              box.style.height = data.h + "%";
+            }
           }
         }
         if (data.type === "reorder-guests" && !isLocal) {
@@ -911,9 +913,10 @@
               if (aEl) aEl.muted = true;
               hiddenContainer.appendChild(box);
             } else {
-              // Jeśli z jakiegoś powodu był wykluczony, ale zmienił imię
               box.classList.remove("excluded-guest");
-              container.appendChild(box);
+              if (box.parentElement !== container) {
+                container.appendChild(box);
+              }
             }
           }
 
