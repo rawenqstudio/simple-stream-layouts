@@ -599,15 +599,28 @@
           (directorConn && directorConn.open) ||
           (globalConn && globalConn.open);
 
+        const selectedRatio = document.getElementById("cameraRatio").value;
+        const currentName = document.getElementById("username").value.trim();
+
+        // 1. NATYCHMIASTOWY sygnał o zmianie formatu/imienia do Reżysera i OBS (zero opóźnienia)
         if (isAlreadyLive) {
           log("🔄 Płynna zmiana sprzętu w locie...", "info");
+          const identifyMsg = {
+            type: "identify",
+            name: currentName,
+            ratio: selectedRatio,
+          };
+          if (isMulti && directorConn && directorConn.open) {
+            directorConn.send(identifyMsg);
+          } else if (!isMulti && globalConn && globalConn.open) {
+            globalConn.send(identifyMsg);
+          }
         } else {
           joinBtn.disabled = true;
           joinBtn.innerText = "Ustawianie kamery...";
         }
 
         const oldStream = localStream;
-        const selectedRatio = document.getElementById("cameraRatio").value;
         const idealWidth = selectedRatio === "4:3" ? 1440 : 1920;
         document.querySelector(".video-wrapper").style.aspectRatio =
           selectedRatio.replace(":", "/");
@@ -639,7 +652,7 @@
 
           if (isAlreadyLive) {
             if (activeCalls.length > 0) {
-              for (const call of activeCalls) {
+              activeCalls.forEach(async (call) => {
                 if (call && call.peerConnection) {
                   const senders = call.peerConnection.getSenders();
                   const videoSender = senders.find(
@@ -650,35 +663,24 @@
                   );
 
                   if (videoSender && newVideoTrack) {
-                    await videoSender.replaceTrack(newVideoTrack);
-                    if (document.getElementById("high-bitrate").checked) {
-                      try {
+                    try {
+                      await videoSender.replaceTrack(newVideoTrack);
+                      if (document.getElementById("high-bitrate").checked) {
                         const params = videoSender.getParameters();
                         if (!params.encodings) params.encodings = [{}];
                         params.encodings[0].maxBitrate = 6e6;
                         await videoSender.setParameters(params);
-                      } catch (e) {}
-                    }
+                      }
+                    } catch (e) {}
                   }
                   if (audioSender && newAudioTrack) {
-                    await audioSender.replaceTrack(newAudioTrack);
+                    try {
+                      await audioSender.replaceTrack(newAudioTrack);
+                    } catch (e) {}
                   }
                 }
-              }
+              });
             }
-
-            // Zawsze wysyłaj zaktualizowany format i imię do Reżysera i OBS
-            const identifyMsg = {
-              type: "identify",
-              name: document.getElementById("username").value.trim(),
-              ratio: selectedRatio,
-            };
-            if (isMulti && directorConn && directorConn.open) {
-              directorConn.send(identifyMsg);
-            } else if (!isMulti && globalConn && globalConn.open) {
-              globalConn.send(identifyMsg);
-            }
-
             log(
               "✅ Sprzęt podmieniony w locie! Wizja aktywna bez rozłączania.",
               "success",
@@ -689,7 +691,6 @@
             log("Kamera gotowa. Możesz dołączyć.", "success");
           }
 
-          // Bezpieczne zatrzymanie starego sprzętu dopiero po podpięciu nowego
           if (oldStream) {
             oldStream.getTracks().forEach((track) => track.stop());
           }

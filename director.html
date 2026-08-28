@@ -1208,39 +1208,10 @@
               }
             });
 
-            // Automatyczne dopasowanie proporcji ramki do formatu kamery
-            const stageEl = document.getElementById("free-mode-stage");
-            const boxEl = stageEl
-              ? stageEl.querySelector(`.stage-box[data-id="${o}"]`)
-              : null;
-            if (boxEl) {
-              const curH = parseFloat(boxEl.style.height) || CAM_HEIGHT_PCT;
-              let curX = parseFloat(boxEl.style.left) || 0;
-              const curY = parseFloat(boxEl.style.top) || 0;
-              const R = guestRatio === "4:3" ? 4 / 3 : 16 / 9;
-              let newW = parseFloat((curH * R * 0.5625).toFixed(4));
-
-              // Zabezpieczenie przed wyjechaniem ramki poza prawą krawędź stołu
-              if (curX + newW > 100) {
-                curX = Math.max(0, parseFloat((100 - newW).toFixed(4)));
-                boxEl.style.left = curX + "%";
-              }
-              boxEl.style.width = newW + "%";
-
-              broadcastCommand({
-                type: "transform-update",
-                targetId: o,
-                x: curX,
-                y: curY,
-                w: newW,
-                h: curH,
-              });
-            }
-
-            (refreshMultiModeUI(),
-              renderGameControls(),
-              renderFreeStage(),
-              updateStatusMsg());
+            renderFreeStage();
+            refreshMultiModeUI();
+            renderGameControls();
+            updateStatusMsg();
           }
           ("mic-status" === e.type &&
             t &&
