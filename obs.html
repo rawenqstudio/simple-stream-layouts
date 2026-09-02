@@ -679,8 +679,8 @@
         const box = document.getElementById(`box-${id}`);
         if (!box) return;
 
-        const stageW = window.innerWidth;
-        const stageH = window.innerHeight;
+        const stageW = window.innerWidth || 1920;
+        const stageH = window.innerHeight || 1080;
 
         let curX = parseFloat(box.style.left) || 0;
         let curY = parseFloat(box.style.top) || 0;
@@ -689,34 +689,39 @@
           curY = (box.offsetTop / stageH) * 100;
         }
 
-        // Sprawdź, czy kafelek znajduje się w układzie poziomym (Góra/Dół - baza 280px)
-        const isHorizontalLayout =
-          curY < 10 ||
-          curY > 65 ||
-          (parseFloat(box.style.width) < 16 &&
-            parseFloat(box.style.height) < 16);
+        // Pobierz aktualny referencyjny rozmiar kafelka 16:9 ze sceny lub użyj standardowego 320x180 px
+        const ref16x9 = Array.from(
+          document.querySelectorAll("#video-container .video-box"),
+        ).find(
+          (b) =>
+            b !== box &&
+            b.getAttribute("data-ratio") !== "4:3" &&
+            b.style.width &&
+            b.style.height,
+        );
 
-        let newW, newH;
-        if (isHorizontalLayout) {
-          if (mode === "width") {
-            newW = (280 / 1920) * 100;
-            newH = (210 / 1080) * 100;
-          } else {
-            newW = (210 / 1920) * 100;
-            newH = (157 / 1080) * 100;
-          }
-          if (curY > 50) curY = 100 - newH - (20 / 1080) * 100;
-          else curY = (20 / 1080) * 100;
-        } else {
-          if (mode === "width") {
-            newW = (320 / 1920) * 100;
-            newH = (240 / 1080) * 100;
-          } else {
-            newW = (240 / 1920) * 100;
-            newH = (180 / 1080) * 100;
-          }
+        let refW = (320 / 1920) * 100; // 16.6667%
+        let refH = (180 / 1080) * 100; // 16.6667%
+
+        if (ref16x9) {
+          const rw = parseFloat(ref16x9.style.width);
+          const rh = parseFloat(ref16x9.style.height);
+          if (!isNaN(rw) && rw > 0) refW = rw;
+          if (!isNaN(rh) && rh > 0) refH = rh;
         }
 
+        let newW, newH;
+        if (mode === "width") {
+          // Dopasuj do szerokości 16:9 -> Wysokość = Szerokość * (3/4) / 0.5625
+          newW = refW;
+          newH = (refW / 0.5625) * (3 / 4);
+        } else {
+          // Dopasuj do wysokości 16:9 -> Szerokość = Wysokość * (4/3) * 0.5625
+          newH = refH;
+          newW = refH * (4 / 3) * 0.5625;
+        }
+
+        // Zabezpieczenie przed wyjechaniem poza ekran
         if (curX + newW > 100) curX = Math.max(0, 100 - newW);
         if (curY + newH > 100) curY = Math.max(0, 100 - newH);
 
