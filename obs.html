@@ -662,15 +662,21 @@
       }
 
       function setLocalLayout(mode, btnElement) {
-        isLocalFreeMode = false;
-        document.body.classList.remove("local-free-mode");
-        container.className = mode;
-        document.querySelectorAll(".video-box").forEach((box) => {
-          box.style.top = "";
-          box.style.left = "";
-          box.style.width = "";
-          box.style.height = "";
-        });
+        if (isLocalFreeMode) {
+          // Jeśli tryb swobodny jest aktywny, zastosuj gotowy układ jako szablon startowy
+          applyPresetToLocalFreeMode(mode);
+        } else {
+          // Standardowy tryb CSS
+          container.className = mode;
+          document
+            .querySelectorAll("#video-container .video-box")
+            .forEach((box) => {
+              box.style.top = "";
+              box.style.left = "";
+              box.style.width = "";
+              box.style.height = "";
+            });
+        }
         updateLocalActiveButton(btnElement);
       }
 
@@ -732,34 +738,288 @@
       }
 
       function toggleLocalFreeMode(btnElement) {
-        isLocalFreeMode = true;
-        document.body.classList.add("local-free-mode");
-        container.className = "layout-free";
+        isLocalFreeMode = !isLocalFreeMode;
+        if (isLocalFreeMode) {
+          document.body.classList.add("local-free-mode");
+          container.className = "layout-free";
 
-        const boxes = container.querySelectorAll(".video-box");
-        boxes.forEach((box, index) => {
-          const is4x3 = box.getAttribute("data-ratio") === "4:3";
-          // Precyzyjne wartości procentowe: 320x180 dla 16:9 lub 240x180 dla 4:3
-          const baseH = parseFloat(((180 / 1080) * 100).toFixed(4)); // 16.6667%
-          const baseW = is4x3
-            ? parseFloat(((240 / 1920) * 100).toFixed(4)) // 12.5000%
-            : parseFloat(((320 / 1920) * 100).toFixed(4)); // 16.6667%
-
-          if (
-            !box.style.left ||
-            !box.style.left.includes("%") ||
-            !box.style.width ||
-            box.style.width === "auto" ||
-            !box.style.height ||
-            box.style.height === "auto"
-          ) {
-            box.style.width = baseW + "%";
-            box.style.height = baseH + "%";
-            box.style.left = (2 + index * 4).toFixed(4) + "%";
-            box.style.top = (2 + index * 4).toFixed(4) + "%";
+          // Ułóż w siatkę jako bazę startową
+          applyPresetToLocalFreeMode("layout-grid");
+          if (btnElement) {
+            btnElement.style.background = "rgba(16, 185, 129, 0.4)";
+            btnElement.style.borderColor = "#34d399";
+            btnElement.innerText = "🔓 Swobodne Ustawianie (WŁĄCZONE)";
           }
-        });
-        updateLocalActiveButton(btnElement);
+        } else {
+          document.body.classList.remove("local-free-mode");
+          setLocalLayout(
+            "layout-grid",
+            document.querySelector("#local-panel button"),
+          );
+          if (btnElement) {
+            btnElement.style.background = "rgba(16, 185, 129, 0.2)";
+            btnElement.style.borderColor = "rgba(16, 185, 129, 0.4)";
+            btnElement.innerText = "🔓 Swobodne Ustawianie";
+          }
+        }
+      }
+
+      function applyPresetToLocalFreeMode(preset) {
+        const boxes = Array.from(
+          document.querySelectorAll("#video-container .video-box"),
+        ).filter((b) => !b.classList.contains("excluded-guest"));
+        const o = boxes.length;
+        if (0 === o) return;
+
+        const pxToW = (px) => (px / 1920) * 100;
+        const pxToH = (px) => (px / 1080) * 100;
+
+        const getBoxWidth = (boxEl, heightPct) => {
+          const is4x3 = boxEl.getAttribute("data-ratio") === "4:3";
+          const R = is4x3 ? 4 / 3 : 16 / 9;
+          return heightPct * R * 0.5625;
+        };
+
+        const getBoxHeightForWidth = (boxEl, widthPx) => {
+          const is4x3 = boxEl.getAttribute("data-ratio") === "4:3";
+          const heightPx = is4x3 ? widthPx * (3 / 4) : widthPx * (9 / 16);
+          return pxToH(heightPx);
+        };
+
+        if ("layout-grid" === preset) {
+          let cols, rows, baseH;
+          if (1 === o) {
+            cols = 1;
+            rows = 1;
+            baseH = 85;
+          } else if (2 === o) {
+            cols = 2;
+            rows = 1;
+            baseH = 48;
+          } else if (o <= 4) {
+            cols = 2;
+            rows = 2;
+            baseH = 45;
+          } else if (o <= 6) {
+            cols = 3;
+            rows = 2;
+            baseH = 32;
+          } else if (o <= 9) {
+            cols = 3;
+            rows = 3;
+            baseH = 30;
+          } else if (o <= 12) {
+            cols = 4;
+            rows = 3;
+            baseH = 23;
+          } else {
+            cols = Math.ceil(Math.sqrt(o));
+            rows = Math.ceil(o / cols);
+            baseH = Math.min(85 / rows, 85 / cols);
+          }
+
+          const gapX = pxToW(15);
+          const gapY = pxToH(15);
+          const totalGridH = baseH * rows + gapY * (rows - 1);
+          const gridStartY = (100 - totalGridH) / 2;
+
+          for (let r = 0; r < rows; r++) {
+            const rowBoxes = boxes.slice(r * cols, (r + 1) * cols);
+            if (0 === rowBoxes.length) break;
+
+            const rowWidths = rowBoxes.map((b) => getBoxWidth(b, baseH));
+            const totalRowW =
+              rowWidths.reduce((sum, w) => sum + w, 0) +
+              (rowBoxes.length - 1) * gapX;
+            let curX = (100 - totalRowW) / 2;
+            const curY = gridStartY + r * (baseH + gapY);
+
+            rowBoxes.forEach((b, colIdx) => {
+              const w = rowWidths[colIdx];
+              b.style.left = curX.toFixed(4) + "%";
+              b.style.top = curY.toFixed(4) + "%";
+              b.style.width = w.toFixed(4) + "%";
+              b.style.height = baseH.toFixed(4) + "%";
+              curX += w + gapX;
+            });
+          }
+        } else if ("layout-sidebar-right" === preset) {
+          const baseW = pxToW(320);
+          const gap = pxToH(15);
+          const heights = boxes.map((b) => getBoxHeightForWidth(b, 320));
+          const totalH =
+            heights.reduce((sum, val) => sum + val, 0) + (o - 1) * gap;
+          let currentY = Math.max(pxToH(20), (100 - totalH) / 2);
+
+          boxes.forEach((b, idx) => {
+            const h = heights[idx];
+            b.style.left = (100 - baseW - pxToW(20)).toFixed(4) + "%";
+            b.style.top = currentY.toFixed(4) + "%";
+            b.style.width = baseW.toFixed(4) + "%";
+            b.style.height = h.toFixed(4) + "%";
+            currentY += h + gap;
+          });
+        } else if ("layout-sidebar-left" === preset) {
+          const baseW = pxToW(320);
+          const gap = pxToH(15);
+          const heights = boxes.map((b) => getBoxHeightForWidth(b, 320));
+          const totalH =
+            heights.reduce((sum, val) => sum + val, 0) + (o - 1) * gap;
+          let currentY = Math.max(pxToH(20), (100 - totalH) / 2);
+
+          boxes.forEach((b, idx) => {
+            const h = heights[idx];
+            b.style.left = pxToW(20).toFixed(4) + "%";
+            b.style.top = currentY.toFixed(4) + "%";
+            b.style.width = baseW.toFixed(4) + "%";
+            b.style.height = h.toFixed(4) + "%";
+            currentY += h + gap;
+          });
+        } else if ("layout-bottom" === preset) {
+          const baseH = pxToH(157);
+          const gap = pxToW(20);
+          const widths = boxes.map((b) => getBoxWidth(b, baseH));
+          const totalW =
+            widths.reduce((sum, val) => sum + val, 0) + (o - 1) * gap;
+          let currentX = Math.max(0, (100 - totalW) / 2);
+
+          boxes.forEach((b, idx) => {
+            const w = widths[idx];
+            b.style.left = currentX.toFixed(4) + "%";
+            b.style.top = (100 - baseH - pxToH(20)).toFixed(4) + "%";
+            b.style.width = w.toFixed(4) + "%";
+            b.style.height = baseH.toFixed(4) + "%";
+            currentX += w + gap;
+          });
+        } else if ("layout-top" === preset) {
+          const baseH = pxToH(157);
+          const gap = pxToW(20);
+          const widths = boxes.map((b) => getBoxWidth(b, baseH));
+          const totalW =
+            widths.reduce((sum, val) => sum + val, 0) + (o - 1) * gap;
+          let currentX = Math.max(0, (100 - totalW) / 2);
+
+          boxes.forEach((b, idx) => {
+            const w = widths[idx];
+            b.style.left = currentX.toFixed(4) + "%";
+            b.style.top = pxToH(20).toFixed(4) + "%";
+            b.style.width = w.toFixed(4) + "%";
+            b.style.height = baseH.toFixed(4) + "%";
+            currentX += w + gap;
+          });
+        } else if ("layout-split" === preset) {
+          const baseW = pxToW(320);
+          const gap = pxToH(30);
+          const leftX = pxToW(40);
+          const rightX = 100 - pxToW(40) - baseW;
+          const rows = Math.ceil(o / 2);
+
+          const rowHeights = [];
+          for (let r = 0; r < rows; r++) {
+            const bLeft = boxes[r * 2];
+            const bRight = boxes[r * 2 + 1];
+            const hLeft = bLeft ? getBoxHeightForWidth(bLeft, 320) : 0;
+            const hRight = bRight ? getBoxHeightForWidth(bRight, 320) : 0;
+            rowHeights.push(Math.max(hLeft, hRight));
+          }
+
+          const totalH =
+            rowHeights.reduce((sum, val) => sum + val, 0) + (rows - 1) * gap;
+          let curRowY = Math.max(pxToH(20), (100 - totalH) / 2);
+
+          for (let r = 0; r < rows; r++) {
+            const bLeft = boxes[r * 2];
+            const bRight = boxes[r * 2 + 1];
+            const rowH = rowHeights[r];
+
+            if (bLeft) {
+              const h = getBoxHeightForWidth(bLeft, 320);
+              bLeft.style.left = leftX.toFixed(4) + "%";
+              bLeft.style.top = curRowY.toFixed(4) + "%";
+              bLeft.style.width = baseW.toFixed(4) + "%";
+              bLeft.style.height = h.toFixed(4) + "%";
+            }
+            if (bRight) {
+              const h = getBoxHeightForWidth(bRight, 320);
+              bRight.style.left = rightX.toFixed(4) + "%";
+              bRight.style.top = curRowY.toFixed(4) + "%";
+              bRight.style.width = baseW.toFixed(4) + "%";
+              bRight.style.height = h.toFixed(4) + "%";
+            }
+            curRowY += rowH + gap;
+          }
+        } else if ("layout-center-stage" === preset) {
+          if (1 === o) {
+            const mainH = 85;
+            const mainW = getBoxWidth(boxes[0], mainH);
+            boxes[0].style.left = ((100 - mainW) / 2).toFixed(4) + "%";
+            boxes[0].style.top = ((100 - mainH) / 2).toFixed(4) + "%";
+            boxes[0].style.width = mainW.toFixed(4) + "%";
+            boxes[0].style.height = mainH.toFixed(4) + "%";
+          } else {
+            const sideColW = pxToW(300);
+            const marginSide = pxToW(20);
+            const gapCenter = pxToW(20);
+            const sideGap = pxToH(15);
+
+            const availCenterW =
+              100 - 2 * marginSide - 2 * sideColW - 2 * gapCenter;
+            const maxCenterH = 80;
+
+            const is4x3Main = boxes[0].getAttribute("data-ratio") === "4:3";
+            const R_main = is4x3Main ? 4 / 3 : 16 / 9;
+
+            let mainH = availCenterW / (R_main * 0.5625);
+            if (mainH > maxCenterH) mainH = maxCenterH;
+            const mainW = mainH * R_main * 0.5625;
+
+            boxes[0].style.left = ((100 - mainW) / 2).toFixed(4) + "%";
+            boxes[0].style.top = ((100 - mainH) / 2).toFixed(4) + "%";
+            boxes[0].style.width = mainW.toFixed(4) + "%";
+            boxes[0].style.height = mainH.toFixed(4) + "%";
+
+            const sideCount = o - 1;
+            const sideRows = Math.ceil(sideCount / 2);
+
+            const sideRowHeights = [];
+            for (let r = 0; r < sideRows; r++) {
+              const bLeft = boxes[1 + r * 2];
+              const bRight = boxes[2 + r * 2];
+              const hLeft = bLeft ? getBoxHeightForWidth(bLeft, 300) : 0;
+              const hRight = bRight ? getBoxHeightForWidth(bRight, 300) : 0;
+              sideRowHeights.push(Math.max(hLeft, hRight));
+            }
+
+            const totalSideH =
+              sideRowHeights.reduce((sum, val) => sum + val, 0) +
+              (sideRows - 1) * sideGap;
+            const sideStartY = Math.max(pxToH(20), (100 - totalSideH) / 2);
+
+            let curSideY = sideStartY;
+            for (let r = 0; r < sideRows; r++) {
+              const bLeft = boxes[1 + r * 2];
+              const bRight = boxes[2 + r * 2];
+              const rowH = sideRowHeights[r];
+
+              if (bLeft) {
+                const h = getBoxHeightForWidth(bLeft, 300);
+                bLeft.style.left = marginSide.toFixed(4) + "%";
+                bLeft.style.top = curSideY.toFixed(4) + "%";
+                bLeft.style.width = sideColW.toFixed(4) + "%";
+                bLeft.style.height = h.toFixed(4) + "%";
+              }
+              if (bRight) {
+                const h = getBoxHeightForWidth(bRight, 300);
+                bRight.style.left =
+                  (100 - marginSide - sideColW).toFixed(4) + "%";
+                bRight.style.top = curSideY.toFixed(4) + "%";
+                bRight.style.width = sideColW.toFixed(4) + "%";
+                bRight.style.height = h.toFixed(4) + "%";
+              }
+              curSideY += rowH + sideGap;
+            }
+          }
+        }
       }
 
       // --- LOKALNY DRAG & DROP W OBS ---
