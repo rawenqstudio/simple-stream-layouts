@@ -682,15 +682,32 @@
           curY = (box.offsetTop / stageH) * 100;
         }
 
+        // Sprawdź, czy kafelek znajduje się w układzie poziomym (Góra/Dół - baza 280px)
+        const isHorizontalLayout =
+          curY < 10 ||
+          curY > 65 ||
+          (parseFloat(box.style.width) < 16 &&
+            parseFloat(box.style.height) < 16);
+
         let newW, newH;
-        if (mode === "width") {
-          // Dopasuj do szerokości 16:9 (320px) -> Wysokość = 240px
-          newW = (320 / 1920) * 100;
-          newH = (240 / 1080) * 100;
+        if (isHorizontalLayout) {
+          if (mode === "width") {
+            newW = (280 / 1920) * 100;
+            newH = (210 / 1080) * 100;
+          } else {
+            newW = (210 / 1920) * 100;
+            newH = (157 / 1080) * 100;
+          }
+          if (curY > 50) curY = 100 - newH - (20 / 1080) * 100;
+          else curY = (20 / 1080) * 100;
         } else {
-          // Dopasuj do wysokości 16:9 (180px) -> Szerokość = 240px
-          newW = (240 / 1920) * 100;
-          newH = (180 / 1080) * 100;
+          if (mode === "width") {
+            newW = (320 / 1920) * 100;
+            newH = (240 / 1080) * 100;
+          } else {
+            newW = (240 / 1920) * 100;
+            newH = (180 / 1080) * 100;
+          }
         }
 
         if (curX + newW > 100) curX = Math.max(0, 100 - newW);

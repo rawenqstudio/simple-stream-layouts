@@ -1491,6 +1491,7 @@
           });
       }
       function applyPresetToFreeMode(e) {
+        lastAppliedPreset = e;
         let t = isMulti ? Object.keys(multiGuestsState) : guestOrder;
         const o = t.length;
         if (0 === o) return;
@@ -1789,6 +1790,15 @@
           }
         }
       }
+      let lastAppliedPreset = null;
+      const allowedFitPresets = [
+        "layout-sidebar-left",
+        "layout-sidebar-right",
+        "layout-top",
+        "layout-bottom",
+        "layout-split",
+      ];
+
       function fit4x3Box(targetId, mode, event) {
         if (event) event.stopPropagation();
         const stageEl = document.getElementById("free-mode-stage");
@@ -1801,14 +1811,60 @@
         let curY = parseFloat(box.style.top) || 0;
         let newW, newH;
 
-        if (mode === "width") {
-          // Dopasuj do szerokości 16:9 (320px) -> Wysokość = 240px
-          newW = parseFloat(pxToW(320).toFixed(4));
-          newH = parseFloat(pxToH(240).toFixed(4));
+        // Dopasowanie wymiarów w zależności od aktywnego gotowego układu
+        if (
+          lastAppliedPreset === "layout-top" ||
+          lastAppliedPreset === "layout-bottom"
+        ) {
+          // Baza 16:9 w Górze / Dole to 280 x 157 px
+          if (mode === "width") {
+            // Dopasuj do szerokości 16:9 (280px) -> Wysokość 4:3 = 210px
+            newW = parseFloat(pxToW(280).toFixed(4));
+            newH = parseFloat(pxToH(210).toFixed(4));
+          } else {
+            // Dopasuj do wysokości 16:9 (157px) -> Szerokość 4:3 = 209.33px
+            newW = parseFloat(pxToW(280 * 0.75).toFixed(4));
+            newH = parseFloat(pxToH(157).toFixed(4));
+          }
+
+          if (lastAppliedPreset === "layout-bottom") {
+            curY = parseFloat((100 - newH - pxToH(20)).toFixed(4));
+          } else {
+            curY = parseFloat(pxToH(20).toFixed(4));
+          }
         } else {
-          // Dopasuj do wysokości 16:9 (180px) -> Szerokość = 240px
-          newW = parseFloat(pxToW(240).toFixed(4));
-          newH = parseFloat(pxToH(180).toFixed(4));
+          // Baza 16:9 w Lewo / Prawo / Split to 320 x 180 px
+          if (mode === "width") {
+            // Dopasuj do szerokości 16:9 (320px) -> Wysokość 4:3 = 240px
+            newW = parseFloat(pxToW(320).toFixed(4));
+            newH = parseFloat(pxToH(240).toFixed(4));
+
+            if (lastAppliedPreset === "layout-sidebar-right") {
+              curX = parseFloat((100 - newW - pxToW(20)).toFixed(4));
+            } else if (lastAppliedPreset === "layout-sidebar-left") {
+              curX = parseFloat(pxToW(20).toFixed(4));
+            } else if (lastAppliedPreset === "layout-split") {
+              const isRight = curX > 50;
+              curX = isRight
+                ? parseFloat((100 - pxToW(40) - newW).toFixed(4))
+                : parseFloat(pxToW(40).toFixed(4));
+            }
+          } else {
+            // Dopasuj do wysokości 16:9 (180px) -> Szerokość 4:3 = 240px
+            newW = parseFloat(pxToW(240).toFixed(4));
+            newH = parseFloat(pxToH(180).toFixed(4));
+
+            if (lastAppliedPreset === "layout-sidebar-right") {
+              curX = parseFloat((100 - newW - pxToW(20)).toFixed(4));
+            } else if (lastAppliedPreset === "layout-sidebar-left") {
+              curX = parseFloat(pxToW(20).toFixed(4));
+            } else if (lastAppliedPreset === "layout-split") {
+              const isRight = curX > 50;
+              curX = isRight
+                ? parseFloat((100 - pxToW(40) - newW).toFixed(4))
+                : parseFloat(pxToW(40).toFixed(4));
+            }
+          }
         }
 
         if (curX + newW > 100)
@@ -1852,6 +1908,10 @@
           const guestRatio = guest && guest.ratio ? guest.ratio : "16:9";
           const R = guestRatio === "4:3" ? 4 / 3 : 16 / 9;
 
+          const shouldShowFitButtons =
+            guestRatio === "4:3" &&
+            allowedFitPresets.includes(lastAppliedPreset);
+
           if (box) {
             if (box.dataset.ratio !== guestRatio) {
               const curH = parseFloat(box.style.height) || CAM_HEIGHT_PCT;
@@ -1880,15 +1940,15 @@
             if (labelEl) labelEl.innerText = name;
             else box.innerText = name;
 
-            // Zarządzanie przyciskami dopasowania dla 4:3
+            // Przyciski dopasowania wyświetlają się tylko w dozwolonych gotowych układach
             let fitGroup = box.querySelector(".box-fit-btn-group");
-            if (guestRatio === "4:3") {
+            if (shouldShowFitButtons) {
               if (!fitGroup) {
                 fitGroup = document.createElement("div");
                 fitGroup.className = "box-fit-btn-group";
                 fitGroup.innerHTML = `
-                  <button class="btn-fit" onclick="fit4x3Box('${tId}', 'width', event)" title="Dopasuj do szerokości 16:9 (320px)">↔ Szer.</button>
-                  <button class="btn-fit" onclick="fit4x3Box('${tId}', 'height', event)" title="Dopasuj do wysokości 16:9 (180px)">↕ Wys.</button>
+                  <button class="btn-fit" onclick="fit4x3Box('${tId}', 'width', event)" title="Dopasuj do szerokości 16:9">↔ Szer.</button>
+                  <button class="btn-fit" onclick="fit4x3Box('${tId}', 'height', event)" title="Dopasuj do wysokości 16:9">↕ Wys.</button>
                 `;
                 box.appendChild(fitGroup);
               }
@@ -1918,12 +1978,12 @@
             labelEl.innerText = name;
             box.appendChild(labelEl);
 
-            if (guestRatio === "4:3") {
+            if (shouldShowFitButtons) {
               const fitGroup = document.createElement("div");
               fitGroup.className = "box-fit-btn-group";
               fitGroup.innerHTML = `
-                <button class="btn-fit" onclick="fit4x3Box('${tId}', 'width', event)" title="Dopasuj do szerokości 16:9 (320px)">↔ Szer.</button>
-                <button class="btn-fit" onclick="fit4x3Box('${tId}', 'height', event)" title="Dopasuj do wysokości 16:9 (180px)">↕ Wys.</button>
+                <button class="btn-fit" onclick="fit4x3Box('${tId}', 'width', event)" title="Dopasuj do szerokości 16:9">↔ Szer.</button>
+                <button class="btn-fit" onclick="fit4x3Box('${tId}', 'height', event)" title="Dopasuj do wysokości 16:9">↕ Wys.</button>
               `;
               box.appendChild(fitGroup);
             }
