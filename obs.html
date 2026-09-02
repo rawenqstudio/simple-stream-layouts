@@ -374,11 +374,11 @@
         height: auto;
         margin: 0;
       }
-      .layout-split .video-box:nth-child(2n + 1) {
+      .layout-split .video-box:nth-child(odd) {
         grid-column: 1;
         justify-self: start;
       }
-      .layout-split .video-box:nth-child(2n) {
+      .layout-split .video-box:nth-child(even) {
         grid-column: 3;
         justify-self: end;
       }
@@ -534,7 +534,6 @@
       const heartbeats = {};
       let directorConn = null;
       const statsCache = {};
-      const transformsCache = {};
       let hidePanelTimeout;
       let isLocalFreeMode = false;
 
@@ -571,306 +570,15 @@
         btn.classList.add("active-layout");
       }
 
-      function applyPresetToLocalFreeMode(mode) {
-        const boxes = Array.from(container.querySelectorAll(".video-box"));
-        const o = boxes.length;
-        if (0 === o) return;
-
-        const pxToW = (px) => (px / 1920) * 100;
-        const pxToH = (px) => (px / 1080) * 100;
-        const gap = pxToW(15);
-        const coords = {};
-
-        const getBoxW = (boxEl, hPct) => {
-          const id = boxEl.id.replace("box-", "");
-          const is4x3 =
-            (guests[id]?.ratio || boxEl.getAttribute("data-ratio")) === "4:3";
-          const R = is4x3 ? 4 / 3 : 16 / 9;
-          return hPct * R * 0.5625;
-        };
-
-        const getBoxH = (boxEl, wPx) => {
-          const id = boxEl.id.replace("box-", "");
-          const is4x3 =
-            (guests[id]?.ratio || boxEl.getAttribute("data-ratio")) === "4:3";
-          const hPx = is4x3 ? wPx * (3 / 4) : wPx * (9 / 16);
-          return pxToH(hPx);
-        };
-
-        if ("layout-grid" === mode) {
-          const cols = Math.ceil(Math.sqrt(o));
-          const rows = Math.ceil(o / cols);
-          let cellW =
-            1 === o ? 85 : 2 === o ? 48 : o <= 4 ? 45 : o <= 9 ? 32 : 23;
-          let cellH =
-            1 === o ? 85 : 2 === o ? 60 : o <= 6 ? 45 : o <= 9 ? 30 : 23;
-
-          const totalGridW = cellW * cols + gap * (cols - 1);
-          const totalGridH = cellH * rows + pxToH(15) * (rows - 1);
-          const startX = (100 - totalGridW) / 2;
-          const startY = (100 - totalGridH) / 2;
-
-          boxes.forEach((box, idx) => {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            const itemsInRow = (row === rows - 1 && o % cols) || cols;
-            const rowStartX =
-              startX +
-              (totalGridW - (cellW * itemsInRow + gap * (itemsInRow - 1))) / 2;
-
-            const cellX = rowStartX + col * (cellW + gap);
-            const cellY = startY + row * (cellH + pxToH(15));
-            const w = getBoxW(box, cellH);
-            const offsetX = (cellW - w) / 2;
-
-            coords[box.id] = {
-              x: cellX + offsetX,
-              y: cellY,
-              w: w,
-              h: cellH,
-            };
-          });
-        } else if ("layout-sidebar-right" === mode) {
-          const baseW = pxToW(320);
-          const vGap = pxToH(15);
-          const heights = boxes.map((box) => getBoxH(box, 320));
-          const totalH =
-            heights.reduce((sum, val) => sum + val, 0) + (o - 1) * vGap;
-          let curY = Math.max(pxToH(20), (100 - totalH) / 2);
-
-          boxes.forEach((box, idx) => {
-            const h = heights[idx];
-            coords[box.id] = {
-              x: 100 - baseW - pxToW(20),
-              y: curY,
-              w: baseW,
-              h: h,
-            };
-            curY += h + vGap;
-          });
-        } else if ("layout-sidebar-left" === mode) {
-          const baseW = pxToW(320);
-          const vGap = pxToH(15);
-          const heights = boxes.map((box) => getBoxH(box, 320));
-          const totalH =
-            heights.reduce((sum, val) => sum + val, 0) + (o - 1) * vGap;
-          let curY = Math.max(pxToH(20), (100 - totalH) / 2);
-
-          boxes.forEach((box, idx) => {
-            const h = heights[idx];
-            coords[box.id] = {
-              x: pxToW(20),
-              y: curY,
-              w: baseW,
-              h: h,
-            };
-            curY += h + vGap;
-          });
-        } else if ("layout-bottom" === mode) {
-          const baseH = pxToH(157);
-          const hGap = pxToW(20);
-          const widths = boxes.map((box) => getBoxW(box, baseH));
-          const totalW =
-            widths.reduce((sum, val) => sum + val, 0) + (o - 1) * hGap;
-          let curX = Math.max(0, (100 - totalW) / 2);
-
-          boxes.forEach((box, idx) => {
-            const w = widths[idx];
-            coords[box.id] = {
-              x: curX,
-              y: 100 - baseH - pxToH(20),
-              w: w,
-              h: baseH,
-            };
-            curX += w + hGap;
-          });
-        } else if ("layout-top" === mode) {
-          const baseH = pxToH(157);
-          const hGap = pxToW(20);
-          const widths = boxes.map((box) => getBoxW(box, baseH));
-          const totalW =
-            widths.reduce((sum, val) => sum + val, 0) + (o - 1) * hGap;
-          let curX = Math.max(0, (100 - totalW) / 2);
-
-          boxes.forEach((box, idx) => {
-            const w = widths[idx];
-            coords[box.id] = {
-              x: curX,
-              y: pxToH(20),
-              w: w,
-              h: baseH,
-            };
-            curX += w + hGap;
-          });
-        } else if ("layout-split" === mode) {
-          const baseW = pxToW(320);
-          const vGap = pxToH(30);
-          const leftX = pxToW(40);
-          const rightX = 100 - pxToW(40) - baseW;
-          const rows = Math.ceil(o / 2);
-
-          const rowHeights = [];
-          for (let r = 0; r < rows; r++) {
-            const bLeft = boxes[r * 2];
-            const bRight = boxes[r * 2 + 1];
-            const hL = bLeft ? getBoxH(bLeft, 320) : 0;
-            const hR = bRight ? getBoxH(bRight, 320) : 0;
-            rowHeights.push(Math.max(hL, hR));
-          }
-
-          const totalH =
-            rowHeights.reduce((sum, val) => sum + val, 0) + (rows - 1) * vGap;
-          let curRowY = Math.max(pxToH(20), (100 - totalH) / 2);
-
-          for (let r = 0; r < rows; r++) {
-            const bLeft = boxes[r * 2];
-            const bRight = boxes[r * 2 + 1];
-            const rowH = rowHeights[r];
-
-            if (bLeft) {
-              coords[bLeft.id] = {
-                x: leftX,
-                y: curRowY,
-                w: baseW,
-                h: getBoxH(bLeft, 320),
-              };
-            }
-            if (bRight) {
-              coords[bRight.id] = {
-                x: rightX,
-                y: curRowY,
-                w: baseW,
-                h: getBoxH(bRight, 320),
-              };
-            }
-            curRowY += rowH + vGap;
-          }
-        } else if ("layout-center-stage" === mode) {
-          if (1 === o) {
-            const mainH = 85;
-            const mainW = getBoxW(boxes[0], mainH);
-            coords[boxes[0].id] = {
-              x: (100 - mainW) / 2,
-              y: (100 - mainH) / 2,
-              w: mainW,
-              h: mainH,
-            };
-          } else {
-            const sideColW = pxToW(300);
-            const marginSide = pxToW(20);
-            const gapCenter = pxToW(20);
-            const sideGap = pxToH(15);
-
-            const availCenterW =
-              100 - 2 * marginSide - 2 * sideColW - 2 * gapCenter;
-            const maxCenterH = 80;
-
-            const id0 = boxes[0].id.replace("box-", "");
-            const is4x3Main =
-              (guests[id0]?.ratio || boxes[0].getAttribute("data-ratio")) ===
-              "4:3";
-            const R_main = is4x3Main ? 4 / 3 : 16 / 9;
-
-            let mainH = availCenterW / (R_main * 0.5625);
-            if (mainH > maxCenterH) mainH = maxCenterH;
-            const mainW = mainH * R_main * 0.5625;
-
-            const sideCount = o - 1;
-            const sideRows = Math.ceil(sideCount / 2);
-
-            const sideRowHeights = [];
-            for (let r = 0; r < sideRows; r++) {
-              const bL = boxes[1 + r * 2];
-              const bR = boxes[2 + r * 2];
-              const hL = bL ? getBoxH(bL, 300) : 0;
-              const hR = bR ? getBoxH(bR, 300) : 0;
-              sideRowHeights.push(Math.max(hL, hR));
-            }
-
-            const totalSideH =
-              sideRowHeights.reduce((sum, val) => sum + val, 0) +
-              (sideRows - 1) * sideGap;
-            const sideStartY = Math.max(pxToH(20), (100 - totalSideH) / 2);
-
-            coords[boxes[0].id] = {
-              x: (100 - mainW) / 2,
-              y: (100 - mainH) / 2,
-              w: mainW,
-              h: mainH,
-            };
-
-            let curSideY = sideStartY;
-            for (let r = 0; r < sideRows; r++) {
-              const bL = boxes[1 + r * 2];
-              const bR = boxes[2 + r * 2];
-              const rowH = sideRowHeights[r];
-
-              if (bL) {
-                coords[bL.id] = {
-                  x: marginSide,
-                  y: curSideY,
-                  w: sideColW,
-                  h: getBoxH(bL, 300),
-                };
-              }
-              if (bR) {
-                coords[bR.id] = {
-                  x: 100 - marginSide - sideColW,
-                  y: curSideY,
-                  w: sideColW,
-                  h: getBoxH(bR, 300),
-                };
-              }
-              curSideY += rowH + sideGap;
-            }
-          }
-        }
-
-        for (const [id, c] of Object.entries(coords)) {
-          const box = document.getElementById(id);
-          if (box) {
-            const cleanX = parseFloat(c.x.toFixed(4));
-            const cleanY = parseFloat(c.y.toFixed(4));
-            const cleanW = parseFloat(c.w.toFixed(4));
-            const cleanH = parseFloat(c.h.toFixed(4));
-
-            box.style.left = cleanX + "%";
-            box.style.top = cleanY + "%";
-            box.style.width = cleanW + "%";
-            box.style.height = cleanH + "%";
-
-            // Aktualizacja pamięci podręcznej współrzędnych
-            const guestId = id.replace("box-", "");
-            transformsCache[guestId] = {
-              x: cleanX,
-              y: cleanY,
-              w: cleanW,
-              h: cleanH,
-            };
-          }
-        }
-      }
-
       function setLocalLayout(mode, btnElement) {
-        if (isLocalFreeMode) {
-          applyPresetToLocalFreeMode(mode);
-        } else {
-          // Bezpieczna zmiana klasy układu bez usuwania innych klas systemowych
-          const classesToRemove = [];
-          container.classList.forEach((c) => {
-            if (c.startsWith("layout-")) classesToRemove.push(c);
-          });
-          classesToRemove.forEach((c) => container.classList.remove(c));
-          container.classList.add(mode);
-
-          // Całkowite wyczyszczenie styli pozycji ze Swobodnego Ustawiania
-          document.querySelectorAll(".video-box").forEach((box) => {
-            box.style.top = "";
-            box.style.left = "";
-            box.style.width = "";
-            box.style.height = "";
-          });
-        }
+        isLocalFreeMode = false;
+        container.className = mode;
+        document.querySelectorAll(".video-box").forEach((box) => {
+          box.style.top = "";
+          box.style.left = "";
+          box.style.width = "";
+          box.style.height = "";
+        });
         updateLocalActiveButton(btnElement);
       }
 
@@ -913,16 +621,12 @@
         isLocalFreeMode = true;
         container.className = "layout-free";
 
+        // Tylko kafelki z głównego kontenera układamy w kaskadę
         const boxes = container.querySelectorAll(".video-box");
         boxes.forEach((box, index) => {
           if (!box.style.left) {
-            const id = box.id.replace("box-", "");
-            const is4x3 =
-              (guests[id]?.ratio || box.getAttribute("data-ratio")) === "4:3";
-            const R = is4x3 ? 4 / 3 : 16 / 9;
-            const w = (180 / 1080) * 100 * R * 0.5625;
-            box.style.width = w.toFixed(4) + "%";
-            box.style.height = ((180 / 1080) * 100).toFixed(4) + "%";
+            box.style.width = "320px";
+            box.style.height = "auto";
             box.style.left = 2 + index * 5 + "%";
             box.style.top = 2 + index * 5 + "%";
           }
@@ -1158,12 +862,6 @@
           }
         }
         if (data.type === "transform-update" && !isLocal) {
-          transformsCache[data.targetId] = {
-            x: data.x,
-            y: data.y,
-            w: data.w,
-            h: data.h,
-          };
           if (container.classList.contains("layout-free")) {
             const box = document.getElementById(`box-${data.targetId}`);
             if (box) {
@@ -1390,20 +1088,6 @@
         box.id = `box-${id}`;
         box.style.order = 999;
 
-        const currentRatio = guests[id]?.ratio || "16:9";
-        box.setAttribute("data-ratio", currentRatio);
-
-        // Jeśli są zapisane współrzędne z Free Mode, zaaplikuj je od razu
-        if (
-          container.classList.contains("layout-free") &&
-          transformsCache[id]
-        ) {
-          box.style.left = transformsCache[id].x + "%";
-          box.style.top = transformsCache[id].y + "%";
-          box.style.width = transformsCache[id].w + "%";
-          box.style.height = transformsCache[id].h + "%";
-        }
-
         const video = document.createElement("video");
         video.srcObject = stream;
         video.muted = true;
@@ -1457,8 +1141,6 @@
         }
 
         updateGuestCount();
-        updateLabel(id, guests[id]?.name);
-        toggleMuteIcon(id, guests[id]?.muted);
         applyVideoStyle(id);
 
         video.play().catch((e) => console.error(e));

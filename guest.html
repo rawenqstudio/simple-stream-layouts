@@ -766,8 +766,8 @@
                   (log(
                     `Aktualizacja listy OBS: znaleziono ${e.targets.length}`,
                   ),
-                  e.targets.forEach((obsId) => {
-                    activeCallIds.includes(obsId) || callSingleOBS(obsId);
+                  e.targets.forEach((e) => {
+                    activeCallIds.includes(e) || callSingleOBS(e, t, n, o);
                   }),
                   (joinBtn.innerText = "🔴 JESTEŚ NA WIZJI (MULTI)"),
                   (joinBtn.style.background = "rgba(244, 63, 94, 0.2)"),
@@ -782,7 +782,7 @@
                     directorConn.send({ type: "get-obs-list" })),
                   handleRemoteCommand(e));
               }))
-            : callSingleOBS(e),
+            : callSingleOBS(e, t, n, o),
           window.addEventListener("beforeunload", () => {
             (directorConn &&
               directorConn.open &&
@@ -835,70 +835,65 @@
           btnDirector.onclick = () =>
             copyWithFeedback(btnDirector, directorUrl);
       }
-      function callSingleOBS(e) {
-        const curName = document.getElementById("username").value.trim();
-        const curRatio = document.getElementById("cameraRatio").value;
-        const isHighBitrate = document.getElementById("high-bitrate").checked;
-        const isStartMuted = document.getElementById("start-muted").checked;
-
-        log(`Dzwonię do ekranu: ${e}`);
-        activeCallIds.push(e);
+      function callSingleOBS(e, t, n, o) {
+        (log(`Dzwonię do ekranu: ${e}`), activeCallIds.push(e));
         const a = peer.call(e, localStream);
         activeCalls.push(a);
         const r = peer.connect(e);
-        if (!isMulti) globalConn = r;
-
-        r.on("open", () => {
-          r.send({ type: "identify", name: curName, ratio: curRatio });
-          r.send({ type: "mic-status", muted: isStartMuted });
-          r.send({
-            type: "guest-cam-transform",
-            transform: currentTransform,
-          });
-          if (!isMulti) {
-            log("Połączenie zestawione!", "success");
-            const btn = document.getElementById("join-btn");
-            btn.innerText = "🔴 JESTEŚ NA WIZJI";
-            btn.style.background = "rgba(244, 63, 94, 0.2)";
-            btn.style.border = "1px solid rgba(244, 63, 94, 0.4)";
-            btn.style.color = "#fb7185";
-            btn.style.boxShadow = "0 0 15px rgba(244, 63, 94, 0.25)";
-            document.getElementById("monitor-area").style.display = "block";
-          }
-        });
-
-        a.on("close", () => {
-          const t = activeCallIds.indexOf(e);
-          if (t > -1) activeCallIds.splice(t, 1);
-          const n = activeCalls.indexOf(a);
-          if (n > -1) activeCalls.splice(n, 1);
-        });
-
-        a.on("error", () => {
-          const t = activeCallIds.indexOf(e);
-          if (t > -1) activeCallIds.splice(t, 1);
-          const n = activeCalls.indexOf(a);
-          if (n > -1) activeCalls.splice(n, 1);
-        });
-
-        if (isHighBitrate) {
-          setTimeout(() => {
-            const sender = a.peerConnection
-              ?.getSenders()
-              ?.find((s) => "video" === s.track?.kind);
-            if (sender) {
-              const params = sender.getParameters();
-              if (!params.encodings) params.encodings = [{}];
-              params.encodings[0].maxBitrate = 6e6;
-              sender.setParameters(params).catch(() => {});
-            }
-          }, 1000);
-        }
-
-        r.on("data", (data) => handleRemoteCommand(data));
-        setInterval(() => {
-          if (r.open) r.send({ type: "heartbeat" });
-        }, 2000);
+        (isMulti || (globalConn = r),
+          r.on("open", () => {
+            const e = document.getElementById("start-muted").checked;
+            (r.send({ type: "identify", name: t, ratio: o }),
+              r.send({ type: "mic-status", muted: e }),
+              r.send({
+                type: "guest-cam-transform",
+                transform: currentTransform,
+              }),
+              isMulti ||
+                (log("Połączenie zestawione!", "success"),
+                (document.getElementById("join-btn").innerText =
+                  "🔴 JESTEŚ NA WIZJI"),
+                (document.getElementById("join-btn").style.background =
+                  "rgba(244, 63, 94, 0.2)"),
+                (document.getElementById("join-btn").style.border =
+                  "1px solid rgba(244, 63, 94, 0.4)"),
+                (document.getElementById("join-btn").style.color = "#fb7185"),
+                (document.getElementById("join-btn").style.boxShadow =
+                  "0 0 15px rgba(244, 63, 94, 0.25)"),
+                (document.getElementById("monitor-area").style.display =
+                  "block")));
+          }),
+          a.on("close", () => {
+            const t = activeCallIds.indexOf(e);
+            t > -1 && activeCallIds.splice(t, 1);
+            const n = activeCalls.indexOf(a);
+            n > -1 && activeCalls.splice(n, 1);
+          }),
+          a.on("error", () => {
+            const t = activeCallIds.indexOf(e);
+            t > -1 && activeCallIds.splice(t, 1);
+            const n = activeCalls.indexOf(a);
+            n > -1 && activeCalls.splice(n, 1);
+          }),
+          n &&
+            setTimeout(() => {
+              const e = a.peerConnection
+                .getSenders()
+                .find((e) => "video" === e.track.kind);
+              if (e) {
+                const t = e.getParameters();
+                (t.encodings || (t.encodings = [{}]),
+                  (t.encodings[0].maxBitrate = 6e6),
+                  e
+                    .setParameters(t)
+                    .then(() => {})
+                    .catch((e) => {}));
+              }
+            }, 1e3),
+          r.on("data", (e) => handleRemoteCommand(e)),
+          setInterval(() => {
+            r.open && r.send({ type: "heartbeat" });
+          }, 2e3));
       }
       function handleRemoteCommand(e) {
         if ("mute-cmd" === e.type) {

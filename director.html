@@ -1171,32 +1171,6 @@
                 e.send({ type: "layout", mode: currentLayoutMode }),
                 guestOrder.length > 0 &&
                   e.send({ type: "reorder-guests", order: guestOrder }),
-                // 1. Prześlij pełny stan (format 16:9/4:3, imię, audio, PTZ) do nowego OBS
-                Object.values(multiGuestsState).forEach((guest) => {
-                  e.send({
-                    type: "identify",
-                    targetId: guest.id,
-                    name: guest.name,
-                    ratio: guest.ratio || "16:9",
-                  });
-                  if (guest.muted) {
-                    e.send({ type: "mic-status", peer: guest.id, muted: true });
-                  }
-                  if (guest.mirrored) {
-                    e.send({ type: "toggle-mirror", targetId: guest.id });
-                  }
-                  if (guest.transform) {
-                    e.send({
-                      type: "guest-cam-transform",
-                      targetId: guest.id,
-                      transform: guest.transform,
-                    });
-                  }
-                }),
-                // 2. Automatycznie powiadom gości, by zestawili połączenie z nowym OBS
-                guestConnections.forEach((g) => {
-                  if (g.open) g.send({ type: "force-sync" });
-                }),
                 "layout-free" === currentLayoutMode &&
                   setTimeout(() => syncFreeStageToOBS(), 150)),
               "get-obs-list" === t.type)
