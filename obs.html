@@ -374,11 +374,11 @@
         height: auto;
         margin: 0;
       }
-      .layout-split .video-box:nth-child(odd) {
+      .layout-split .video-box:nth-child(2n + 1) {
         grid-column: 1;
         justify-self: start;
       }
-      .layout-split .video-box:nth-child(even) {
+      .layout-split .video-box:nth-child(2n) {
         grid-column: 3;
         justify-self: end;
       }
@@ -714,7 +714,7 @@
             const bLeft = boxes[r * 2];
             const bRight = boxes[r * 2 + 1];
             const hL = bLeft ? getBoxH(bLeft, 320) : 0;
-            const hR = bRight ? getBoxH(bR, 320) : 0;
+            const hR = bRight ? getBoxH(bRight, 320) : 0;
             rowHeights.push(Math.max(hL, hR));
           }
 
@@ -829,10 +829,24 @@
         for (const [id, c] of Object.entries(coords)) {
           const box = document.getElementById(id);
           if (box) {
-            box.style.left = parseFloat(c.x.toFixed(4)) + "%";
-            box.style.top = parseFloat(c.y.toFixed(4)) + "%";
-            box.style.width = parseFloat(c.w.toFixed(4)) + "%";
-            box.style.height = parseFloat(c.h.toFixed(4)) + "%";
+            const cleanX = parseFloat(c.x.toFixed(4));
+            const cleanY = parseFloat(c.y.toFixed(4));
+            const cleanW = parseFloat(c.w.toFixed(4));
+            const cleanH = parseFloat(c.h.toFixed(4));
+
+            box.style.left = cleanX + "%";
+            box.style.top = cleanY + "%";
+            box.style.width = cleanW + "%";
+            box.style.height = cleanH + "%";
+
+            // Aktualizacja pamięci podręcznej współrzędnych
+            const guestId = id.replace("box-", "");
+            transformsCache[guestId] = {
+              x: cleanX,
+              y: cleanY,
+              w: cleanW,
+              h: cleanH,
+            };
           }
         }
       }
@@ -841,7 +855,15 @@
         if (isLocalFreeMode) {
           applyPresetToLocalFreeMode(mode);
         } else {
-          container.className = mode;
+          // Bezpieczna zmiana klasy układu bez usuwania innych klas systemowych
+          const classesToRemove = [];
+          container.classList.forEach((c) => {
+            if (c.startsWith("layout-")) classesToRemove.push(c);
+          });
+          classesToRemove.forEach((c) => container.classList.remove(c));
+          container.classList.add(mode);
+
+          // Całkowite wyczyszczenie styli pozycji ze Swobodnego Ustawiania
           document.querySelectorAll(".video-box").forEach((box) => {
             box.style.top = "";
             box.style.left = "";
