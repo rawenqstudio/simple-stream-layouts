@@ -1514,69 +1514,65 @@
         };
 
         if ("layout-grid" === e) {
-          let cols, rows;
+          let cols, rows, baseH;
           if (1 === o) {
             cols = 1;
             rows = 1;
+            baseH = 85;
           } else if (2 === o) {
             cols = 2;
             rows = 1;
+            baseH = 48;
           } else if (o <= 4) {
             cols = 2;
             rows = 2;
+            baseH = 45;
           } else if (o <= 6) {
             cols = 3;
             rows = 2;
+            baseH = 32;
           } else if (o <= 9) {
             cols = 3;
             rows = 3;
+            baseH = 30;
           } else if (o <= 12) {
             cols = 4;
             rows = 3;
+            baseH = 23;
           } else {
             cols = Math.ceil(Math.sqrt(o));
             rows = Math.ceil(o / cols);
+            baseH = Math.min(85 / rows, 85 / cols);
           }
 
           const gapX = pxToW(15);
           const gapY = pxToH(15);
-          const marginX = pxToW(20);
-          const marginY = pxToH(20);
 
-          const maxCellW = (100 - 2 * marginX - (cols - 1) * gapX) / cols;
-          const maxCellH = (100 - 2 * marginY - (rows - 1) * gapY) / rows;
+          const totalGridH = baseH * rows + gapY * (rows - 1);
+          const gridStartY = (100 - totalGridH) / 2;
 
-          // W układzie 16:9 na ekranie 16:9 wysokość w % odpowiada dokładnie szerokości w %
-          let cellH = Math.min(maxCellW, maxCellH);
-          if (1 === o && cellH > 85) cellH = 85;
-          const cellW = cellH;
+          for (let r = 0; r < rows; r++) {
+            const rowGuestIds = t.slice(r * cols, (r + 1) * cols);
+            if (0 === rowGuestIds.length) break;
 
-          const totalGridH = cellH * rows + gapY * (rows - 1);
-          const gridStartY = Math.max(marginY, (100 - totalGridH) / 2);
+            const rowWidths = rowGuestIds.map((id) => getGuestWidth(id, baseH));
+            const totalRowW =
+              rowWidths.reduce((sum, w) => sum + w, 0) +
+              (rowGuestIds.length - 1) * gapX;
+            let curX = (100 - totalRowW) / 2;
+            const curY = gridStartY + r * (baseH + gapY);
 
-          t.forEach((tId, idx) => {
-            const row = Math.floor(idx / cols);
-            const col = idx % cols;
-
-            const itemsInThisRow =
-              row === rows - 1 && o % cols !== 0 ? o % cols : cols;
-            const rowTotalW =
-              cellW * itemsInThisRow + gapX * (itemsInThisRow - 1);
-            const rowStartX = (100 - rowTotalW) / 2;
-
-            const cellX = rowStartX + col * (cellW + gapX);
-            const cellY = gridStartY + row * (cellH + gapY);
-
-            const w = getGuestWidth(tId, cellH);
-            const offsetX = (cellW - w) / 2;
-
-            n[tId] = {
-              x: cellX + offsetX,
-              y: cellY,
-              w: w,
-              h: cellH,
-            };
-          });
+            rowGuestIds.forEach((id, colIdx) => {
+              const w = rowWidths[colIdx];
+              n[id] = {
+                x: curX,
+                y: curY,
+                w: w,
+                h: baseH,
+              };
+              curX += w + gapX;
+            });
+          }
         } else if ("layout-sidebar-right" === e) {
           const baseW = pxToW(320),
             gap = pxToH(15);
