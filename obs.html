@@ -835,9 +835,21 @@
           document.body.classList.remove("local-fit-allowed");
         }
 
-        const boxes = Array.from(
+        let boxes = Array.from(
           document.querySelectorAll("#video-container .video-box"),
         ).filter((b) => !b.classList.contains("excluded-guest"));
+
+        // Posortuj kafelki według kolejności zdefiniowanej w pokoju
+        if (currentGuestOrder && currentGuestOrder.length > 0) {
+          boxes.sort((a, b) => {
+            const idA = a.id.replace("box-", "");
+            const idB = b.id.replace("box-", "");
+            const idxA = currentGuestOrder.indexOf(idA);
+            const idxB = currentGuestOrder.indexOf(idB);
+            return (idxA === -1 ? 999 : idxA) - (idxB === -1 ? 999 : idxB);
+          });
+        }
+
         const o = boxes.length;
         if (0 === o) return;
 
@@ -1350,7 +1362,7 @@
             }
           }
         }
-        if (data.type === "reorder-guests" && !isLocal) {
+        if (data.type === "reorder-guests") {
           currentGuestOrder = data.order;
           applyGuestOrder();
         }
