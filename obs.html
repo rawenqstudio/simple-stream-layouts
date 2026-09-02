@@ -1360,6 +1360,7 @@
         box.className = "video-box";
         box.id = `box-${id}`;
         box.style.order = 999;
+        box.setAttribute("data-ratio", guests[id]?.ratio || "16:9");
 
         const video = document.createElement("video");
         video.srcObject = stream;
@@ -1414,6 +1415,8 @@
         }
 
         updateGuestCount();
+        updateLabel(id, guests[id]?.name);
+        toggleMuteIcon(id, guests[id]?.muted);
         applyVideoStyle(id);
 
         video.play().catch((e) => console.error(e));
