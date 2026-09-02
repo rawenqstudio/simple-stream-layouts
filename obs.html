@@ -230,12 +230,16 @@
         position: absolute;
         top: 8px;
         left: 8px;
-        display: none;
+        display: none !important;
         gap: 4px;
         z-index: 30;
       }
-      .layout-free .video-box[data-ratio="4:3"] .box-fit-btn-group {
-        display: flex;
+      /* Przyciski widoczne TYLKO w lokalnej interakcji podczas trybu swobodnego */
+      body.local-interact-active.local-free-mode
+        #video-container.layout-free
+        .video-box[data-ratio="4:3"]
+        .box-fit-btn-group {
+        display: flex !important;
       }
       .btn-fit-obs {
         background: rgba(9, 11, 16, 0.85);
@@ -631,10 +635,12 @@
         const hidePanel = () => {
           clearTimeout(hidePanelTimeout);
           panel.classList.remove("visible");
+          document.body.classList.remove("local-interact-active");
         };
 
         const showPanel = () => {
           panel.classList.add("visible");
+          document.body.classList.add("local-interact-active");
           clearTimeout(hidePanelTimeout);
           hidePanelTimeout = setTimeout(hidePanel, 5000);
         };
@@ -657,6 +663,7 @@
 
       function setLocalLayout(mode, btnElement) {
         isLocalFreeMode = false;
+        document.body.classList.remove("local-free-mode");
         container.className = mode;
         document.querySelectorAll(".video-box").forEach((box) => {
           box.style.top = "";
@@ -721,6 +728,7 @@
 
       function toggleLocalFreeMode(btnElement) {
         isLocalFreeMode = true;
+        document.body.classList.add("local-free-mode");
         container.className = "layout-free";
 
         // Tylko kafelki z głównego kontenera układamy w kaskadę

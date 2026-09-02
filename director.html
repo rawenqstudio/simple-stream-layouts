@@ -1789,6 +1789,7 @@
             });
           }
         }
+        updateFitButtonsOnStage();
       }
       let lastAppliedPreset = null;
       const allowedFitPresets = [
@@ -1888,6 +1889,35 @@
         });
       }
 
+      function updateFitButtonsOnStage() {
+        const stageEl = document.getElementById("free-mode-stage");
+        if (!stageEl) return;
+        const boxes = stageEl.querySelectorAll(".stage-box");
+        const isAllowed = allowedFitPresets.includes(lastAppliedPreset);
+
+        boxes.forEach((box) => {
+          const tId = box.dataset.id;
+          const guest = multiGuestsState[tId];
+          const guestRatio =
+            guest && guest.ratio ? guest.ratio : box.dataset.ratio || "16:9";
+
+          let fitGroup = box.querySelector(".box-fit-btn-group");
+          if (guestRatio === "4:3" && isAllowed) {
+            if (!fitGroup) {
+              fitGroup = document.createElement("div");
+              fitGroup.className = "box-fit-btn-group";
+              fitGroup.innerHTML = `
+                <button class="btn-fit" onclick="fit4x3Box('${tId}', 'width', event)" title="Dopasuj do szerokości 16:9">↔ Szer.</button>
+                <button class="btn-fit" onclick="fit4x3Box('${tId}', 'height', event)" title="Dopasuj do wysokości 16:9">↕ Wys.</button>
+              `;
+              box.appendChild(fitGroup);
+            }
+          } else if (fitGroup) {
+            fitGroup.remove();
+          }
+        });
+      }
+
       function renderFreeStage() {
         const e = document.getElementById("free-mode-stage");
         let t = isMulti ? Object.keys(multiGuestsState) : guestOrder;
@@ -1907,10 +1937,6 @@
           const name = guest ? guest.name : "Gość";
           const guestRatio = guest && guest.ratio ? guest.ratio : "16:9";
           const R = guestRatio === "4:3" ? 4 / 3 : 16 / 9;
-
-          const shouldShowFitButtons =
-            guestRatio === "4:3" &&
-            allowedFitPresets.includes(lastAppliedPreset);
 
           if (box) {
             if (box.dataset.ratio !== guestRatio) {
@@ -1940,22 +1966,6 @@
             if (labelEl) labelEl.innerText = name;
             else box.innerText = name;
 
-            // Przyciski dopasowania wyświetlają się tylko w dozwolonych gotowych układach
-            let fitGroup = box.querySelector(".box-fit-btn-group");
-            if (shouldShowFitButtons) {
-              if (!fitGroup) {
-                fitGroup = document.createElement("div");
-                fitGroup.className = "box-fit-btn-group";
-                fitGroup.innerHTML = `
-                  <button class="btn-fit" onclick="fit4x3Box('${tId}', 'width', event)" title="Dopasuj do szerokości 16:9">↔ Szer.</button>
-                  <button class="btn-fit" onclick="fit4x3Box('${tId}', 'height', event)" title="Dopasuj do wysokości 16:9">↕ Wys.</button>
-                `;
-                box.appendChild(fitGroup);
-              }
-            } else if (fitGroup) {
-              fitGroup.remove();
-            }
-
             if (!box.querySelector(".resize-handle")) {
               const handle = document.createElement("div");
               handle.className = "resize-handle";
@@ -1978,16 +1988,6 @@
             labelEl.innerText = name;
             box.appendChild(labelEl);
 
-            if (shouldShowFitButtons) {
-              const fitGroup = document.createElement("div");
-              fitGroup.className = "box-fit-btn-group";
-              fitGroup.innerHTML = `
-                <button class="btn-fit" onclick="fit4x3Box('${tId}', 'width', event)" title="Dopasuj do szerokości 16:9">↔ Szer.</button>
-                <button class="btn-fit" onclick="fit4x3Box('${tId}', 'height', event)" title="Dopasuj do wysokości 16:9">↕ Wys.</button>
-              `;
-              box.appendChild(fitGroup);
-            }
-
             const handle = document.createElement("div");
             handle.className = "resize-handle";
             box.appendChild(handle);
@@ -2000,6 +2000,8 @@
             ? box.classList.add("locked")
             : box.classList.remove("locked");
         });
+
+        updateFitButtonsOnStage();
       }
 
       function setupInteractions(e) {
