@@ -625,6 +625,44 @@
       const statsCache = {};
       let hidePanelTimeout;
       let isLocalFreeMode = false;
+      let currentGuestOrder = [];
+      const pendingTransforms = {};
+
+      function applyGuestOrder() {
+        if (!currentGuestOrder || currentGuestOrder.length === 0) return;
+        currentGuestOrder.forEach((id) => {
+          const box = document.getElementById(`box-${id}`);
+          if (
+            box &&
+            !box.classList.contains("excluded-guest") &&
+            box.parentElement === container
+          ) {
+            container.appendChild(box);
+          }
+        });
+      }
+
+      function applyGuestState(id) {
+        const box = document.getElementById(`box-${id}`);
+        if (!box) return;
+
+        // 1. Zastosuj oczekujące współrzędne Free Mode
+        if (
+          pendingTransforms[id] &&
+          container.classList.contains("layout-free")
+        ) {
+          box.style.left = pendingTransforms[id].x + "%";
+          box.style.top = pendingTransforms[id].y + "%";
+          box.style.width = pendingTransforms[id].w + "%";
+          box.style.height = pendingTransforms[id].h + "%";
+        }
+
+        // 2. Zastosuj transformacje wideo (PTZ, format, lustro)
+        applyVideoStyle(id);
+
+        // 3. Zastosuj właściwą kolejność kafelków na scenie
+        applyGuestOrder();
+      }
 
       // --- LOKALNY PANEL STEROWANIA ---
       if (isLocal) {
@@ -1280,6 +1318,12 @@
           }
         }
         if (data.type === "transform-update" && !isLocal) {
+          pendingTransforms[data.targetId] = {
+            x: data.x,
+            y: data.y,
+            w: data.w,
+            h: data.h,
+          };
           if (container.classList.contains("layout-free")) {
             const box = document.getElementById(`box-${data.targetId}`);
             if (box) {
@@ -1291,13 +1335,8 @@
           }
         }
         if (data.type === "reorder-guests" && !isLocal) {
-          data.order.forEach((id) => {
-            const box = document.getElementById(`box-${id}`);
-            // Przepinamy tylko te, które nie są wykluczone
-            if (box && !box.classList.contains("excluded-guest")) {
-              container.appendChild(box);
-            }
-          });
+          currentGuestOrder = data.order;
+          applyGuestOrder();
         }
         if (data.type === "toggle-labels") {
           if (data.show) container.classList.add("show-labels");
@@ -1486,7 +1525,7 @@
         container.appendChild(box);
         updateGuestCount();
         sendGuestListToDirector();
-        applyVideoStyle(id);
+        applyGuestState(id);
       }
 
       function addVideo(stream, id) {
@@ -1563,7 +1602,7 @@
         }
 
         updateGuestCount();
-        applyVideoStyle(id);
+        applyGuestState(id);
 
         video.play().catch((e) => console.error(e));
         audio.play().catch((e) => console.warn(e));
