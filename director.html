@@ -1165,6 +1165,11 @@
               if (!obsClients.includes(e)) obsClients.push(e);
               updateStatusMsg();
 
+              const isFreeModeOpen =
+                "block" ===
+                document.getElementById("free-mode-container").style.display;
+              if (isFreeModeOpen) currentLayoutMode = "layout-free";
+
               // 1. Synchronizacja globalnych ustawień widoku
               e.send({ type: "toggle-labels", show: labelsVisible });
               e.send({ type: "toggle-icons", show: iconsVisible });
@@ -1507,10 +1512,11 @@
           );
           return;
         }
-        currentLayoutMode = e;
         if (isFreeModeOpen) {
+          currentLayoutMode = "layout-free";
           applyPresetToFreeMode(e);
         } else {
+          currentLayoutMode = e;
           broadcastCommand({ type: "layout", mode: e });
         }
       }
@@ -1537,7 +1543,8 @@
         const e = document.getElementById("free-mode-container");
         if ("block" === e.style.display) {
           e.style.display = "none";
-          sendLayout("layout-grid");
+          currentLayoutMode = "layout-grid";
+          broadcastCommand({ type: "layout", mode: "layout-grid" });
         } else {
           e.style.display = "block";
           currentLayoutMode = "layout-free";

@@ -630,14 +630,16 @@
 
       function applyGuestOrder() {
         if (!currentGuestOrder || currentGuestOrder.length === 0) return;
-        currentGuestOrder.forEach((id) => {
+        currentGuestOrder.forEach((id, index) => {
           const box = document.getElementById(`box-${id}`);
-          if (
-            box &&
-            !box.classList.contains("excluded-guest") &&
-            box.parentElement === container
-          ) {
-            container.appendChild(box);
+          if (box) {
+            box.style.order = index + 1; // Wymuszenie bezwzględnej kolejności w CSS Flex/Grid
+            if (
+              !box.classList.contains("excluded-guest") &&
+              box.parentElement === container
+            ) {
+              container.appendChild(box);
+            }
           }
         });
       }
@@ -1308,13 +1310,27 @@
           });
           classesToRemove.forEach((c) => container.classList.remove(c));
           container.classList.add(data.mode);
-          if (data.mode !== "layout-free") {
-            document.querySelectorAll(".video-box").forEach((box) => {
-              box.style.top = "";
-              box.style.left = "";
-              box.style.width = "";
-              box.style.height = "";
+
+          if (data.mode === "layout-free") {
+            // Natychmiast aplikuj wszystkie otrzymane współrzędne Free Mode
+            Object.keys(pendingTransforms).forEach((targetId) => {
+              const box = document.getElementById(`box-${targetId}`);
+              if (box) {
+                box.style.left = pendingTransforms[targetId].x + "%";
+                box.style.top = pendingTransforms[targetId].y + "%";
+                box.style.width = pendingTransforms[targetId].w + "%";
+                box.style.height = pendingTransforms[targetId].h + "%";
+              }
             });
+          } else {
+            document
+              .querySelectorAll("#video-container .video-box")
+              .forEach((box) => {
+                box.style.top = "";
+                box.style.left = "";
+                box.style.width = "";
+                box.style.height = "";
+              });
           }
         }
         if (data.type === "transform-update" && !isLocal) {
@@ -1448,7 +1464,7 @@
 
           updateGuestCount();
           if (!isMulti) sendGuestListToDirector();
-          applyVideoStyle(peerId);
+          applyGuestState(peerId);
         }
 
         if (data.type === "mic-status") {
@@ -1502,7 +1518,6 @@
         const box = document.createElement("div");
         box.className = "video-box";
         box.id = `box-${id}`;
-        box.style.order = 999;
 
         const img = document.createElement("img");
         img.src = imgSrc;
@@ -1547,7 +1562,6 @@
         const box = document.createElement("div");
         box.className = "video-box";
         box.id = `box-${id}`;
-        box.style.order = 999;
 
         const video = document.createElement("video");
         video.srcObject = stream;
