@@ -534,6 +534,7 @@
       const heartbeats = {};
       let directorConn = null;
       const statsCache = {};
+      const transformsCache = {};
       let hidePanelTimeout;
       let isLocalFreeMode = false;
 
@@ -1135,6 +1136,12 @@
           }
         }
         if (data.type === "transform-update" && !isLocal) {
+          transformsCache[data.targetId] = {
+            x: data.x,
+            y: data.y,
+            w: data.w,
+            h: data.h,
+          };
           if (container.classList.contains("layout-free")) {
             const box = document.getElementById(`box-${data.targetId}`);
             if (box) {
@@ -1360,7 +1367,20 @@
         box.className = "video-box";
         box.id = `box-${id}`;
         box.style.order = 999;
-        box.setAttribute("data-ratio", guests[id]?.ratio || "16:9");
+
+        const currentRatio = guests[id]?.ratio || "16:9";
+        box.setAttribute("data-ratio", currentRatio);
+
+        // Jeśli są zapisane współrzędne z Free Mode, zaaplikuj je od razu
+        if (
+          container.classList.contains("layout-free") &&
+          transformsCache[id]
+        ) {
+          box.style.left = transformsCache[id].x + "%";
+          box.style.top = transformsCache[id].y + "%";
+          box.style.width = transformsCache[id].w + "%";
+          box.style.height = transformsCache[id].h + "%";
+        }
 
         const video = document.createElement("video");
         video.srcObject = stream;
