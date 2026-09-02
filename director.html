@@ -1161,23 +1161,100 @@
       function handleIncomingConnection(e) {
         (e.on("open", () => console.log("Połączenie:", e.peer)),
           e.on("data", (t) => {
-            if (
-              ("register-obs" === t.type &&
-                (obsClients.push(e),
-                updateStatusMsg(),
-                e.send({ type: "toggle-labels", show: labelsVisible }),
-                e.send({ type: "toggle-icons", show: iconsVisible }),
-                e.send({ type: "toggle-borders", show: bordersVisible }),
-                e.send({ type: "layout", mode: currentLayoutMode }),
-                guestOrder.length > 0 &&
-                  e.send({ type: "reorder-guests", order: guestOrder }),
-                "layout-free" === currentLayoutMode &&
-                  setTimeout(() => syncFreeStageToOBS(), 150)),
-              "get-obs-list" === t.type)
-            ) {
+            if ("register-obs" === t.type) {
+              if (!obsClients.includes(e)) obsClients.push(e);
+              updateStatusMsg();
+
+              // 1. Synchronizacja globalnych ustawień widoku
+              e.send({ type: "toggle-labels", show: labelsVisible });
+              e.send({ type: "toggle-icons", show: iconsVisible });
+              e.send({ type: "toggle-borders", show: bordersVisible });
+              e.send({ type: "layout", mode: currentLayoutMode });
+
+              // 2. Synchronizacja kolejności gości
+              if (guestOrder.length > 0) {
+                e.send({ type: "reorder-guests", order: guestOrder });
+              }
+
+              // 3. Synchronizacja sztucznych gości (demo boty)
+              Object.values(multiGuestsState).forEach((guest) => {
+                if (guest.id.startsWith("fake-")) {
+                  e.send({
+                    type: "add-fake-guest",
+                    id: guest.id,
+                    name: guest.name,
+                    img: `https://picsum.photos/seed/${guest.id}/640/360`,
+                  });
+                }
+              });
+
+              // 4. Synchronizacja metadanych każdego uczestnika
+              Object.values(multiGuestsState).forEach((guest) => {
+                // Imię i proporcje
+                e.send({
+                  type: "identify",
+                  targetId: guest.id,
+                  name: guest.name,
+                  ratio: guest.ratio || "16:9",
+                });
+
+                // Wyciszenie mikrofonu
+                if (guest.muted !== undefined) {
+                  e.send({
+                    type: "mic-status",
+                    peer: guest.id,
+                    muted: guest.muted,
+                  });
+                }
+
+                // Odbicie lustrzane
+                if (guest.mirrored) {
+                  e.send({
+                    type: "toggle-mirror",
+                    targetId: guest.id,
+                    state: true,
+                  });
+                }
+
+                // Kadrowanie PTZ (Zoom, Poziom, Pion)
+                if (guest.transform) {
+                  e.send({
+                    type: "guest-cam-transform",
+                    targetId: guest.id,
+                    transform: guest.transform,
+                  });
+                }
+              });
+
+              // 5. Synchronizacja kart do gry (Czółko)
+              if (Object.keys(currentWords).length > 0) {
+                e.send({
+                  type: "game-deal",
+                  cards: currentWords,
+                });
+              }
+
+              // 6. Synchronizacja współrzędnych Stołu Montażowego
+              if ("layout-free" === currentLayoutMode) {
+                setTimeout(() => syncFreeStageToOBS(), 200);
+              }
+
+              // 7. AUTOMATYCZNE powiadomienie wszystkich aktywnych gości o nowym ekranie OBS
+              const allObsTargets = obsClients.map((client) => client.peer);
+              guestConnections.forEach((gConn) => {
+                if (gConn && gConn.open) {
+                  gConn.send({
+                    type: "obs-list",
+                    targets: allObsTargets,
+                  });
+                }
+              });
+            }
+
+            if ("get-obs-list" === t.type) {
               guestConnections.includes(e) || guestConnections.push(e);
-              const t = obsClients.map((e) => e.peer);
-              e.send({ type: "obs-list", targets: t });
+              const targets = obsClients.map((client) => client.peer);
+              e.send({ type: "obs-list", targets: targets });
             }
             handleData(t, e);
           }),

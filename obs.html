@@ -1320,9 +1320,12 @@
         }
         if (data.type === "toggle-mirror") {
           if (guests[data.targetId]) {
-            guests[data.targetId].mirrored = !guests[data.targetId].mirrored;
+            guests[data.targetId].mirrored =
+              data.state !== undefined
+                ? data.state
+                : !guests[data.targetId].mirrored;
             applyVideoStyle(data.targetId);
-            sendGuestListToDirector();
+            if (!isMulti) sendGuestListToDirector();
           }
         }
         if (data.type === "guest-cam-transform") {
@@ -1409,11 +1412,12 @@
           applyVideoStyle(peerId);
         }
 
-        if (data.type === "mic-status" && conn) {
-          if (guests[conn.peer]) {
-            guests[conn.peer].muted = data.muted;
-            toggleMuteIcon(conn.peer, data.muted);
-            sendGuestListToDirector();
+        if (data.type === "mic-status") {
+          const peerId = data.peer || (conn ? conn.peer : null);
+          if (peerId && guests[peerId]) {
+            guests[peerId].muted = data.muted;
+            toggleMuteIcon(peerId, data.muted);
+            if (!isMulti) sendGuestListToDirector();
           }
         }
         if (data.type === "heartbeat" && conn)
