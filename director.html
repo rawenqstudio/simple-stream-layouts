@@ -1514,29 +1514,59 @@
         };
 
         if ("layout-grid" === e) {
-          const cols = Math.ceil(Math.sqrt(o)),
+          let cols, rows;
+          if (1 === o) {
+            cols = 1;
+            rows = 1;
+          } else if (2 === o) {
+            cols = 2;
+            rows = 1;
+          } else if (o <= 4) {
+            cols = 2;
+            rows = 2;
+          } else if (o <= 6) {
+            cols = 3;
+            rows = 2;
+          } else if (o <= 9) {
+            cols = 3;
+            rows = 3;
+          } else if (o <= 12) {
+            cols = 4;
+            rows = 3;
+          } else {
+            cols = Math.ceil(Math.sqrt(o));
             rows = Math.ceil(o / cols);
-          let cellW, cellH;
-          cellW = 1 === o ? 85 : 2 === o ? 48 : o <= 4 ? 45 : o <= 9 ? 32 : 23;
-          cellH = 1 === o ? 85 : 2 === o ? 60 : o <= 6 ? 45 : o <= 9 ? 30 : 23;
+          }
 
-          const totalGridW = cellW * cols + s * (cols - 1),
-            totalGridH = cellH * rows + pxToH(15) * (rows - 1),
-            startX = (100 - totalGridW) / 2,
-            startY = (100 - totalGridH) / 2;
+          const gapX = pxToW(15);
+          const gapY = pxToH(15);
+          const marginX = pxToW(20);
+          const marginY = pxToH(20);
+
+          const maxCellW = (100 - 2 * marginX - (cols - 1) * gapX) / cols;
+          const maxCellH = (100 - 2 * marginY - (rows - 1) * gapY) / rows;
+
+          // W układzie 16:9 na ekranie 16:9 wysokość w % odpowiada dokładnie szerokości w %
+          let cellH = Math.min(maxCellW, maxCellH);
+          if (1 === o && cellH > 85) cellH = 85;
+          const cellW = cellH;
+
+          const totalGridH = cellH * rows + gapY * (rows - 1);
+          const gridStartY = Math.max(marginY, (100 - totalGridH) / 2);
 
           t.forEach((tId, idx) => {
-            const col = idx % cols,
-              row = Math.floor(idx / cols),
-              itemsInThisRow = (row === rows - 1 && o % cols) || cols,
-              rowStartX =
-                startX +
-                (totalGridW -
-                  (cellW * itemsInThisRow + s * (itemsInThisRow - 1))) /
-                  2;
+            const row = Math.floor(idx / cols);
+            const col = idx % cols;
 
-            const cellX = rowStartX + col * (cellW + s);
-            const cellY = startY + row * (cellH + pxToH(15));
+            const itemsInThisRow =
+              row === rows - 1 && o % cols !== 0 ? o % cols : cols;
+            const rowTotalW =
+              cellW * itemsInThisRow + gapX * (itemsInThisRow - 1);
+            const rowStartX = (100 - rowTotalW) / 2;
+
+            const cellX = rowStartX + col * (cellW + gapX);
+            const cellY = gridStartY + row * (cellH + gapY);
+
             const w = getGuestWidth(tId, cellH);
             const offsetX = (cellW - w) / 2;
 
