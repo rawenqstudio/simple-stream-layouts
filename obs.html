@@ -234,8 +234,8 @@
         gap: 4px;
         z-index: 30;
       }
-      /* Przyciski widoczne TYLKO w lokalnej interakcji podczas trybu swobodnego */
-      body.local-interact-active.local-free-mode
+      /* Przyciski widoczne TYLKO podczas interakcji w trybie swobodnym I po wybraniu dozwolonego układu */
+      body.local-interact-active.local-free-mode.local-fit-allowed
         #video-container.layout-free
         .video-box[data-ratio="4:3"]
         .box-fit-btn-group {
@@ -663,10 +663,10 @@
 
       function setLocalLayout(mode, btnElement) {
         if (isLocalFreeMode) {
-          // Jeśli tryb swobodny jest aktywny, zastosuj gotowy układ jako szablon startowy
           applyPresetToLocalFreeMode(mode);
         } else {
-          // Standardowy tryb CSS
+          document.body.classList.remove("local-fit-allowed");
+          localLastPreset = mode;
           container.className = mode;
           document
             .querySelectorAll("#video-container .video-box")
@@ -679,6 +679,15 @@
         }
         updateLocalActiveButton(btnElement);
       }
+
+      let localLastPreset = null;
+      const allowedLocalFitPresets = [
+        "layout-sidebar-left",
+        "layout-sidebar-right",
+        "layout-top",
+        "layout-bottom",
+        "layout-split",
+      ];
 
       function localFit4x3Box(id, mode, event) {
         if (event) event.stopPropagation();
@@ -695,39 +704,53 @@
           curY = (box.offsetTop / stageH) * 100;
         }
 
-        // Pobierz aktualny referencyjny rozmiar kafelka 16:9 ze sceny lub użyj standardowego 320x180 px
-        const ref16x9 = Array.from(
-          document.querySelectorAll("#video-container .video-box"),
-        ).find(
-          (b) =>
-            b !== box &&
-            b.getAttribute("data-ratio") !== "4:3" &&
-            b.style.width &&
-            b.style.height,
-        );
-
-        let refW = (320 / 1920) * 100; // 16.6667%
-        let refH = (180 / 1080) * 100; // 16.6667%
-
-        if (ref16x9) {
-          const rw = parseFloat(ref16x9.style.width);
-          const rh = parseFloat(ref16x9.style.height);
-          if (!isNaN(rw) && rw > 0) refW = rw;
-          if (!isNaN(rh) && rh > 0) refH = rh;
-        }
-
         let newW, newH;
-        if (mode === "width") {
-          // Dopasuj do szerokości 16:9 -> Wysokość = Szerokość * (3/4) / 0.5625
-          newW = refW;
-          newH = (refW / 0.5625) * (3 / 4);
+        if (
+          localLastPreset === "layout-top" ||
+          localLastPreset === "layout-bottom"
+        ) {
+          if (mode === "width") {
+            newW = (280 / 1920) * 100;
+            newH = (210 / 1080) * 100;
+          } else {
+            newW = (210 / 1920) * 100;
+            newH = (157 / 1080) * 100;
+          }
+          if (localLastPreset === "layout-bottom") {
+            curY = 100 - newH - (20 / 1080) * 100;
+          } else {
+            curY = (20 / 1080) * 100;
+          }
         } else {
-          // Dopasuj do wysokości 16:9 -> Szerokość = Wysokość * (4/3) * 0.5625
-          newH = refH;
-          newW = refH * (4 / 3) * 0.5625;
+          if (mode === "width") {
+            newW = (320 / 1920) * 100;
+            newH = (240 / 1080) * 100;
+            if (localLastPreset === "layout-sidebar-right") {
+              curX = 100 - newW - (20 / 1920) * 100;
+            } else if (localLastPreset === "layout-sidebar-left") {
+              curX = (20 / 1920) * 100;
+            } else if (localLastPreset === "layout-split") {
+              const isRight = curX > 50;
+              curX = isRight
+                ? 100 - (40 / 1920) * 100 - newW
+                : (40 / 1920) * 100;
+            }
+          } else {
+            newW = (240 / 1920) * 100;
+            newH = (180 / 1080) * 100;
+            if (localLastPreset === "layout-sidebar-right") {
+              curX = 100 - newW - (20 / 1920) * 100;
+            } else if (localLastPreset === "layout-sidebar-left") {
+              curX = (20 / 1920) * 100;
+            } else if (localLastPreset === "layout-split") {
+              const isRight = curX > 50;
+              curX = isRight
+                ? 100 - (40 / 1920) * 100 - newW
+                : (40 / 1920) * 100;
+            }
+          }
         }
 
-        // Zabezpieczenie przed wyjechaniem poza ekran
         if (curX + newW > 100) curX = Math.max(0, 100 - newW);
         if (curY + newH > 100) curY = Math.max(0, 100 - newH);
 
@@ -743,7 +766,6 @@
           document.body.classList.add("local-free-mode");
           container.className = "layout-free";
 
-          // Ułóż w siatkę jako bazę startową
           applyPresetToLocalFreeMode("layout-grid");
           if (btnElement) {
             btnElement.style.background = "rgba(16, 185, 129, 0.4)";
@@ -752,6 +774,7 @@
           }
         } else {
           document.body.classList.remove("local-free-mode");
+          document.body.classList.remove("local-fit-allowed");
           setLocalLayout(
             "layout-grid",
             document.querySelector("#local-panel button"),
@@ -765,6 +788,13 @@
       }
 
       function applyPresetToLocalFreeMode(preset) {
+        localLastPreset = preset;
+        if (allowedLocalFitPresets.includes(preset)) {
+          document.body.classList.add("local-fit-allowed");
+        } else {
+          document.body.classList.remove("local-fit-allowed");
+        }
+
         const boxes = Array.from(
           document.querySelectorAll("#video-container .video-box"),
         ).filter((b) => !b.classList.contains("excluded-guest"));
