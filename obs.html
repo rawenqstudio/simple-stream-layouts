@@ -225,6 +225,37 @@
         aspect-ratio: auto !important;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8);
       }
+
+      .box-fit-btn-group {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        display: none;
+        gap: 4px;
+        z-index: 30;
+      }
+      .layout-free .video-box[data-ratio="4:3"] .box-fit-btn-group {
+        display: flex;
+      }
+      .btn-fit-obs {
+        background: rgba(9, 11, 16, 0.85);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #f8fafc;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        line-height: 1;
+        font-family: inherit;
+      }
+      .btn-fit-obs:hover {
+        background: var(--accent-sky, #38bdf8);
+        border-color: var(--accent-sky, #38bdf8);
+        color: #000;
+      }
       .layout-free .video-box:active {
         cursor: grabbing;
         z-index: 1000;
@@ -551,6 +582,41 @@
         updateLocalActiveButton(btnElement);
       }
 
+      function localFit4x3Box(id, mode, event) {
+        if (event) event.stopPropagation();
+        const box = document.getElementById(`box-${id}`);
+        if (!box) return;
+
+        const stageW = window.innerWidth;
+        const stageH = window.innerHeight;
+
+        let curX = parseFloat(box.style.left) || 0;
+        let curY = parseFloat(box.style.top) || 0;
+        if (!box.style.left.includes("%")) {
+          curX = (box.offsetLeft / stageW) * 100;
+          curY = (box.offsetTop / stageH) * 100;
+        }
+
+        let newW, newH;
+        if (mode === "width") {
+          // Dopasuj do szerokości 16:9 (320px) -> Wysokość = 240px
+          newW = (320 / 1920) * 100;
+          newH = (240 / 1080) * 100;
+        } else {
+          // Dopasuj do wysokości 16:9 (180px) -> Szerokość = 240px
+          newW = (240 / 1920) * 100;
+          newH = (180 / 1080) * 100;
+        }
+
+        if (curX + newW > 100) curX = Math.max(0, 100 - newW);
+        if (curY + newH > 100) curY = Math.max(0, 100 - newH);
+
+        box.style.left = curX.toFixed(4) + "%";
+        box.style.top = curY.toFixed(4) + "%";
+        box.style.width = newW.toFixed(4) + "%";
+        box.style.height = newH.toFixed(4) + "%";
+      }
+
       function toggleLocalFreeMode(btnElement) {
         isLocalFreeMode = true;
         container.className = "layout-free";
@@ -574,7 +640,7 @@
       let obsStartLeftPct, obsStartTopPct;
 
       document.addEventListener("mousedown", (e) => {
-        if (!isLocalFreeMode) return;
+        if (!isLocalFreeMode || e.target.closest(".box-fit-btn-group")) return;
         const box = e.target.closest(".video-box");
         if (!box) return;
 
@@ -1043,10 +1109,18 @@
         muteIcon.innerText = "🔇";
         muteIcon.id = `mute-${id}`;
 
+        const fitGroup = document.createElement("div");
+        fitGroup.className = "box-fit-btn-group";
+        fitGroup.innerHTML = `
+          <button class="btn-fit-obs" onclick="localFit4x3Box('${id}', 'width', event)" title="Dopasuj do szerokości 16:9 (320px)">↔ Szer.</button>
+          <button class="btn-fit-obs" onclick="localFit4x3Box('${id}', 'height', event)" title="Dopasuj do wysokości 16:9 (180px)">↕ Wys.</button>
+        `;
+
         box.appendChild(video);
         box.appendChild(label);
         box.appendChild(muteIcon);
         box.appendChild(audio);
+        box.appendChild(fitGroup);
 
         // --- Mix-Minus sprawdzanie na starcie ---
         let isExcluded = false;

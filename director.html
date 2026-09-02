@@ -223,6 +223,37 @@
         box-sizing: border-box;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       }
+
+      .box-fit-btn-group {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        display: flex;
+        gap: 3px;
+        z-index: 20;
+      }
+      .btn-fit {
+        background: rgba(9, 11, 16, 0.85);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: #f8fafc;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 5px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+        line-height: 1;
+        font-family: inherit;
+      }
+      .btn-fit:hover {
+        background: var(--accent-sky);
+        border-color: var(--accent-sky);
+        color: #000;
+      }
+      .stage-box.locked .box-fit-btn-group {
+        display: none;
+      }
       .stage-box:active {
         cursor: grabbing;
         border-color: var(--accent-sky);
@@ -1732,6 +1763,49 @@
           }
         }
       }
+      function fit4x3Box(targetId, mode, event) {
+        if (event) event.stopPropagation();
+        const stageEl = document.getElementById("free-mode-stage");
+        const box = stageEl
+          ? stageEl.querySelector(`.stage-box[data-id="${targetId}"]`)
+          : null;
+        if (!box) return;
+
+        let curX = parseFloat(box.style.left) || 0;
+        let curY = parseFloat(box.style.top) || 0;
+        let newW, newH;
+
+        if (mode === "width") {
+          // Dopasuj do szerokości 16:9 (320px) -> Wysokość = 240px
+          newW = parseFloat(pxToW(320).toFixed(4));
+          newH = parseFloat(pxToH(240).toFixed(4));
+        } else {
+          // Dopasuj do wysokości 16:9 (180px) -> Szerokość = 240px
+          newW = parseFloat(pxToW(240).toFixed(4));
+          newH = parseFloat(pxToH(180).toFixed(4));
+        }
+
+        if (curX + newW > 100)
+          curX = Math.max(0, parseFloat((100 - newW).toFixed(4)));
+        if (curY + newH > 100)
+          curY = Math.max(0, parseFloat((100 - newH).toFixed(4)));
+
+        box.style.left = curX + "%";
+        box.style.top = curY + "%";
+        box.style.width = newW + "%";
+        box.style.height = newH + "%";
+        box.dataset.ratio = "4:3";
+
+        broadcastCommand({
+          type: "transform-update",
+          targetId: targetId,
+          x: curX,
+          y: curY,
+          w: newW,
+          h: newH,
+        });
+      }
+
       function renderFreeStage() {
         const e = document.getElementById("free-mode-stage");
         let t = isMulti ? Object.keys(multiGuestsState) : guestOrder;
@@ -1753,7 +1827,6 @@
           const R = guestRatio === "4:3" ? 4 / 3 : 16 / 9;
 
           if (box) {
-            // Jeśli format kamery zmienił się w locie, automatycznie przelicz i zaktualizuj kafelek
             if (box.dataset.ratio !== guestRatio) {
               const curH = parseFloat(box.style.height) || CAM_HEIGHT_PCT;
               let curX = parseFloat(box.style.left) || 0;
@@ -1781,6 +1854,22 @@
             if (labelEl) labelEl.innerText = name;
             else box.innerText = name;
 
+            // Zarządzanie przyciskami dopasowania dla 4:3
+            let fitGroup = box.querySelector(".box-fit-btn-group");
+            if (guestRatio === "4:3") {
+              if (!fitGroup) {
+                fitGroup = document.createElement("div");
+                fitGroup.className = "box-fit-btn-group";
+                fitGroup.innerHTML = `
+                  <button class="btn-fit" onclick="fit4x3Box('${tId}', 'width', event)" title="Dopasuj do szerokości 16:9 (320px)">↔ Szer.</button>
+                  <button class="btn-fit" onclick="fit4x3Box('${tId}', 'height', event)" title="Dopasuj do wysokości 16:9 (180px)">↕ Wys.</button>
+                `;
+                box.appendChild(fitGroup);
+              }
+            } else if (fitGroup) {
+              fitGroup.remove();
+            }
+
             if (!box.querySelector(".resize-handle")) {
               const handle = document.createElement("div");
               handle.className = "resize-handle";
@@ -1802,6 +1891,16 @@
             labelEl.className = "box-label";
             labelEl.innerText = name;
             box.appendChild(labelEl);
+
+            if (guestRatio === "4:3") {
+              const fitGroup = document.createElement("div");
+              fitGroup.className = "box-fit-btn-group";
+              fitGroup.innerHTML = `
+                <button class="btn-fit" onclick="fit4x3Box('${tId}', 'width', event)" title="Dopasuj do szerokości 16:9 (320px)">↔ Szer.</button>
+                <button class="btn-fit" onclick="fit4x3Box('${tId}', 'height', event)" title="Dopasuj do wysokości 16:9 (180px)">↕ Wys.</button>
+              `;
+              box.appendChild(fitGroup);
+            }
 
             const handle = document.createElement("div");
             handle.className = "resize-handle";
@@ -1830,7 +1929,7 @@
           c = !1;
         const u = e.querySelector(".resize-handle");
         (e.addEventListener("mousedown", (m) => {
-          if (isLayoutLocked) return;
+          if (isLayoutLocked || m.target.closest(".box-fit-btn-group")) return;
           const y = document.getElementById("free-mode-stage");
           (m.target === u ? ((c = !0), m.stopPropagation()) : (d = !0),
             (t = m.clientX),
