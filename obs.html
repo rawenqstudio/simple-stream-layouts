@@ -731,14 +731,27 @@
         document.body.classList.add("local-free-mode");
         container.className = "layout-free";
 
-        // Tylko kafelki z głównego kontenera układamy w kaskadę
         const boxes = container.querySelectorAll(".video-box");
         boxes.forEach((box, index) => {
-          if (!box.style.left) {
-            box.style.width = "320px";
-            box.style.height = "auto";
-            box.style.left = 2 + index * 5 + "%";
-            box.style.top = 2 + index * 5 + "%";
+          const is4x3 = box.getAttribute("data-ratio") === "4:3";
+          // Precyzyjne wartości procentowe: 320x180 dla 16:9 lub 240x180 dla 4:3
+          const baseH = parseFloat(((180 / 1080) * 100).toFixed(4)); // 16.6667%
+          const baseW = is4x3
+            ? parseFloat(((240 / 1920) * 100).toFixed(4)) // 12.5000%
+            : parseFloat(((320 / 1920) * 100).toFixed(4)); // 16.6667%
+
+          if (
+            !box.style.left ||
+            !box.style.left.includes("%") ||
+            !box.style.width ||
+            box.style.width === "auto" ||
+            !box.style.height ||
+            box.style.height === "auto"
+          ) {
+            box.style.width = baseW + "%";
+            box.style.height = baseH + "%";
+            box.style.left = (2 + index * 4).toFixed(4) + "%";
+            box.style.top = (2 + index * 4).toFixed(4) + "%";
           }
         });
         updateLocalActiveButton(btnElement);
