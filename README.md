@@ -42,7 +42,7 @@ Głównym problemem podczas wspólnych streamów (np. z gier wieloosobowych, pod
 
 ### ⚡ 5. Wydajność i Ultra-Low Latency (ULL)
 * **Topologia WebRTC Mesh:** Bezpośrednie połączenia P2P o minimalnym opóźnieniu.
-* **Wyłączony Jitter Buffer (`&ull=1`):** Wymuszenie zerowego buforowania (`playoutDelayHint = 0`) dla natychmiastowej synchronizacji audio/video.
+* **Zerowy Jitter Buffer:** Wymuszenie zerowego buforowania (`playoutDelayHint = 0`) dla natychmiastowej synchronizacji audio/video.
 * **Pętla Auto-Catchup:** Monitorowanie opóźnień w czasie rzeczywistym – jeśli pojawi się lag (>200 ms), OBS delikatnie przyspiesza odtwarzanie (1.05x), a przy dużym zacięciu (>2 s) wykonuje natychmiastowy bezszwowy refresh bufora.
 * **Unlock Bitrate:** Opcja wymuszenia wysokiego bitrate'u (6 Mbps) z flagą `contentHint = 'motion'`.
 
@@ -52,45 +52,45 @@ Głównym problemem podczas wspólnych streamów (np. z gier wieloosobowych, pod
 
 ### 🎮 7. Moduł Gier (Czółko / Heads-Up)
 * Wbudowane narzędzie do teleturniejów i gier towarzyskich na żywo.
-* Reżyser jednym kliknięciem losuje lub wpisuje hasła, które pojawiają się w OBS-ie w formie trójwymiarowych kart nad głowami graczy.
+* Reżyser jednym kliknięciem losuje lub wpisuje hasła, które pojawiają się w OBS-ie w formie kart nad głowami graczy.
 * **Anti-Cheat:** Gracz zgadujący ma w swoim podglądzie ukryte własne hasło!
 * Tryb testowy: Skrót `Ctrl + Shift + F` dodający sztucznych uczestników (demo boty) do testowania scen.
 
 ### 🎨 8. Minimalistyczny Design *Dark Slate Studio*
 * **Kinowe podpisy (Ambient Text Overlay):** Czysta, elegancka typografia z subtelną winietą cienia u dołu kadru – 100% czytelności na każdym tle bez zasłaniania obrazu.
-* Płynne animacje wejścia i szklany interfejs (*Glassmorphism*).
+* Płynne animacje i szklany interfejs (*Glassmorphism*).
 
 ---
 
 ## 🚀 Szybki Start (Krok po Kroku)
 
 1. Otwórz stronę główną **`index.html`** i kliknij **`+ Utwórz Nowe Studio`**.
-2. **Krok 1 (Reżyser):** Otwórz *Panel Reżysera* – to Twoje centrum dowodzenia.
+2. **Krok 1 (Reżyser):** Otwórz *Panel Reżysera* – to Twoje centrum dowodzenia realizacją.
 3. **Krok 2 (Goście):** Skopiuj *Link dla Gości* i wyślij go znajomym. Goście wpisują swoje imię, ustawiają kadr i klikają *Dołącz*.
-4. **Krok 3 (OBS):** Skopiuj *Źródło do OBS* i wklej w OBS Studio jako **Browser Source** o rozdzielczości **1920x1080**.
+4. **Krok 3 (OBS i Podglądy):**
+   * **Główny ekran transmisji:** Skopiuj *Źródło OBS / Ekran Gry* ze strony głównej i wklej w OBS Studio jako **Browser Source (1920x1080)**.
+   * **Podglądy dla uczestników:** Po kliknięciu *„Dołącz do studia”* w panelu gościa automatycznie generują się gotowe, spersonalizowane przyciski kopiowania linku podglądu:
+     * **Własny Podgląd (Niezależny):** link z automatycznym Mix-Minus (wycięta własna kamera i audio) oraz włączonym lokalnym menu sterowania w oknie interakcji.
+     * **Podgląd Live Reżysera (Tryb gry):** link z podglądem na żywo całej sceny i automatycznie ukrytym własnym hasłem do gry (Anti-Cheat).
 
 ---
 
 ## ⚙️ Parametry URL (Kompendium)
 
-Możesz precyzyjnie dostosować działanie każdego linku, dopisując odpowiednie parametry w adresie URL:
+Możesz ręcznie dostosować działanie każdego linku podglądu w OBS, dopisując poniższe parametry w adresie URL:
 
 | Parametr | Zastosowanie | Przykład |
 | :--- | :--- | :--- |
 | `room` | Unikalny identyfikator pokoju / studia | `?room=goodiez7` |
-| `multi=1` | Włącza architekturę Multi-Viewer (Reżyser jako serwer sygnalizacyjny) | `&multi=1` |
-| `local=1` | **Tryb Niezależnego OBS-a:** Ignoruje sceny Reżysera i włącza lokalne menu sterowania w OBS | `&local=1` |
+| `local=1` | **Tryb Niezależnego OBS-a:** Ignoruje realizację Reżysera i włącza lokalne menu sterowania w oknie interakcji OBS | `&local=1` |
 | `exclude` | **Mix-Minus:** Całkowicie ukrywa i wycisza podane osoby (oddzielone przecinkami) | `&exclude=Marek,Ania` |
-| `hide` | Ukrywa kartę do gry (Czółko) dla konkretnego gracza w jego podglądzie | `&hide=Marek` |
-| `ull=1` | Wymusza tryb Ultra-Low Latency (zerowy Jitter Buffer w OBS) | `&ull=1` |
-| `stunonly=1` | Używa wyłącznie serwerów STUN Google (przydatne w sieciach lokalnych) | `&stunonly=1` |
 
 ---
 
 ## 🛠️ Technologie
 
 * **Frontend:** HTML5, CSS3 (CSS Grid, Flexbox, Custom Transforms, Glassmorphism)
-* **Język:** Vanilla JavaScript (ES6+, bez ciężkich frameworków, maksymalna wydajność)
+* **Język:** Vanilla JavaScript (ES6+, bez zewnętrznych frameworków)
 * **Transmisja Audio/Video:** WebRTC (RTCPeerConnection, MediaStream API)
 * **Sygnalizacja P2P:** PeerJS (DataChannels, Mesh Orchestration)
 
