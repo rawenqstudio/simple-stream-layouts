@@ -228,10 +228,10 @@
 
       .box-fit-btn-group {
         position: absolute;
-        top: 8px;
-        left: 8px;
+        top: 10px;
+        left: 10px;
         display: none !important;
-        gap: 4px;
+        gap: 6px;
         z-index: 30;
       }
       /* Przyciski widoczne TYLKO podczas interakcji w trybie swobodnym I po wybraniu dozwolonego układu */
@@ -242,23 +242,30 @@
         display: flex !important;
       }
       .btn-fit-obs {
-        background: rgba(9, 11, 16, 0.85);
-        backdrop-filter: blur(6px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: #f8fafc;
-        font-size: 11px;
-        font-weight: 700;
-        padding: 4px 8px;
-        border-radius: 6px;
+        background: rgba(15, 20, 32, 0.92);
+        backdrop-filter: blur(8px);
+        border: 1.5px solid rgba(56, 189, 248, 0.45);
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 5px 10px;
+        border-radius: 7px;
         cursor: pointer;
-        transition: all 0.15s;
-        line-height: 1;
+        transition: all 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        line-height: 1.1;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
         font-family: inherit;
       }
       .btn-fit-obs:hover {
         background: var(--accent-sky, #38bdf8);
-        border-color: var(--accent-sky, #38bdf8);
-        color: #000;
+        border-color: #ffffff;
+        color: #000000;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(56, 189, 248, 0.5);
       }
       .layout-free .video-box:active {
         cursor: grabbing;
