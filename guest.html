@@ -714,8 +714,8 @@
       }
       async function joinRoom() {
         const uInput = document.getElementById("username");
-        const t = uInput.value.trim();
-        if (!t || t.length < 2) {
+        const username = uInput.value.trim();
+        if (!username || username.length < 2) {
           uInput.style.border = "2px solid #ff4444";
           uInput.focus();
           log(
@@ -729,68 +729,95 @@
         }
         uInput.style.border = "1px solid #555";
         try {
-          localStorage.setItem("ssl_guest_name", t);
+          localStorage.setItem("ssl_guest_name", username);
         } catch (err) {}
 
-        const e = document.getElementById("target-id").value,
-          n = document.getElementById("high-bitrate").checked,
-          o = document.getElementById("cameraRatio").value;
-        ((joinBtn.disabled = !0),
-          (joinBtn.innerText = "Łączenie..."),
-          generateMonitorLink(e, t),
-          log("Dzwonię do OBS..."));
-        const a = localStream.getVideoTracks()[0];
-        (a && "contentHint" in a && (a.contentHint = "motion"),
-          isMulti
-            ? ((directorConn = peer.connect(e)),
-              directorConn.on("open", () => {
-                (log(
-                  "Połączono z Reżyserem. Pobieram listę ekranów...",
-                  "success",
-                ),
-                  directorConn.send({ type: "get-obs-list" }),
-                  directorConn.send({ type: "identify", name: t, ratio: o }));
-                const e = document.getElementById("start-muted").checked;
-                (directorConn.send({ type: "mic-status", muted: e }),
-                  directorConn.send({
-                    type: "guest-cam-transform",
-                    transform: currentTransform,
-                  }),
-                  setInterval(() => {
-                    directorConn.open &&
-                      directorConn.send({ type: "heartbeat" });
-                  }, 2e3));
-              }),
-              directorConn.on("data", (e) => {
-                ("obs-list" === e.type &&
-                  (log(
-                    `Aktualizacja listy OBS: znaleziono ${e.targets.length}`,
-                  ),
-                  e.targets.forEach((e) => {
-                    activeCallIds.includes(e) || callSingleOBS(e, t, n, o);
-                  }),
-                  (joinBtn.innerText = "🔴 JESTEŚ NA WIZJI (MULTI)"),
-                  (joinBtn.style.background = "rgba(244, 63, 94, 0.2)"),
-                  (joinBtn.style.border = "1px solid rgba(244, 63, 94, 0.4)"),
-                  (joinBtn.style.color = "#fb7185"),
-                  (joinBtn.style.boxShadow =
-                    "0 0 15px rgba(244, 63, 94, 0.25)"),
-                  (document.getElementById("monitor-area").style.display =
-                    "block")),
-                  "force-sync" === e.type &&
-                    (log("Otrzymano rozkaz synchronizacji...", "info"),
-                    directorConn.send({ type: "get-obs-list" })),
-                  handleRemoteCommand(e));
-              }))
-            : callSingleOBS(e, t, n, o),
-          window.addEventListener("beforeunload", () => {
-            (directorConn &&
-              directorConn.open &&
-              directorConn.send({ type: "leave" }),
-              globalConn &&
-                globalConn.open &&
-                globalConn.send({ type: "leave" }));
-          }));
+        const targetRoom = document.getElementById("target-id").value;
+        const isHighBitrate = document.getElementById("high-bitrate").checked;
+        const currentRatio = document.getElementById("cameraRatio").value;
+
+        joinBtn.disabled = true;
+        joinBtn.innerText = "Łączenie...";
+        generateMonitorLink(targetRoom, username);
+        log("Dzwonię do OBS...");
+
+        const videoTrack = localStream ? localStream.getVideoTracks()[0] : null;
+        if (videoTrack && "contentHint" in videoTrack) {
+          videoTrack.contentHint = "motion";
+        }
+
+        if (isMulti) {
+          directorConn = peer.connect(targetRoom);
+          directorConn.on("open", () => {
+            log("Połączono z Reżyserem. Pobieram listę ekranów...", "success");
+            const liveName =
+              document.getElementById("username").value.trim() || username;
+            const liveRatio =
+              document.getElementById("cameraRatio").value || currentRatio;
+            const isMuted = document.getElementById("start-muted").checked;
+
+            directorConn.send({ type: "get-obs-list" });
+            directorConn.send({
+              type: "identify",
+              name: liveName,
+              ratio: liveRatio,
+            });
+            directorConn.send({ type: "mic-status", muted: isMuted });
+            directorConn.send({
+              type: "guest-cam-transform",
+              transform: currentTransform,
+            });
+
+            setInterval(() => {
+              if (directorConn && directorConn.open) {
+                directorConn.send({ type: "heartbeat" });
+              }
+            }, 2000);
+          });
+
+          directorConn.on("data", (data) => {
+            if ("obs-list" === data.type) {
+              log(`Aktualizacja listy OBS: znaleziono ${data.targets.length}`);
+              const liveName =
+                document.getElementById("username").value.trim() || username;
+              const liveRatio =
+                document.getElementById("cameraRatio").value || currentRatio;
+              const liveBitrate =
+                document.getElementById("high-bitrate").checked;
+
+              data.targets.forEach((targetObsId) => {
+                if (!activeCallIds.includes(targetObsId)) {
+                  callSingleOBS(targetObsId, liveName, liveBitrate, liveRatio);
+                }
+              });
+
+              joinBtn.innerText = "🔴 JESTEŚ NA WIZJI (MULTI)";
+              joinBtn.style.background = "rgba(244, 63, 94, 0.2)";
+              joinBtn.style.border = "1px solid rgba(244, 63, 94, 0.4)";
+              joinBtn.style.color = "#fb7185";
+              joinBtn.style.boxShadow = "0 0 15px rgba(244, 63, 94, 0.25)";
+              document.getElementById("monitor-area").style.display = "block";
+            }
+
+            if ("force-sync" === data.type) {
+              log("Otrzymano rozkaz synchronizacji...", "info");
+              directorConn.send({ type: "get-obs-list" });
+            }
+
+            handleRemoteCommand(data);
+          });
+        } else {
+          callSingleOBS(targetRoom, username, isHighBitrate, currentRatio);
+        }
+
+        window.addEventListener("beforeunload", () => {
+          if (directorConn && directorConn.open) {
+            directorConn.send({ type: "leave" });
+          }
+          if (globalConn && globalConn.open) {
+            globalConn.send({ type: "leave" });
+          }
+        });
       }
       function copyWithFeedback(btn, text) {
         navigator.clipboard
@@ -835,65 +862,76 @@
           btnDirector.onclick = () =>
             copyWithFeedback(btnDirector, directorUrl);
       }
-      function callSingleOBS(e, t, n, o) {
-        (log(`Dzwonię do ekranu: ${e}`), activeCallIds.push(e));
-        const a = peer.call(e, localStream);
-        activeCalls.push(a);
-        const r = peer.connect(e);
-        (isMulti || (globalConn = r),
-          r.on("open", () => {
-            const e = document.getElementById("start-muted").checked;
-            (r.send({ type: "identify", name: t, ratio: o }),
-              r.send({ type: "mic-status", muted: e }),
-              r.send({
-                type: "guest-cam-transform",
-                transform: currentTransform,
-              }),
-              isMulti ||
-                (log("Połączenie zestawione!", "success"),
-                (document.getElementById("join-btn").innerText =
-                  "🔴 JESTEŚ NA WIZJI"),
-                (document.getElementById("join-btn").style.background =
-                  "rgba(244, 63, 94, 0.2)"),
-                (document.getElementById("join-btn").style.border =
-                  "1px solid rgba(244, 63, 94, 0.4)"),
-                (document.getElementById("join-btn").style.color = "#fb7185"),
-                (document.getElementById("join-btn").style.boxShadow =
-                  "0 0 15px rgba(244, 63, 94, 0.25)"),
-                (document.getElementById("monitor-area").style.display =
-                  "block")));
-          }),
-          a.on("close", () => {
-            const t = activeCallIds.indexOf(e);
-            t > -1 && activeCallIds.splice(t, 1);
-            const n = activeCalls.indexOf(a);
-            n > -1 && activeCalls.splice(n, 1);
-          }),
-          a.on("error", () => {
-            const t = activeCallIds.indexOf(e);
-            t > -1 && activeCallIds.splice(t, 1);
-            const n = activeCalls.indexOf(a);
-            n > -1 && activeCalls.splice(n, 1);
-          }),
-          n &&
-            setTimeout(() => {
-              const e = a.peerConnection
+      function callSingleOBS(targetId, guestName, highBitrate, cameraRatioVal) {
+        log(`Dzwonię do ekranu: ${targetId}`);
+        activeCallIds.push(targetId);
+        const call = peer.call(targetId, localStream);
+        activeCalls.push(call);
+        const conn = peer.connect(targetId);
+        if (!isMulti) globalConn = conn;
+
+        conn.on("open", () => {
+          const isMuted = document.getElementById("start-muted").checked;
+          const liveName =
+            document.getElementById("username").value.trim() || guestName;
+          const liveRatio =
+            document.getElementById("cameraRatio").value || cameraRatioVal;
+
+          conn.send({ type: "identify", name: liveName, ratio: liveRatio });
+          conn.send({ type: "mic-status", muted: isMuted });
+          conn.send({
+            type: "guest-cam-transform",
+            transform: currentTransform,
+          });
+
+          if (!isMulti) {
+            log("Połączenie zestawione!", "success");
+            joinBtn.innerText = "🔴 JESTEŚ NA WIZJI";
+            joinBtn.style.background = "rgba(244, 63, 94, 0.2)";
+            joinBtn.style.border = "1px solid rgba(244, 63, 94, 0.4)";
+            joinBtn.style.color = "#fb7185";
+            joinBtn.style.boxShadow = "0 0 15px rgba(244, 63, 94, 0.25)";
+            document.getElementById("monitor-area").style.display = "block";
+          }
+        });
+
+        call.on("close", () => {
+          const idIdx = activeCallIds.indexOf(targetId);
+          if (idIdx > -1) activeCallIds.splice(idIdx, 1);
+          const callIdx = activeCalls.indexOf(call);
+          if (callIdx > -1) activeCalls.splice(callIdx, 1);
+        });
+
+        call.on("error", () => {
+          const idIdx = activeCallIds.indexOf(targetId);
+          if (idIdx > -1) activeCallIds.splice(idIdx, 1);
+          const callIdx = activeCalls.indexOf(call);
+          if (callIdx > -1) activeCalls.splice(callIdx, 1);
+        });
+
+        if (highBitrate) {
+          setTimeout(() => {
+            if (call.peerConnection) {
+              const videoSender = call.peerConnection
                 .getSenders()
-                .find((e) => "video" === e.track.kind);
-              if (e) {
-                const t = e.getParameters();
-                (t.encodings || (t.encodings = [{}]),
-                  (t.encodings[0].maxBitrate = 6e6),
-                  e
-                    .setParameters(t)
-                    .then(() => {})
-                    .catch((e) => {}));
+                .find((s) => s.track && "video" === s.track.kind);
+              if (videoSender) {
+                const params = videoSender.getParameters();
+                if (!params.encodings) params.encodings = [{}];
+                params.encodings[0].maxBitrate = 6e6;
+                videoSender.setParameters(params).catch(() => {});
               }
-            }, 1e3),
-          r.on("data", (e) => handleRemoteCommand(e)),
-          setInterval(() => {
-            r.open && r.send({ type: "heartbeat" });
-          }, 2e3));
+            }
+          }, 1000);
+        }
+
+        conn.on("data", (data) => handleRemoteCommand(data));
+
+        setInterval(() => {
+          if (conn.open) {
+            conn.send({ type: "heartbeat" });
+          }
+        }, 2000);
       }
       function handleRemoteCommand(e) {
         if ("mute-cmd" === e.type) {

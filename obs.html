@@ -647,6 +647,7 @@
       function applyGuestState(id) {
         const box = document.getElementById(`box-${id}`);
         if (!box) return;
+        const guest = guests[id];
 
         // 1. Zastosuj oczekujące współrzędne Free Mode
         if (
@@ -662,7 +663,13 @@
         // 2. Zastosuj transformacje wideo (PTZ, format, lustro)
         applyVideoStyle(id);
 
-        // 3. Zastosuj właściwą kolejność kafelków na scenie
+        // 3. Zastosuj etykietę i status wyciszenia
+        if (guest) {
+          updateLabel(id, guest.name);
+          toggleMuteIcon(id, guest.muted);
+        }
+
+        // 4. Zastosuj właściwą kolejność kafelków na scenie
         applyGuestOrder();
       }
 
