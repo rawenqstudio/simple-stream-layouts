@@ -8,9 +8,15 @@ Główną zaletą mojego rozwiązania w porównaniu do wykorzystywanego przez wi
 
 ## 🚀 Jak zacząć? (Szybki Start)
 
-1. Stwórz Pokój.
-2. W pierwszej kolejności otwórz **Panel Reżysera** (Panel ten musi być otwarty cały czas).
-3. Wyślij linki Gościom. Gdy wejdą na stronę i wybiorą sprzęt, automatycznie pojawią się w OBS i w panelu Reżysera.
+Narzędzie posiada dwa tryby pracy, które mogą pracować jednocześnie: Tryb Reżysera oraz Tryb niezależnego Obsa.
+
+1. Tryb Reżysera.
+W tym trybie to Reżyser steruje widokiem układu kamer widocznych w obsie.
+
+2. Tryb niezależnego Obsa.
+W tym trybie to każdy z uczestników steruje widokiem układu kamer widocznych w swoim obsie za pomocą 'interakcji'. W tym trybie domyślnie każdy z niezależnych obsów ma wyłączone wyświetlanie własnej kamerki, tak aby nie dublowała się z tą, którą już posiada na streamie i steruje kamerkami tylko pozostałych uczestników pokoju.
+
+Uczestnik może wybrać do którego z trybów chce dołączyć po dołączeniu do pokoju.
 
 ### Niezależny podgląd dla ekipy (Tryb Lokalny)
 Jeśli Twój współpracownik potrzebuje własnego układu kamer w OBS (ignorującego polecenia Reżysera), wystarczy, że do swojego linku OBS doda parametr `&local=1`. Po kliknięciu prawym przyciskiem myszy na źródło w OBS i wybraniu "Interakcja", zyska dostęp do lokalnego menu sterowania.
@@ -22,7 +28,6 @@ Jeśli Twój współpracownik potrzebuje własnego układu kamer w OBS (ignoruj�
 * **Vanilla JavaScript** (ES6+)
 * **WebRTC** (Natywne API dla Audio/Video)
 * **PeerJS** (Warstwa sygnalizacyjna do zestawiania połączeń P2P)
-* **STUN / TURN Servers** (Wsparcie dla trudnych sieci komórkowych/LTE poprzez projekt OpenRelay)
 
 ---
 
