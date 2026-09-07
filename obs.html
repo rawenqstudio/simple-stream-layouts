@@ -784,13 +784,22 @@
         btn.classList.add("active-layout");
       }
 
+      function updateContainerLayoutClass(newLayoutMode) {
+        const classesToRemove = [];
+        container.classList.forEach((c) => {
+          if (c.startsWith("layout-")) classesToRemove.push(c);
+        });
+        classesToRemove.forEach((c) => container.classList.remove(c));
+        container.classList.add(newLayoutMode);
+      }
+
       function setLocalLayout(mode, btnElement) {
         if (isLocalFreeMode) {
           applyPresetToLocalFreeMode(mode);
         } else {
           document.body.classList.remove("local-fit-allowed");
           localLastPreset = mode;
-          container.className = mode;
+          updateContainerLayoutClass(mode);
           document
             .querySelectorAll("#video-container .video-box")
             .forEach((box) => {
@@ -887,7 +896,7 @@
         isLocalFreeMode = !isLocalFreeMode;
         if (isLocalFreeMode) {
           document.body.classList.add("local-free-mode");
-          container.className = "layout-free";
+          updateContainerLayoutClass("layout-free");
 
           applyPresetToLocalFreeMode("layout-grid");
           if (btnElement) {
