@@ -81,26 +81,53 @@
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
       }
 
+      /* PODPISY: AMBIENT TEXT OVERLAY (KINOWY MINIMALIZM) */
       .label {
         position: absolute;
-        bottom: 12px;
-        left: 12px;
-        background: rgba(9, 11, 16, 0.85);
-        backdrop-filter: blur(10px);
-        color: #f8fafc;
-        padding: 6px 14px;
-        border-radius: 8px;
+        bottom: 14px;
+        left: 16px;
+        color: #ffffff;
         font-size: 1.15rem;
         font-weight: 700;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-left: 4px solid var(--accent-sky);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+        letter-spacing: 0.03em;
+        text-shadow:
+          0 2px 5px rgba(0, 0, 0, 0.95),
+          0 0 14px rgba(0, 0, 0, 0.85);
         z-index: 10;
         display: none;
+        user-select: none;
+        pointer-events: none;
+        animation: labelFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
 
-      #video-container:not(.show-labels) .label {
+      /* Miękki gradient cienia u dołu kadru dla idealnego kontrastu */
+      #video-container.show-labels .video-box::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 52px;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.65), transparent);
+        pointer-events: none;
+        z-index: 5;
+        animation: labelFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      #video-container:not(.show-labels) .label,
+      #video-container:not(.show-labels) .video-box::after {
         display: none !important;
+      }
+
+      @keyframes labelFadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
       #video-container:not(.show-icons) .mute-icon {
         display: none !important;
