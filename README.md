@@ -18,8 +18,11 @@ W tym trybie to każdy z uczestników steruje widokiem układu kamer widocznych 
 
 Uczestnik może wybrać do którego z trybów chce dołączyć po dołączeniu do pokoju.
 
-### Niezależny podgląd dla ekipy (Tryb Lokalny)
-Jeśli Twój współpracownik potrzebuje własnego układu kamer w OBS (ignorującego polecenia Reżysera), wystarczy, że do swojego linku OBS doda parametr `&local=1`. Po kliknięciu prawym przyciskiem myszy na źródło w OBS i wybraniu "Interakcja", zyska dostęp do lokalnego menu sterowania.
+### Dodatkowe informacje
+
+Niezależny podgląd dla ekipy (Tryb Lokalny). Jeśli Twój współpracownik potrzebuje własnego układu kamer w OBS (ignorującego polecenia Reżysera), wystarczy, że do swojego linku OBS doda parametr `&local=1`. Po kliknięciu prawym przyciskiem myszy na źródło w OBS i wybraniu "Włącz interakcję", zyska dostęp do lokalnego menu sterowania.
+
+Domyślnie w trybie niezależnego obsa Twoja kamerka jest wyłączona. Jeśli chcesz aby Twoja kamerka również była widoczna w widoku Twojego obsa lub chcesz usunąć z widoku Twojego obsa innych użytkowników, to możesz tego dokonać dokonując zmian w wklejonym linku w obsie i parametrze '&exclude=', albo go całkowicie usuwając, jeśli chcesz mieć kamerki wszystkich uczestników, albo dodając po przecinku, przykładowo exclude=Marek,Ania,Piotr innych uczestników pokoju.
 
 ---
 
