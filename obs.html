@@ -708,15 +708,31 @@
         const t = document.getElementById(`box-${e}`);
         if (!t) return;
         const o = guests[e];
-        (pendingTransforms[e] &&
-          container.classList.contains("layout-free") &&
-          ((t.style.left = pendingTransforms[e].x + "%"),
-          (t.style.top = pendingTransforms[e].y + "%"),
-          (t.style.width = pendingTransforms[e].w + "%"),
-          (t.style.height = pendingTransforms[e].h + "%")),
-          applyVideoStyle(e),
-          o && (updateLabel(e, o.name), toggleMuteIcon(e, o.muted)),
-          applyGuestOrder());
+
+        if (container.classList.contains("layout-free")) {
+          if (isLocal) {
+            // W lokalnym trybie swobodnym natychmiast przelicz szerokość do nowego formatu kamery
+            const guestRatio = o && o.ratio ? o.ratio : "16:9";
+            const R = "4:3" === guestRatio ? 4 / 3 : 16 / 9;
+            const curH = parseFloat(t.style.height) || (180 / 1080) * 100;
+            let curX = parseFloat(t.style.left) || 0;
+            let newW = curH * R * 0.5625;
+
+            if (curX + newW > 100) curX = Math.max(0, 100 - newW);
+            t.style.left = curX.toFixed(4) + "%";
+            t.style.width = newW.toFixed(4) + "%";
+          } else if (pendingTransforms[e]) {
+            // W standardowym OBS-ie zastosuj pozycje przesłane z Reżyserki
+            t.style.left = pendingTransforms[e].x + "%";
+            t.style.top = pendingTransforms[e].y + "%";
+            t.style.width = pendingTransforms[e].w + "%";
+            t.style.height = pendingTransforms[e].h + "%";
+          }
+        }
+
+        applyVideoStyle(e);
+        o && (updateLabel(e, o.name), toggleMuteIcon(e, o.muted));
+        applyGuestOrder();
       }
       if (isLocal) {
         const e = document.getElementById("local-panel");
